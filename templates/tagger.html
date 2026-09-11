@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Tagger — {{ wall.title }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 1.5rem; background: #0f172a; color: #f8fafc; }
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; height: calc(100vh - 5rem); }
+    .viewport-container { position: relative; background: #1e293b; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; user-select: none; }
+    #wall-img { max-width: 100%; max-height: 100%; display: block; object-fit: contain; }
+    #canvas-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+    .sidebar { background: #1e293b; border-radius: 8px; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+    input, select, textarea, button { width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 0.6rem; font-size: 0.9rem; }
+    button { background: #2563eb; font-weight: 600; cursor: pointer; border: none; margin-top: 0.5rem; }
+    button:hover { background: #1d4ed8; }
+    .defect-card { background: #0f172a; border-left: 4px solid #ef4444; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; font-size: 0.85rem; }
+    .badge { display: inline-block; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; background: #334155; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <header style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h2 style="margin: 0;">{{ wall.title }}</h2>
+      <small style="color: #94a3b8;">{{ wall.wall_type }} • {{ wall.country }}</small>
+    </div>
+    <a href="/" style="color: #38bdf8; text-decoration: none;">&larr; Return to Dashboard</a>
+  </header>
+
+  <div class="layout">
+    <div class="viewport-container" id="viewport">
+      <img id="wall-img" src="/static/img/walls/{{ wall.image_filename }}" alt="Target Wall">
+      <svg id="canvas-overlay"></svg>
+    </div>
+
+    <div class="sidebar">
+      <h3 style="margin: 0;">Add Ground Truth</h3>
+      <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Click & drag on the wall image to box a defect.</p>
+      
+      <form id="defect-form">
+        <label>Defect Title</label>
+        <input type="text" id="title" placeholder="e.g. Center Gap & Washout" required>
+
+        <label>Category</label>
+        <select id="category">
+          <option value="core_collapse">Core / Hearting Collapse</option>
+          <option value="bulge_bowing">Bulge / Out-of-Plumb</option>
+          <option value="missing_stone">Missing Through-Stone</option>
+          <option value="foundation_washout">Base / Foundation Washout</option>
+          <option value="structural_crack">Shear / Structural Crack</option>
+        </select>
+
+        <label>Severity</label>
+        <select id="severity">
+          <option value="minor">Minor</option>
+          <option value="moderate" selected>Moderate</option>
+          <option value="critical">Critical</option>
+        </select>
+
+        <label>Educational Explanation</label>
+        <textarea id="explanation" rows="3" placeholder="Why this failure occurred..." required></textarea>
+
+        <button type="submit" id="save-btn" disabled>Save Ground Truth Zone</button>
+      </form>
+
+      <hr style="border-color: #334155; width: 100%;">
+      <h4 style="margin: 0;">Logged Defects (<span id="defect-count">0</span>)</h4>
+      <div id="defects-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const WALL_ID = "{{ wall.id }}";
+    const img = document.getElementById("wall-img");
+    const svg = document.getElementById("canvas-overlay");
+    const form = document.getElementById("defect-form");
+    const saveBtn = document.getElementById("save-btn");
+    const defectsList = document.getElementById("defects-list");
+
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+    let currentRect = null;
+    let normalizedBox = null;
+    let existingDefects = [];
+
+    function alignOverlay() {
+      const rect = img.getBoundingClientRect();
+      const parentRect = img.parentElement.getBoundingClientRect();
+      svg.style.width = `${rect.width}px`;
+      svg.style.height = `${rect.height}px`;
+      svg.style.left = `${rect.left - parentRect.left}px`;
+      svg.style.top = `${rect.top - parentRect.top}px`;
+    }
+
+    img.addEventListener("load", () => {
+      alignOverlay();
+      fetchDefects();
+    });
+    window.addEventListener("resize", () => {
+      alignOverlay();
+      renderAll();
+    });
+
+    svg.addEventListener("mousedown", (e) => {
+      const bounds = svg.getBoundingClientRect();
+      isDrawing = true;
+      startX = e.clientX - bounds.left;
+      startY = e.clientY - bounds.top;
+
+      if (currentRect) currentRect.remove();
+      currentRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      currentRect.setAttribute("stroke", "#38bdf8");
+      currentRect.setAttribute("stroke-width", "2");
+      currentRect.setAttribute("stroke-dasharray", "4");
+      currentRect.setAttribute("fill", "rgba(56, 189, 248, 0.2)");
+      svg.appendChild(currentRect);
+    });
+
+    svg.addEventListener("mousemove", (e) => {
+      if (!isDrawing) return;
+      const bounds = svg.getBoundingClientRect();
+      const currentX = Math.max(0, Math.min(e.clientX - bounds.left, bounds.width));
+      const currentY = Math.max(0, Math.min(e.clientY - bounds.top, bounds.height));
+
+      const x = Math.min(startX, currentX);
+      const y = Math.min(startY, currentY);
+      const w = Math.abs(currentX - startX);
+      const h = Math.abs(currentY - startY);
+
+      currentRect.setAttribute("x", x);
+      currentRect.setAttribute("y", y);
+      currentRect.setAttribute("width", w);
+      currentRect.setAttribute("height", h);
+
+      normalizedBox = {
+        x_min: x / bounds.width,
+        y_min: y / bounds.height,
+        x_max: (x + w) / bounds.width,
+        y_max: (y + h) / bounds.height
+      };
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      if (normalizedBox && (normalizedBox.x_max - normalizedBox.x_min > 0.01)) {
+        saveBtn.disabled = false;
+      }
+    });
+
+    function renderAll() {
+      svg.innerHTML = "";
+      const bounds = svg.getBoundingClientRect();
+
+      existingDefects.forEach((d) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", d.x_min * bounds.width);
+        rect.setAttribute("y", d.y_min * bounds.height);
+        rect.setAttribute("width", (d.x_max - d.x_min) * bounds.width);
+        rect.setAttribute("height", (d.y_max - d.y_min) * bounds.height);
+        rect.setAttribute("stroke", "#ef4444");
+        rect.setAttribute("stroke-width", "2");
+        rect.setAttribute("fill", "rgba(239, 68, 68, 0.2)");
+        svg.appendChild(rect);
+      });
+    }
+
+    async function fetchDefects() {
+      const res = await fetch(`/admin/walls/${WALL_ID}/defects`);
+      existingDefects = await res.json();
+      document.getElementById("defect-count").innerText = existingDefects.length;
+      renderAll();
+
+      defectsList.innerHTML = existingDefects.map(d => `
+        <div class="defect-card">
+          <strong>${d.title}</strong><br>
+          <span class="badge">${d.category}</span>
+          <span class="badge">${d.severity}</span>
+          <p style="margin: 6px 0 0; color: #94a3b8;">${d.explanation}</p>
+        </div>
+      `).join("");
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!normalizedBox) return;
+
+      const payload = {
+        ...normalizedBox,
+        title: document.getElementById("title").value,
+        category: document.getElementById("category").value,
+        severity: document.getElementById("severity").value,
+        explanation: document.getElementById("explanation").value
+      };
+
+      const res = await fetch(`/admin/walls/${WALL_ID}/defects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        form.reset();
+        saveBtn.disabled = true;
+        normalizedBox = null;
+        if (currentRect) currentRect.remove();
+        fetchDefects();
+      }
+    });
+  </script>
+</body>
+</html>
