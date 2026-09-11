@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inspect Wall: {{ wall.title }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 1.5rem; background: #0f172a; color: #f8fafc; }
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; height: calc(100vh - 5rem); }
+    .viewport-container { position: relative; background: #1e293b; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; user-select: none; }
+    #wall-img { max-width: 100%; max-height: 100%; display: block; object-fit: contain; }
+    #canvas-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+    .sidebar { background: #1e293b; border-radius: 8px; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+    input, select, button { width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 0.6rem; font-size: 0.9rem; }
+    button { background: #059669; font-weight: 600; cursor: pointer; border: none; margin-top: 0.5rem; }
+    button:hover { background: #047857; }
+    .marker-item { background: #0f172a; border-left: 4px solid #38bdf8; border-radius: 4px; padding: 0.6rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+    .debrief-card { background: #0f172a; border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; border: 1px solid #334155; }
+  </style>
+</head>
+<body>
+  <header style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h2 style="margin: 0;">{{ wall.title }}</h2>
+      <small style="color: #94a3b8;">{{ wall.wall_type }} • {{ wall.country }} • {{ wall.difficulty|capitalize }}</small>
+    </div>
+    <a href="/" style="color: #38bdf8; text-decoration: none;">&larr; Exit Inspection</a>
+  </header>
+
+  <div class="layout">
+    <div class="viewport-container" id="viewport">
+      <img id="wall-img" src="/static/img/walls/{{ wall.image_filename }}" alt="Inspection Wall">
+      <svg id="canvas-overlay"></svg>
+    </div>
+
+    <div class="sidebar">
+      <div id="active-panel">
+        <h3 style="margin: 0;">Inspection Mode</h3>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0.5rem 0;">Draw a box over any structural defect you observe.</p>
+
+        <label style="font-size: 0.8rem; color: #94a3b8;">Your Name</label>
+        <input type="text" id="student-name" placeholder="Inspector Name" value="Inspector 1">
+
+        <h4 style="margin: 1rem 0 0.5rem;">Marked Defects (<span id="count">0</span>)</h4>
+        <div id="marker-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+
+        <button type="button" id="submit-btn" style="margin-top: 1rem;" disabled>Submit Inspection Report</button>
+        <button type="button" id="clear-btn" style="background: #475569; margin-top: 0.25rem;">Clear Marks</button>
+      </div>
+
+      <div id="results-panel" style="display: none; flex-direction: column; gap: 0.75rem;">
+        <h3 style="margin: 0;">Assessment Results</h3>
+        <div id="score-banner" style="font-size: 1.5rem; font-weight: bold;"></div>
+        <div id="stat-summary" style="font-size: 0.85rem; color: #94a3b8;"></div>
+        <hr style="border-color: #334155; width: 100%;">
+        <h4 style="margin: 0;">Expert Debrief</h4>
+        <div id="ground-truth-notes" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SLUG = "{{ wall.slug }}";
+    const img = document.getElementById("wall-img");
+    const svg = document.getElementById("canvas-overlay");
+    const markerList = document.getElementById("marker-list");
+    const countEl = document.getElementById("count");
+    const submitBtn = document.getElementById("submit-btn");
+    const clearBtn = document.getElementById("clear-btn");
+
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+    let currentRect = null;
+    let markers = [];
+
+    function alignOverlay() {
+      const rect = img.getBoundingClientRect();
+      const parent = img.parentElement.getBoundingClientRect();
+      svg.style.width = `${rect.width}px`;
+      svg.style.height = `${rect.height}px`;
+      svg.style.left = `${rect.left - parent.left}px`;
+      svg.style.top = `${rect.top - parent.top}px`;
+    }
+
+    img.addEventListener("load", alignOverlay);
+    window.addEventListener("resize", () => {
+      alignOverlay();
+      renderMarkers();
+    });
+
+    svg.addEventListener("mousedown", (e) => {
+      if (document.getElementById("results-panel").style.display === "flex") return;
+      const bounds = svg.getBoundingClientRect();
+      isDrawing = true;
+      startX = e.clientX - bounds.left;
+      startY = e.clientY - bounds.top;
+
+      currentRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      currentRect.setAttribute("stroke", "#38bdf8");
+      currentRect.setAttribute("stroke-width", "2");
+      currentRect.setAttribute("stroke-dasharray", "3");
+      currentRect.setAttribute("fill", "rgba(56, 189, 248, 0.2)");
+      svg.appendChild(currentRect);
+    });
+
+    svg.addEventListener("mousemove", (e) => {
+      if (!isDrawing) return;
+      const bounds = svg.getBoundingClientRect();
+      const currentX = Math.max(0, Math.min(e.clientX - bounds.left, bounds.width));
+      const currentY = Math.max(0, Math.min(e.clientY - bounds.top, bounds.height));
+
+      const x = Math.min(startX, currentX);
+      const y = Math.min(startY, currentY);
+      const w = Math.abs(currentX - startX);
+      const h = Math.abs(currentY - startY);
+
+      currentRect.setAttribute("x", x);
+      currentRect.setAttribute("y", y);
+      currentRect.setAttribute("width", w);
+      currentRect.setAttribute("height", h);
+    });
+
+    window.addEventListener("mouseup", (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      const bounds = svg.getBoundingClientRect();
+      const currentX = Math.max(0, Math.min(e.clientX - bounds.left, bounds.width));
+      const currentY = Math.max(0, Math.min(e.clientY - bounds.top, bounds.height));
+
+      const x = Math.min(startX, currentX);
+      const y = Math.min(startY, currentY);
+      const w = Math.abs(currentX - startX);
+      const h = Math.abs(currentY - startY);
+
+      if (w > 15 && h > 15) {
+        markers.push({
+          x_min: x / bounds.width,
+          y_min: y / bounds.height,
+          x_max: (x + w) / bounds.width,
+          y_max: (y + h) / bounds.height
+        });
+        updateUI();
+      } else if (currentRect) {
+        currentRect.remove();
+      }
+    });
+
+    function renderMarkers() {
+      svg.innerHTML = "";
+      const bounds = svg.getBoundingClientRect();
+      markers.forEach((m, idx) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", m.x_min * bounds.width);
+        rect.setAttribute("y", m.y_min * bounds.height);
+        rect.setAttribute("width", (m.x_max - m.x_min) * bounds.width);
+        rect.setAttribute("height", (m.y_max - m.y_min) * bounds.height);
+        rect.setAttribute("stroke", "#38bdf8");
+        rect.setAttribute("stroke-width", "2");
+        rect.setAttribute("fill", "rgba(56, 189, 248, 0.25)");
+        svg.appendChild(rect);
+      });
+    }
+
+    function updateUI() {
+      renderMarkers();
+      countEl.innerText = markers.length;
+      submitBtn.disabled = markers.length === 0;
+      markerList.innerHTML = markers.map((_, i) => `
+        <div class="marker-item">
+          <span>Observation #${i + 1}</span>
+          <button type="button" onclick="removeMarker(${i})" style="width: auto; background: none; color: #ef4444; margin: 0; padding: 0 4px; font-size: 1rem;">&times;</button>
+        </div>
+      `).join("");
+    }
+
+    window.removeMarker = function(index) {
+      markers.splice(index, 1);
+      updateUI();
+    };
+
+    clearBtn.addEventListener("click", () => {
+      markers = [];
+      updateUI();
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Evaluating...";
+
+      const res = await fetch(`/inspect/${SLUG}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_name: document.getElementById("student-name").value,
+          markers: markers
+        })
+      });
+
+      const data = await res.json();
+      showResults(data);
+    });
+
+    function showResults(data) {
+      document.getElementById("active-panel").style.display = "none";
+      const resultsPanel = document.getElementById("results-panel");
+      resultsPanel.style.display = "flex";
+
+      const scoreBanner = document.getElementById("score-banner");
+      scoreBanner.style.color = data.passed ? "#10b981" : "#ef4444";
+      scoreBanner.innerText = `Score: ${data.score}% (${data.passed ? "PASSED" : "REVISE"})`;
+
+      document.getElementById("stat-summary").innerText = 
+        `Hits: ${data.true_positives} | Overlooked: ${data.false_negatives} | False Alarms: ${data.false_positives}`;
+
+      // Render ground truth in red over student's blue marks
+      const bounds = svg.getBoundingClientRect();
+      data.ground_truth.forEach((gt) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", gt.x_min * bounds.width);
+        rect.setAttribute("y", gt.y_min * bounds.height);
+        rect.setAttribute("width", (gt.x_max - gt.x_min) * bounds.width);
+        rect.setAttribute("height", (gt.y_max - gt.y_min) * bounds.height);
+        rect.setAttribute("stroke", "#ef4444");
+        rect.setAttribute("stroke-width", "2");
+        rect.setAttribute("stroke-dasharray", "4");
+        rect.setAttribute("fill", "rgba(239, 68, 68, 0.2)");
+        svg.appendChild(rect);
+      });
+
+      document.getElementById("ground-truth-notes").innerHTML = data.ground_truth.map(gt => `
+        <div class="debrief-card">
+          <strong style="color: #f87171;">${gt.title}</strong>
+          <p style="margin: 4px 0 0; color: #cbd5e1;">${gt.explanation}</p>
+        </div>
+      `).join("");
+    }
+  </script>
+</body>
+</html>
