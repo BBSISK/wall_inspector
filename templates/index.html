@@ -24,12 +24,14 @@
     .badge-diff { background: #065f46; color: #6ee7b7; }
     .card-title { margin: 0.25rem 0 0.5rem; font-size: 1.15rem; }
     .card-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; margin-bottom: 1.25rem; }
-    .btn-group { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .btn { text-align: center; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+    .btn-group { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .btn { text-align: center; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
     .btn-primary { background: #059669; color: #fff; }
     .btn-primary:hover { background: #047857; }
     .btn-secondary { background: #334155; color: #93c5fd; }
     .btn-secondary:hover { background: #475569; }
+    .btn-delete { background: #7f1d1d; color: #fca5a5; width: 100%; padding: 0.5rem; }
+    .btn-delete:hover { background: #991b1b; }
   </style>
 </head>
 <body>
@@ -60,6 +62,9 @@
             <a href="/inspect/{{ wall.slug }}" class="btn btn-primary">Start Inspection</a>
             <a href="/admin/walls/{{ wall.id }}/tagger" class="btn btn-secondary">Admin Tagger</a>
           </div>
+          <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall image and all assessment data?');">
+            <button type="submit" class="btn btn-delete">Delete Wall</button>
+          </form>
         </div>
       </div>
     {% endfor %}

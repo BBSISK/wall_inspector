@@ -6,7 +6,6 @@ from werkzeug.utils import secure_filename
 from config import Config
 from models import db, Wall, Defect, AssessmentAttempt, Certificate
 
-# Standard Defect Taxonomy by Wall Type
 TAXONOMY_BY_WALL_TYPE = {
     "brick_cavity": [
         {"id": "efflorescence", "label": "Efflorescence (Salt Leaching)"},
@@ -57,7 +56,6 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Persistence handling: Render Persistent Disk fallback if /var/data exists
     if os.path.isdir("/var/data"):
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////var/data/wall_inspector.db"
         upload_folder = "/var/data/walls"
@@ -73,117 +71,42 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-        # Seed Bank of Initial Walls & Detailed Ground Truths
-        seed_data = [
-            {
-                "slug": "industrial-brick-efflorescence",
-                "title": "Industrial Red Brick Cavity Wall",
-                "description": "Red brick masonry exhibiting heavy white crystalline efflorescence and weathered bed joint pointing.",
-                "country": "United Kingdom",
-                "region": "Manchester",
-                "wall_type": "brick_cavity",
-                "structural_function": "load_bearing",
-                "difficulty": "beginner",
-                "image_filename": "brick_efflorescence_01.jpg",
-                "defects": [
-                    {
-                        "target_type": "bounding_box",
-                        "x_min": 0.18, "y_min": 0.20, "x_max": 0.82, "y_max": 0.80,
-                        "category": "efflorescence",
-                        "severity": "moderate",
-                        "title": "Crystalline Salt Efflorescence",
-                        "explanation": "White salt deposits migrated through porous brickwork during water evaporation cycles."
-                    },
-                    {
-                        "target_type": "bounding_box",
-                        "x_min": 0.25, "y_min": 0.65, "x_max": 0.75, "y_max": 0.85,
-                        "category": "mortar_erosion",
-                        "severity": "minor",
-                        "title": "Bed Joint Mortar Erosion",
-                        "explanation": "Recessed joint pointing from driving rain washout, reducing weather protection."
-                    }
-                ]
-            },
-            {
-                "slug": "traditional-drystone-boundary",
-                "title": "Traditional Irish Dry Stone Field Boundary",
-                "description": "Classic double-faced dry stone boundary experiencing coping displacement and core voiding.",
-                "country": "Ireland",
-                "region": "Galway / Connemara",
-                "wall_type": "dry_stone",
-                "structural_function": "boundary",
-                "difficulty": "intermediate",
-                "image_filename": "drystone_01.jpg",
-                "defects": [
-                    {
-                        "target_type": "bounding_box",
-                        "x_min": 0.30, "y_min": 0.05, "x_max": 0.70, "y_max": 0.35,
-                        "category": "coping_displacement",
-                        "severity": "high",
-                        "title": "Coping Stone Loss",
-                        "explanation": "Dislodged top cap stones expose internal smaller hearting stones to rain infiltration."
-                    },
-                    {
-                        "target_type": "bounding_box",
-                        "x_min": 0.35, "y_min": 0.40, "x_max": 0.65, "y_max": 0.80,
-                        "category": "hearting_washout",
-                        "severity": "high",
-                        "title": "Core Hearting Collapse",
-                        "explanation": "Internal packing gravel and small stones have washed down, risking face stone buckling."
-                    }
-                ]
-            }
-        ]
-
-        for item in seed_data:
-            wall = Wall.query.filter_by(slug=item["slug"]).first()
-            if not wall:
-                wall = Wall(
-                    slug=item["slug"],
-                    title=item["title"],
-                    description=item["description"],
-                    country=item["country"],
-                    region=item["region"],
-                    wall_type=item["wall_type"],
-                    structural_function=item["structural_function"],
-                    difficulty=item["difficulty"],
-                    image_filename=item["image_filename"],
-                    is_published=True
-                )
-                db.session.add(wall)
-                db.session.flush()
-
-                for d in item["defects"]:
-                    defect = Defect(
-                        wall_id=wall.id,
-                        target_type=d["target_type"],
-                        x_min=d["x_min"],
-                        y_min=d["y_min"],
-                        x_max=d["x_max"],
-                        y_max=d["y_max"],
-                        category=d["category"],
-                        severity=d["severity"],
-                        title=d["title"],
-                        explanation=d["explanation"]
-                    )
-                    db.session.add(defect)
-        db.session.commit()
-
     # --- Home & Catalog ---
     @app.route("/")
     def index():
         walls = Wall.query.filter_by(is_published=True).all()
         return render_template("index.html", walls=[w.to_dict() for w in walls])
 
-    # --- Student Dashboard & Leaderboard ---
+    # --- Delete Wall Action ---
+    @app.route("/admin/walls/<wall_id>/delete", methods=["POST"])
+    def admin_delete_wall(wall_id):
+        wall = Wall.query.get_or_404(wall_id)
+
+        # Remove image file if stored locally
+        if wall.image_filename:
+            file_path = os.path.join(app.config["UPLOAD_FOLDER"], wall.image_filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+
+        # Delete related defects and attempts
+        Defect.query.filter_by(wall_id=wall.id).delete()
+        AssessmentAttempt.query.filter_by(wall_id=wall.id).delete()
+
+        db.session.delete(wall)
+        db.session.commit()
+        return redirect(url_for("index"))
+
+    # --- Performance Dashboard ---
     @app.route("/dashboard")
     def dashboard():
         attempts_raw = AssessmentAttempt.query.all()
         attempts_raw.sort(key=lambda x: getattr(x, 'created_at', None) or getattr(x, 'timestamp', datetime.min), reverse=True)
         attempts = attempts_raw[:25]
-        
         certificates = Certificate.query.all()
-        
+
         total_attempts = len(attempts_raw)
         total_passed = sum(1 for a in attempts_raw if getattr(a, 'passed', False))
         pass_rate = round((total_passed / total_attempts * 100), 1) if total_attempts > 0 else 0
@@ -356,7 +279,6 @@ def create_app(config_class=Config):
         db.session.add(attempt)
         db.session.commit()
 
-        # Cumulative certification trigger (minimum 2 inspections)
         student_attempts = AssessmentAttempt.query.filter_by(student_name=student_name).all()
         qualifies_for_cert = False
         cert_code = None
