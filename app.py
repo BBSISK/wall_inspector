@@ -102,7 +102,7 @@ def create_app(config_class=Config):
         except Exception as e:
             print(f"Migration note: {e}")
 
-                # Auto-seed demo certificate
+        # Seed Demo Certificate if missing
         cert_code = "GWI-DEMO2026"
         demo_cert = Certificate.query.filter_by(certificate_code=cert_code).first()
         if not demo_cert:
@@ -203,9 +203,9 @@ def create_app(config_class=Config):
             }
         ]
 
-        for seed in seed_catalog:
-            existing = Wall.query.filter_by(slug=seed["slug"]).first()
-            if not existing:
+        # Guard: Only seed if database is entirely empty
+        if Wall.query.count() == 0:
+            for seed in seed_catalog:
                 w = Wall(
                     slug=seed["slug"],
                     title=seed["title"],
