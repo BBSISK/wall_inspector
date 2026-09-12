@@ -71,18 +71,47 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-    # --- Home & Catalog ---
+        # Seed the baseline Industrial Brick Wall if missing
+        brick = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
+        if not brick:
+            brick = Wall(
+                slug="industrial-brick-efflorescence",
+                title="Industrial Red Brick Cavity Wall",
+                description="Red brick masonry exhibiting heavy white crystalline efflorescence and weathered bed joint pointing.",
+                country="United Kingdom",
+                region="Manchester",
+                wall_type="brick_cavity",
+                structural_function="load_bearing",
+                difficulty="beginner",
+                image_filename="brick_efflorescence_01.jpg",
+                is_published=True
+            )
+            db.session.add(brick)
+            db.session.commit()
+
+            gt = Defect(
+                wall_id=brick.id,
+                target_type="bounding_box",
+                x_min=0.18,
+                y_min=0.20,
+                x_max=0.82,
+                y_max=0.80,
+                category="efflorescence",
+                severity="moderate",
+                title="Crystalline Salt Efflorescence",
+                explanation="White salt deposits migrated through porous brickwork during evaporative drying."
+            )
+            db.session.add(gt)
+            db.session.commit()
+
     @app.route("/")
     def index():
         walls = Wall.query.filter_by(is_published=True).all()
         return render_template("index.html", walls=[w.to_dict() for w in walls])
 
-    # --- Delete Wall Action ---
     @app.route("/admin/walls/<wall_id>/delete", methods=["POST"])
     def admin_delete_wall(wall_id):
         wall = Wall.query.get_or_404(wall_id)
-
-        # Remove image file if stored locally
         if wall.image_filename:
             file_path = os.path.join(app.config["UPLOAD_FOLDER"], wall.image_filename)
             if os.path.exists(file_path):
@@ -91,15 +120,12 @@ def create_app(config_class=Config):
                 except OSError:
                     pass
 
-        # Delete related defects and attempts
         Defect.query.filter_by(wall_id=wall.id).delete()
         AssessmentAttempt.query.filter_by(wall_id=wall.id).delete()
-
         db.session.delete(wall)
         db.session.commit()
         return redirect(url_for("index"))
 
-    # --- Performance Dashboard ---
     @app.route("/dashboard")
     def dashboard():
         attempts_raw = AssessmentAttempt.query.all()
@@ -119,7 +145,6 @@ def create_app(config_class=Config):
             pass_rate=pass_rate
         )
 
-    # --- Admin Wall Image Upload ---
     @app.route("/admin/walls/new", methods=["GET", "POST"])
     def admin_create_wall():
         if request.method == "GET":
@@ -155,7 +180,6 @@ def create_app(config_class=Config):
         db.session.commit()
         return redirect(url_for("admin_tagger", wall_id=wall.id))
 
-    # --- Admin Ground Truth Tagger ---
     @app.route("/admin/walls/<wall_id>/tagger")
     def admin_tagger(wall_id):
         wall = Wall.query.get_or_404(wall_id)
@@ -194,7 +218,6 @@ def create_app(config_class=Config):
         db.session.commit()
         return jsonify({"status": "deleted", "id": defect_id})
 
-    # --- Student Inspection View ---
     @app.route("/inspect/<wall_slug>")
     def inspect_wall(wall_slug):
         wall = Wall.query.filter_by(slug=wall_slug, is_published=True).first_or_404()
@@ -314,7 +337,6 @@ def create_app(config_class=Config):
             "certificate_code": cert_code
         })
 
-    # --- Public Certificate View ---
     @app.route("/certificate/<cert_code>")
     def view_certificate(cert_code):
         cert = Certificate.query.filter_by(certificate_code=cert_code).first_or_404()

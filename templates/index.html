@@ -32,6 +32,7 @@
     .btn-secondary:hover { background: #475569; }
     .btn-delete { background: #7f1d1d; color: #fca5a5; width: 100%; padding: 0.5rem; }
     .btn-delete:hover { background: #991b1b; }
+    .empty-state { grid-column: 1 / -1; background: #1e293b; border: 2px dashed #334155; border-radius: 8px; padding: 3rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -62,10 +63,16 @@
             <a href="/inspect/{{ wall.slug }}" class="btn btn-primary">Start Inspection</a>
             <a href="/admin/walls/{{ wall.id }}/tagger" class="btn btn-secondary">Admin Tagger</a>
           </div>
-          <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall image and all assessment data?');">
+          <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall image?');">
             <button type="submit" class="btn btn-delete">Delete Wall</button>
           </form>
         </div>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h3 style="margin-top: 0; color: #94a3b8;">No walls currently in catalog</h3>
+        <p style="color: #64748b; margin-bottom: 1.5rem;">Upload your first masonry photo to start student inspection sessions.</p>
+        <a href="/admin/walls/new" class="btn-action btn-upload">+ Upload First Wall</a>
       </div>
     {% endfor %}
   </div>
