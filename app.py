@@ -393,7 +393,19 @@ def create_app(config_class=Config):
     @app.route("/portal/run/<code>")
     def run_assignment(code):
         assignment = Assignment.query.filter_by(code=code, is_active=True).first_or_404()
-        wall = assignment.wall
+        assigned_walls = assignment.walls
+        if not assigned_walls and assignment.wall_id:
+            single = Wall.query.get(assignment.wall_id)
+            if single:
+                assigned_walls = [single]
+
+        if not assigned_walls:
+            return "No walls currently attached to this assignment.", 404
+
+        wall_idx = request.args.get("wall_idx", 0, type=int)
+        wall_idx = max(0, min(wall_idx, len(assigned_walls) - 1))
+        wall = assigned_walls[wall_idx]
+
         student_name = request.args.get("student_name", "Inspector Candidate")
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
         return render_template(
@@ -401,25 +413,81 @@ def create_app(config_class=Config):
             wall=wall.to_dict(),
             categories=categories,
             assignment_code=code,
-            student_name=student_name
+            student_name=student_name,
+            total_assigned=len(assigned_walls),
+            current_index=wall_idx + 1
         )
 
-    # --- Instructor Assignment Creator ---
+    # --- Instructor Assignment Creator with Filters & Bulk Assign ---
     @app.route("/admin/assignments", methods=["GET", "POST"])
     def admin_assignments():
         if request.method == "POST":
             title = request.form.get("title", "Masonry Assessment").strip()
             code = request.form.get("code", "").strip().upper() or uuid.uuid4().hex[:6].upper()
-            wall_id = request.form.get("wall_id")
+            assign_mode = request.form.get("assign_mode", "selected")
 
-            assignment = Assignment(code=code, title=title, wall_id=wall_id, is_active=True)
+            target_walls = []
+            if assign_mode == "by_type":
+                filter_type = request.form.get("bulk_wall_type")
+                target_walls = Wall.query.filter_by(wall_type=filter_type, is_published=True).all()
+            elif assign_mode == "by_difficulty":
+                filter_diff = request.form.get("bulk_difficulty")
+                target_walls = Wall.query.filter_by(difficulty=filter_diff, is_published=True).all()
+            elif assign_mode == "by_type_and_difficulty":
+                filter_type = request.form.get("bulk_wall_type")
+                filter_diff = request.form.get("bulk_difficulty")
+                target_walls = Wall.query.filter_by(wall_type=filter_type, difficulty=filter_diff, is_published=True).all()
+            else:
+                selected_ids = request.form.getlist("selected_wall_ids")
+                if selected_ids:
+                    target_walls = Wall.query.filter(Wall.id.in_(selected_ids)).all()
+
+            if not target_walls:
+                target_walls = Wall.query.filter_by(is_published=True).limit(1).all()
+
+            assignment = Assignment(
+                code=code,
+                title=title,
+                wall_id=target_walls[0].id if target_walls else None,
+                is_active=True
+            )
+            assignment.walls = target_walls
             db.session.add(assignment)
             db.session.commit()
             return redirect(url_for("admin_assignments"))
 
+        # Filtering catalog choices on the admin view
+        query = Wall.query.filter_by(is_published=True)
+        selected_type = request.args.get("wall_type", "").strip()
+        selected_difficulty = request.args.get("difficulty", "").strip()
+        selected_location = request.args.get("country", "").strip()
+
+        if selected_type:
+            query = query.filter(Wall.wall_type == selected_type)
+        if selected_difficulty:
+            query = query.filter(Wall.difficulty == selected_difficulty)
+        if selected_location:
+            query = query.filter(Wall.country == selected_location)
+
+        filtered_walls = query.all()
+
+        all_walls = Wall.query.filter_by(is_published=True).all()
+        wall_types = sorted(list(set(w.wall_type for w in all_walls if w.wall_type)))
+        difficulties = ["beginner", "intermediate", "advanced"]
+        locations = sorted(list(set(w.country for w in all_walls if w.country)))
         assignments = Assignment.query.order_by(Assignment.created_at.desc()).all()
-        walls = Wall.query.filter_by(is_published=True).all()
-        return render_template("admin_assignments.html", assignments=assignments, walls=walls)
+
+        return render_template(
+            "admin_assignments.html",
+            assignments=assignments,
+            walls=filtered_walls,
+            wall_types=wall_types,
+            difficulties=difficulties,
+            locations=locations,
+            selected_type=selected_type,
+            selected_difficulty=selected_difficulty,
+            selected_location=selected_location
+        )
 
     @app.route("/admin/walls/<wall_id>/edit", methods=["GET", "POST"])
     def admin_edit_wall(wall_id):

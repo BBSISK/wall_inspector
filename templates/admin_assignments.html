@@ -2,30 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Manage Assigned Inspections</title>
+  <title>Manage Assignments - Global Wall Inspector</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
-    .container { max-width: 1000px; margin: 0 auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; margin-bottom: 2rem; }
-    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 2rem; }
+    .header h1 { margin: 0; font-size: 1.8rem; }
+    .layout { display: grid; grid-template-columns: 480px 1fr; gap: 2rem; }
     .panel { background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 1.5rem; }
-    label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; font-weight: 600; }
-    input, select { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.6rem; border-radius: 6px; font-size: 0.9rem; margin-top: 0.3rem; }
-    .btn { display: block; width: 100%; background: #059669; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1.25rem; }
+    label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; font-weight: 600; letter-spacing: 0.5px; }
+    input[type="text"], select { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.65rem; border-radius: 6px; font-size: 0.9rem; margin-top: 0.35rem; }
+    .btn { display: block; width: 100%; background: #059669; color: white; border: none; padding: 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1.5rem; }
     .btn:hover { background: #047857; }
+    
+    /* Wall Selector Box */
+    .wall-checklist { max-height: 240px; overflow-y: auto; background: #0f172a; border: 1px solid #334155; border-radius: 6px; margin-top: 0.4rem; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .wall-check-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+    .wall-check-item:hover { background: #1e293b; }
+    .wall-check-item input[type="checkbox"] { margin: 0; cursor: pointer; width: 16px; height: 16px; }
+
+    /* Filter Bar */
+    .admin-filter-bar { background: #0f172a; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; margin-bottom: 1rem; display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 0.5rem; align-items: flex-end; }
+    .admin-filter-bar select { padding: 0.45rem; font-size: 0.8rem; }
+    .btn-clear { background: #334155; color: #93c5fd; padding: 0.5rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-    th { text-align: left; padding: 0.75rem; background: #0f172a; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; }
-    td { padding: 0.75rem; border-bottom: 1px solid #334155; }
+    th { text-align: left; padding: 0.85rem; background: #0f172a; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; }
+    td { padding: 0.85rem; border-bottom: 1px solid #334155; }
     .badge-code { background: #0f172a; padding: 3px 8px; border-radius: 4px; border: 1px solid #38bdf8; color: #38bdf8; font-family: monospace; font-weight: bold; }
+    .badge-count { background: #334155; color: #cbd5e1; padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <div>
-        <h1 style="margin: 0; font-size: 1.8rem;">Classroom Assignments</h1>
-        <p style="margin: 0.3rem 0 0; color: #94a3b8;">Create specific inspection access codes for your cohorts.</p>
+        <h1>Classroom Assignments & Cohort Workflows</h1>
+        <p style="margin: 0.3rem 0 0; color: #94a3b8;">Assign individual walls or bulk-assign subjects by archetype and difficulty.</p>
       </div>
       <div>
         <a href="/portal" target="_blank" style="background: #2563eb; color: white; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">Open Student Portal &rarr;</a>
@@ -34,33 +48,106 @@
     </div>
 
     <div class="layout">
+      <!-- Assignment Builder Panel -->
       <div class="panel">
-        <h3 style="margin-top: 0;">Create Assignment</h3>
+        <h3 style="margin-top: 0;">Create New Assignment</h3>
+        
         <form method="POST">
           <label>Assignment Title</label>
-          <input type="text" name="title" placeholder="e.g. Week 4: Mortar Erosion Assessment" required>
+          <input type="text" name="title" placeholder="e.g. Assessment 1: Dry Stone Pathology" required>
 
           <label>Access Code (PIN)</label>
-          <input type="text" name="code" placeholder="e.g. LIME-01" style="text-transform: uppercase;" required>
+          <input type="text" name="code" placeholder="e.g. STONE-2026" style="text-transform: uppercase;" required>
 
-          <label>Target Masonry Subject</label>
-          <select name="wall_id" required>
-            {% for w in walls %}
-              <option value="{{ w.id }}">{{ w.title }} ({{ w.wall_type }})</option>
-            {% endfor %}
+          <label>Assignment Strategy</label>
+          <select name="assign_mode" id="assign-mode" onchange="toggleAssignMode(this.value)">
+            <option value="selected">Select Specific Individual Walls (Multiple)</option>
+            <option value="by_type">Bulk Assign All Walls of an Archetype</option>
+            <option value="by_difficulty">Bulk Assign All Walls of a Difficulty Tier</option>
+            <option value="by_type_and_difficulty">Bulk Assign by Archetype AND Difficulty</option>
           </select>
 
-          <button type="submit" class="btn">Generate Assignment</button>
+          <!-- Dynamic Mode 1: Bulk Type -->
+          <div id="block-bulk-type" style="display: none;">
+            <label>Target Archetype</label>
+            <select name="bulk_wall_type">
+              {% for t in wall_types %}
+                <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Dynamic Mode 2: Bulk Difficulty -->
+          <div id="block-bulk-diff" style="display: none;">
+            <label>Target Difficulty</label>
+            <select name="bulk_difficulty">
+              {% for d in difficulties %}
+                <option value="{{ d }}">{{ d.title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Dynamic Mode 3: Specific Wall Checkboxes with Catalog Filters -->
+          <div id="block-manual-walls">
+            <label style="margin-bottom: 0.25rem;">Filter Candidate Wall Selection</label>
+            <div class="admin-filter-bar">
+              <div>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Type</span>
+                <select onchange="applyAdminFilter('wall_type', this.value)">
+                  <option value="">All</option>
+                  {% for t in wall_types %}
+                    <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t.replace('_', ' ').title() }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Tier</span>
+                <select onchange="applyAdminFilter('difficulty', this.value)">
+                  <option value="">All</option>
+                  {% for d in difficulties %}
+                    <option value="{{ d }}" {% if selected_difficulty == d %}selected{% endif %}>{{ d.title() }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Location</span>
+                <select onchange="applyAdminFilter('country', this.value)">
+                  <option value="">All</option>
+                  {% for loc in locations %}
+                    <option value="{{ loc }}" {% if selected_location == loc %}selected{% endif %}>{{ loc }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <a href="/admin/assignments" class="btn-clear">Reset</a>
+              </div>
+            </div>
+
+            <label>Select Wall Assets (<span id="checked-count">0</span> chosen)</label>
+            <div class="wall-checklist">
+              {% for w in walls %}
+                <label class="wall-check-item">
+                  <input type="checkbox" name="selected_wall_ids" value="{{ w.id }}" onchange="updateCheckCount()">
+                  <span><strong>{{ w.title }}</strong> &bull; <small style="color: #94a3b8;">{{ w.wall_type }} • {{ w.difficulty }}</small></span>
+                </label>
+              {% else %}
+                <p style="font-size: 0.8rem; color: #94a3b8; margin: 0.5rem;">No walls match the active filter criteria.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn">Deploy Assignment &rarr;</button>
         </form>
       </div>
 
+      <!-- Active Assignments Registry -->
       <div class="panel" style="padding: 0; overflow: hidden;">
         <table>
           <thead>
             <tr>
-              <th>Code</th>
+              <th>PIN Code</th>
               <th>Assignment Title</th>
-              <th>Assigned Wall</th>
+              <th>Wall Queue</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -69,12 +156,14 @@
               <tr>
                 <td><span class="badge-code">{{ a.code }}</span></td>
                 <td><strong>{{ a.title }}</strong></td>
-                <td>{{ a.wall.title }}</td>
+                <td>
+                  <span class="badge-count">{{ a.walls|length }} wall{% if a.walls|length != 1 %}s{% endif %}</span>
+                </td>
                 <td><span style="color: #34d399; font-weight: bold;">Active</span></td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">No assignments generated yet.</td>
+                <td colspan="4" style="text-align: center; padding: 2.5rem; color: #94a3b8;">No assignments issued yet.</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -82,5 +171,29 @@
       </div>
     </div>
   </div>
+
+  <script>
+    function toggleAssignMode(mode) {
+      const manualBlock = document.getElementById("block-manual-walls");
+      const typeBlock = document.getElementById("block-bulk-type");
+      const diffBlock = document.getElementById("block-bulk-diff");
+
+      manualBlock.style.display = (mode === "selected") ? "block" : "none";
+      typeBlock.style.display = (mode === "by_type" || mode === "by_type_and_difficulty") ? "block" : "none";
+      diffBlock.style.display = (mode === "by_difficulty" || mode === "by_type_and_difficulty") ? "block" : "none";
+    }
+
+    function updateCheckCount() {
+      const count = document.querySelectorAll('input[name="selected_wall_ids"]:checked').length;
+      document.getElementById("checked-count").innerText = count;
+    }
+
+    function applyAdminFilter(key, val) {
+      const url = new URL(window.location.href);
+      if (val) url.searchParams.set(key, val);
+      else url.searchParams.delete(key);
+      window.location.href = url.toString();
+    }
+  </script>
 </body>
 </html>
