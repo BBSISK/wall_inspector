@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surveyor Reflex Arena: Rapid-Fire Pathology Quiz - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b1329;
+      color: #f8fafc;
+      margin: 0;
+      padding: 1.5rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .header-bar {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .header-bar h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .header-bar p { margin: 0.3rem 0 0; color: #94a3b8; font-size: 0.85rem; }
+    .nav-actions { display: flex; gap: 0.6rem; }
+    .btn {
+      padding: 0.55rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-secondary { background: #334155; color: #93c5fd; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-primary { background: #d97706; color: white; }
+    .btn-primary:hover { background: #b45309; }
+
+    .quiz-container {
+      width: 100%;
+      max-width: 900px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Start Screen */
+    #start-screen {
+      padding: 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1.5rem;
+    }
+    .start-badge {
+      background: #451a03;
+      color: #f59e0b;
+      border: 1px solid #78350f;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .start-title { margin: 0; font-size: 2.2rem; font-weight: 800; }
+    .start-desc { max-width: 580px; color: #94a3b8; line-height: 1.6; margin: 0; font-size: 1rem; }
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      width: 100%;
+      max-width: 540px;
+      text-align: left;
+    }
+    .config-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .config-box label { font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+    .config-box select {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .btn-start-game {
+      background: #d97706;
+      color: white;
+      font-size: 1.15rem;
+      font-weight: 800;
+      padding: 0.9rem 2.5rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+      transition: all 0.2s ease;
+    }
+    .btn-start-game:hover {
+      background: #b45309;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.5);
+    }
+
+    /* Active Game Arena */
+    #arena-screen {
+      display: none;
+      flex-direction: column;
+    }
+    .hud-bar {
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hud-timer {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.25rem;
+      font-weight: 800;
+      font-family: monospace;
+      color: #38bdf8;
+    }
+    .hud-timer.urgent { color: #ef4444; animation: pulse 0.8s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .hud-score {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .hud-streak {
+      background: #78350f;
+      color: #fbbf24;
+      border: 1px solid #d97706;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-stage {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .card-media {
+      width: 100%;
+      height: 280px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #334155;
+    }
+    .card-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .card-media-target {
+      position: absolute;
+      border: 2px solid #ef4444;
+      background: rgba(239, 68, 68, 0.25);
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+      animation: targetPulse 1.5s infinite;
+    }
+    @keyframes targetPulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+
+    .archetype-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #93c5fd;
+      border: 1px solid #334155;
+      text-transform: uppercase;
+    }
+
+    .question-prompt {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+    }
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .btn-option {
+      background: #0f172a;
+      border: 1.5px solid #334155;
+      color: #f8fafc;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.15s ease;
+    }
+    .btn-option:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+    }
+    .btn-option .opt-key {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      font-weight: 800;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: 1px solid #475569;
+    }
+    .btn-option.correct {
+      background: #064e3b !important;
+      border-color: #10b981 !important;
+      color: #a7f3d0 !important;
+    }
+    .btn-option.incorrect {
+      background: #7f1d1d !important;
+      border-color: #ef4444 !important;
+      color: #fecaca !important;
+    }
+
+    /* Scorecard Screen */
+    #scorecard-screen {
+      display: none;
+      padding: 2.5rem 2rem;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .rank-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+    }
+    .rank-title { font-size: 1.8rem; font-weight: 800; color: #fbbf24; margin: 0 0 0.5rem; }
+    .rank-score { font-size: 2.5rem; font-weight: 900; color: #f8fafc; }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      width: 100%;
+      max-width: 600px;
+    }
+    .stat-pill {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.9rem;
+      text-align: center;
+    }
+    .stat-pill small { display: block; font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; margin-bottom: 0.2rem; }
+    .stat-pill strong { font-size: 1.3rem; color: #38bdf8; }
+
+    .review-box {
+      width: 100%;
+      max-width: 750px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .review-item {
+      padding: 0.75rem;
+      background: #1e293b;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      border-left: 3px solid #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div>
+      <h1>⚡ Surveyor Reflex Arena</h1>
+      <p>Rapid-fire clinical pathology flashcards for building diagnostic mastery</p>
+    </div>
+    <div class="nav-actions">
+      <a href="/handbook" class="btn btn-secondary">📖 Field Handbook</a>
+      <a href="/portal" class="btn btn-secondary">🎓 Student Portal</a>
+      <a href="/" class="btn btn-secondary">&larr; Main Catalog</a>
+    </div>
+  </div>
+
+  <div class="quiz-container">
+    <!-- Screen 1: Start & Settings -->
+    <div id="start-screen">
+      <span class="start-badge">⚡ Reflex Diagnostic Challenge</span>
+      <h2 class="start-title">Test Your Surveyor Eye Under Pressure</h2>
+      <p class="start-desc">
+        Senior structural surveyors must identify critical masonry failure modes in seconds.
+        Review rapid visual vignettes, identify the primary defect pathology, and maintain your combo streak!
+      </p>
+
+      <div class="config-grid">
+        <div class="config-box">
+          <label>Challenge Mode</label>
+          <select id="select-mode">
+            <option value="60">60-Second Blitz (Standard Exam)</option>
+            <option value="30">30-Second Sprint (Hyper Speed)</option>
+            <option value="0">Untimed Practice (Study Mode)</option>
+          </select>
+        </div>
+        <div class="config-box">
+          <label>Masonry Archetype Filter</label>
+          <select id="select-archetype">
+            <option value="all">All 11 Masonry Archetypes</option>
+            {% for t in wall_types %}
+              <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn-start-game" id="btn-start-game">⚡ Enter the Arena</button>
+    </div>
+
+    <!-- Screen 2: Active Arena Stage -->
+    <div id="arena-screen">
+      <div class="hud-bar">
+        <div class="hud-timer" id="hud-timer">⏱️ <span id="timer-val">60s</span></div>
+        <div class="hud-score">Score: <span id="score-val" style="color: #34d399;">0</span></div>
+        <div class="hud-streak" id="hud-streak">1x Streak 🔥</div>
+      </div>
+
+      <div class="card-stage">
+        <div class="card-media">
+          <img id="card-img" src="" alt="Defect Vignette">
+          <div id="card-target-box" class="card-media-target"></div>
+          <span class="archetype-tag" id="card-archetype-tag">Archetype</span>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.4rem;">
+            <small style="color: #94a3b8; font-weight: 700; text-transform: uppercase;" id="progress-indicator">Card 1 of 15</small>
+            <small style="color: #38bdf8; font-weight: 600;" id="reaction-timer">Time: 0.0s</small>
+          </div>
+          <p class="question-prompt" id="question-prompt">Identify the primary structural pathology present:</p>
+        </div>
+
+        <div class="options-grid" id="options-grid">
+          <!-- 4 Multiple Choice Buttons rendered via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Post-Game Scorecard -->
+    <div id="scorecard-screen">
+      <div class="rank-card">
+        <div class="rank-title" id="rank-title">Senior Building Surveyor 🎖️</div>
+        <div class="rank-score" id="final-score-val">1,850 pts</div>
+        <div style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.3rem;" id="rank-eval">Demonstrated outstanding clinical recall across varied masonry bonds.</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <small>Accuracy</small>
+          <strong id="stat-accuracy">0%</strong>
+        </div>
+        <div class="stat-pill">
+          <small>Avg Reaction Time</small>
+          <strong id="stat-reaction">0.0s</strong>
+        </div>
+        <div class="stat-pill">
+          <small>Peak Streak</small>
+          <strong id="stat-streak" style="color: #fbbf24;">0x 🔥</strong>
+        </div>
+      </div>
+
+      <div class="review-box" id="review-box">
+        <!-- Missed Defect Review Items -->
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <button type="button" class="btn btn-primary" onclick="restartGame()">⚡ Play Again</button>
+        <a href="/handbook" class="btn btn-secondary">📖 Study Field Handbook</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio Synthesizer (Native Web Audio)
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === "correct") {
+        // High-pitched pleasant bell chime
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.15); // A5
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === "wrong") {
+        // Low frequency buzzer
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.25);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+    }
+
+    // Game State
+    let questions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let correctHits = 0;
+    let reactionTimes = [];
+    let cardStartTime = 0;
+    let timerSeconds = 60;
+    let timerInterval = null;
+    let cardTimerInterval = null;
+    let missedDefects = [];
+
+    const startScreen = document.getElementById("start-screen");
+    const arenaScreen = document.getElementById("arena-screen");
+    const scorecardScreen = document.getElementById("scorecard-screen");
+
+    document.getElementById("btn-start-game").addEventListener("click", async () => {
+      initAudio();
+      const mode = parseInt(document.getElementById("select-mode").value, 10);
+      const archetype = document.getElementById("select-archetype").value;
+
+      // Fetch dynamic questions from backend
+      const res = await fetch(`/api/quiz/questions?archetype=${archetype}&limit=20`);
+      const data = await res.json();
+      questions = data.questions || [];
+
+      if (questions.length === 0) {
+        alert("No questions found for the selected filter.");
+        return;
+      }
+
+      startScreen.style.display = "none";
+      scorecardScreen.style.display = "none";
+      arenaScreen.style.display = "flex";
+
+      score = 0;
+      streak = 0;
+      maxStreak = 0;
+      correctHits = 0;
+      reactionTimes = [];
+      currentIndex = 0;
+      missedDefects = [];
+      timerSeconds = mode;
+
+      updateHUD();
+      loadCard(currentIndex);
+
+      if (mode > 0) {
+        document.getElementById("hud-timer").style.display = "flex";
+        document.getElementById("timer-val").innerText = `${timerSeconds}s`;
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          timerSeconds--;
+          document.getElementById("timer-val").innerText = `${timerSeconds}s`;
+          if (timerSeconds <= 10) {
+            document.getElementById("hud-timer").classList.add("urgent");
+          }
+          if (timerSeconds <= 0) {
+            clearInterval(timerInterval);
+            endGame();
+          }
+        }, 1000);
+      } else {
+        document.getElementById("hud-timer").style.display = "none";
+      }
+    });
+
+    function loadCard(idx) {
+      if (idx >= questions.length) {
+        endGame();
+        return;
+      }
+
+      const q = questions[idx];
+      document.getElementById("progress-indicator").innerText = `Card ${idx + 1} of ${questions.length}`;
+      document.getElementById("card-archetype-tag").innerText = q.archetype_label;
+      document.getElementById("card-img").src = q.image_url;
+
+      // Target bounding box overlay if provided
+      const targetBox = document.getElementById("card-target-box");
+      if (q.crop_box) {
+        targetBox.style.display = "block";
+        targetBox.style.left = `${q.crop_box.x_min * 100}%`;
+        targetBox.style.top = `${q.crop_box.y_min * 100}%`;
+        targetBox.style.width = `${(q.crop_box.x_max - q.crop_box.x_min) * 100}%`;
+        targetBox.style.height = `${(q.crop_box.y_max - q.crop_box.y_min) * 100}%`;
+      } else {
+        targetBox.style.display = "none";
+      }
+
+      // Render options
+      const grid = document.getElementById("options-grid");
+      grid.innerHTML = "";
+      const keys = ["A", "B", "C", "D"];
+
+      q.options.forEach((opt, oIdx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-option";
+        btn.innerHTML = `<span class="opt-key">${keys[oIdx]}</span> <span>${opt.label}</span>`;
+        btn.onclick = () => handleAnswer(opt.id, q);
+        grid.appendChild(btn);
+      });
+
+      cardStartTime = Date.now();
+      clearInterval(cardTimerInterval);
+      cardTimerInterval = setInterval(() => {
+        const elapsed = ((Date.now() - cardStartTime) / 1000).toFixed(1);
+        document.getElementById("reaction-timer").innerText = `Time: ${elapsed}s`;
+      }, 100);
+    }
+
+    function handleAnswer(selectedId, question) {
+      clearInterval(cardTimerInterval);
+      const reactionTime = (Date.now() - cardStartTime) / 1000;
+      reactionTimes.push(reactionTime);
+
+      const isCorrect = selectedId === question.target_defect_id;
+      const buttons = document.querySelectorAll(".btn-option");
+      buttons.forEach(b => b.disabled = true);
+
+      if (isCorrect) {
+        playSound("correct");
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+        correctHits++;
+
+        // Multiplier: 1x, 2x (3+), 3x (5+), 5x (8+)
+        let multiplier = 1;
+        if (streak >= 8) multiplier = 5;
+        else if (streak >= 5) multiplier = 3;
+        else if (streak >= 3) multiplier = 2;
+
+        // Speed bonus: < 2.0s adds extra points
+        const speedBonus = reactionTime < 2.0 ? 50 : 0;
+        const pts = (100 + speedBonus) * multiplier;
+        score += pts;
+
+        // Highlight correct button
+        buttons.forEach(b => {
+          if (b.innerText.includes(question.target_defect_label)) {
+            b.classList.add("correct");
+          }
+        });
+      } else {
+        playSound("wrong");
+        streak = 0;
+
+        missedDefects.push({
+          archetype: question.archetype_label,
+          target: question.target_defect_label,
+          explanation: question.explanation
+        });
+
+        // Highlight chosen as incorrect and reveal correct
+        buttons.forEach(b => {
+          if (b.innerText.includes(question.target_defect_label)) {
+            b.classList.add("correct");
+          } else {
+            b.classList.add("incorrect");
+          }
+        });
+      }
+
+      updateHUD();
+
+      setTimeout(() => {
+        currentIndex++;
+        loadCard(currentIndex);
+      }, 700);
+    }
+
+    function updateHUD() {
+      document.getElementById("score-val").innerText = score.toLocaleString();
+      const streakEl = document.getElementById("hud-streak");
+      if (streak >= 5) {
+        streakEl.innerText = `${streak}x STREAK 🔥🔥🔥`;
+        streakEl.style.background = "#991b1b";
+        streakEl.style.borderColor = "#ef4444";
+      } else if (streak >= 3) {
+        streakEl.innerText = `${streak}x STREAK 🔥`;
+        streakEl.style.background = "#78350f";
+        streakEl.style.borderColor = "#d97706";
+      } else {
+        streakEl.innerText = `${streak || 1}x Streak`;
+        streakEl.style.background = "#1e293b";
+        streakEl.style.borderColor = "#475569";
+      }
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      clearInterval(cardTimerInterval);
+
+      arenaScreen.style.display = "none";
+      scorecardScreen.style.display = "flex";
+
+      const totalAnswered = reactionTimes.length;
+      const accuracy = totalAnswered > 0 ? Math.round((correctHits / totalAnswered) * 100) : 0;
+      const avgReaction = totalAnswered > 0 ? (reactionTimes.reduce((a, b) => a + b, 0) / totalAnswered).toFixed(2) : "0.00";
+
+      document.getElementById("final-score-val").innerText = `${score.toLocaleString()} pts`;
+      document.getElementById("stat-accuracy").innerText = `${accuracy}%`;
+      document.getElementById("stat-reaction").innerText = `${avgReaction}s`;
+      document.getElementById("stat-streak").innerText = `${maxStreak}x 🔥`;
+
+      // Rank calculation
+      const rankTitle = document.getElementById("rank-title");
+      const rankEval = document.getElementById("rank-eval");
+      if (accuracy >= 85 && score >= 1500) {
+        rankTitle.innerText = "Chartered Senior Fellow 🏆";
+        rankTitle.style.color = "#fbbf24";
+        rankEval.innerText = "Exceptional clinical precision and lightning-fast defect diagnostic reflex.";
+      } else if (accuracy >= 70) {
+        rankTitle.innerText = "Senior Building Surveyor 🎖️";
+        rankTitle.style.color = "#34d399";
+        rankEval.innerText = "Solid understanding of masonry pathology under time constraints.";
+      } else if (accuracy >= 50) {
+        rankTitle.innerText = "Graduate Surveyor 📜";
+        rankTitle.style.color = "#60a5fa";
+        rankEval.innerText = "Good foundations. Recommend reviewing specialized archetypes in the Field Handbook.";
+      } else {
+        rankTitle.innerText = "Apprentice Trainee ⚠️";
+        rankTitle.style.color = "#f87171";
+        rankEval.innerText = "Revision required on shear crack geometries and mortar binder failure modes.";
+      }
+
+      // Render Missed Defects
+      const reviewBox = document.getElementById("review-box");
+      if (missedDefects.length > 0) {
+        reviewBox.innerHTML = `
+          <strong style="color: #fca5a5; font-size: 0.85rem; text-transform: uppercase;">
+            Defects for Clinical Revision (${missedDefects.length}):
+          </strong>
+          ${missedDefects.map(m => `
+            <div class="review-item">
+              <div>
+                <strong style="color: #f8fafc;">${m.target}</strong>
+                <small style="display: block; color: #94a3b8;">${m.archetype} &bull; ${m.explanation || 'Key structural indicator'}</small>
+              </div>
+              <a href="/handbook" target="_blank" style="color: #38bdf8; text-decoration: none; font-size: 0.75rem; font-weight: bold;">Handbook &rarr;</a>
+            </div>
+          `).join("")}
+        `;
+      } else {
+        reviewBox.innerHTML = `<div style="text-align: center; color: #34d399; font-weight: bold; padding: 1rem;">Flawless Diagnostics! Zero missed defects.</div>`;
+      }
+    }
+
+    function restartGame() {
+      scorecardScreen.style.display = "none";
+      startScreen.style.display = "flex";
+    }
+  </script>
+</body>
+</html>

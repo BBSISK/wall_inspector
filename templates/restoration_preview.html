@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restoration Simulation: {{ wall.title }} - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b1329;
+      color: #f8fafc;
+      margin: 0;
+      padding: 1.5rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header-bar {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 1rem;
+    }
+    .header-bar h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .header-bar p { margin: 0.3rem 0 0; color: #94a3b8; font-size: 0.85rem; }
+    .nav-actions { display: flex; gap: 0.75rem; }
+    .btn {
+      padding: 0.55rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-secondary { background: #334155; color: #93c5fd; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-primary { background: #059669; color: white; }
+    .btn-primary:hover { background: #047857; }
+    .btn-quiz { background: #d97706; color: white; }
+    .btn-quiz:hover { background: #b45309; }
+
+    .main-container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Meta banner */
+    .wall-meta-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .wall-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: capitalize;
+      background: #334155;
+      color: #cbd5e1;
+    }
+    .badge-archetype { background: #1e3a8a; color: #93c5fd; }
+    .badge-diff { background: #065f46; color: #6ee7b7; }
+
+    /* Split Slider Stage */
+    .stage-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stage-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .stage-header h2 { margin: 0; font-size: 1.15rem; }
+    .slider-controls { display: flex; gap: 0.5rem; align-items: center; }
+    .ctrl-pill {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ctrl-pill.active, .ctrl-pill:hover {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+    }
+
+    /* Comparison Container */
+    .comparison-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      height: 520px;
+      border-radius: 8px;
+      overflow: hidden;
+      user-select: none;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 2px solid #334155;
+      background: #0b1329;
+    }
+    .img-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Restored simulated layer */
+    .restored-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+    }
+
+    .restored-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* Restorative visual grading: cleaned mineral bloom, uniform tones, fresh mortar contrast */
+      filter: contrast(1.12) brightness(1.08) saturate(1.05);
+    }
+
+    /* Canvas for drawing restored masonry patches */
+    #restoration-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* Split Handle Line */
+    .split-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: #38bdf8;
+      cursor: ew-resize;
+      z-index: 10;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+    }
+    .handle-pill {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 42px;
+      height: 42px;
+      background: #0284c7;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      cursor: ew-resize;
+    }
+
+    /* Banners overlay */
+    .label-banner {
+      position: absolute;
+      top: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .label-before {
+      left: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #f87171;
+      border: 1px solid #ef4444;
+    }
+    .label-after {
+      right: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+
+    /* Specification Schedule */
+    .spec-table-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .spec-table-card h3 { margin: 0 0 1rem; font-size: 1.15rem; color: #f8fafc; }
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .spec-table th {
+      background: #0f172a;
+      color: #94a3b8;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #334155;
+    }
+    .spec-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #334155;
+      vertical-align: top;
+    }
+    .spec-table tr:hover { background: rgba(51, 65, 85, 0.4); }
+
+    .standard-badge {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 0.72rem;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #38bdf8;
+    }
+
+    @media print {
+      body { background: white !important; color: black !important; padding: 0 !important; }
+      .header-bar, .slider-controls, .nav-actions { display: none !important; }
+      .comparison-wrapper { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div>
+      <h1>✨ Masonry Restoration Simulation</h1>
+      <p>Interactive prognostic comparison & conservation intervention modeling</p>
+    </div>
+    <div class="nav-actions">
+      <a href="/quiz" class="btn btn-quiz">⚡ Reflex Quiz</a>
+      <a href="/inspect/{{ wall.slug }}" class="btn btn-primary">🔍 Start Inspection</a>
+      <a href="/" class="btn btn-secondary">&larr; Back to Catalog</a>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <!-- Meta Summary -->
+    <div class="wall-meta-card">
+      <div>
+        <h2 style="margin: 0 0 0.25rem; font-size: 1.3rem;">{{ wall.title }}</h2>
+        <div class="wall-badges">
+          <span class="badge badge-archetype">{{ wall.wall_type.replace('_', ' ').title() }}</span>
+          <span class="badge badge-diff">{{ wall.difficulty.title() }}</span>
+          <span class="badge">{{ wall.country }}</span>
+          <span class="badge">{{ wall.structural_function.title() }} Structure</span>
+        </div>
+      </div>
+      <div>
+        <span style="font-size: 0.8rem; color: #94a3b8; display: block; text-align: right;">Conservation Status</span>
+        <strong style="color: #34d399; font-size: 1rem;">Planned Remediation Active</strong>
+      </div>
+    </div>
+
+    <!-- Split Stage -->
+    <div class="stage-card">
+      <div class="stage-header">
+        <h2>Before vs. Post-Restoration Projection</h2>
+        <div class="slider-controls">
+          <span style="font-size: 0.75rem; color: #94a3b8; margin-right: 4px;">Presets:</span>
+          <button type="button" class="ctrl-pill" onclick="setSliderPosition(0)">100% Before</button>
+          <button type="button" class="ctrl-pill active" id="btn-50-split" onclick="setSliderPosition(50)">50/50 Split</button>
+          <button type="button" class="ctrl-pill" onclick="setSliderPosition(100)">100% Restored</button>
+          <button type="button" class="ctrl-pill" id="btn-toggle-defects" onclick="toggleDefectCallouts()">Defect Pins: ON</button>
+        </div>
+      </div>
+
+      <div class="comparison-wrapper" id="slider-wrapper">
+        <!-- Before Layer (Underneath) -->
+        <img class="img-layer" id="before-img" src="{{ wall.image_url }}" alt="Weathered Masonry" crossorigin="anonymous">
+        
+        <!-- Optional SVG Callout Pins for Defects -->
+        <svg id="defect-pins-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4;">
+          {% for d in defects %}
+            <rect x="{{ d.x_min * 100 }}%" y="{{ d.y_min * 100 }}%" 
+                  width="{{ (d.x_max - d.x_min) * 100 }}%" height="{{ (d.y_max - d.y_min) * 100 }}%"
+                  stroke="#ef4444" stroke-width="2" stroke-dasharray="4" fill="rgba(239, 68, 68, 0.2)"/>
+            <text x="{{ (d.x_min + d.x_max) / 2 * 100 }}%" y="{{ d.y_min * 100 - 1 }}%"
+                  fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle"
+                  style="paint-order: stroke; stroke: #000; stroke-width: 3px;">
+              {{ d.title }}
+            </text>
+          {% endfor %}
+        </svg>
+
+        <!-- After Restored Layer (Clipped) -->
+        <div class="restored-container" id="restored-clip">
+          <img class="restored-img" id="after-img" src="{{ wall.image_url }}" alt="Restored Masonry" crossorigin="anonymous">
+          <canvas id="restoration-canvas"></canvas>
+        </div>
+
+        <!-- Draggable Handle -->
+        <div class="split-handle" id="slider-handle">
+          <div class="handle-pill">&#10231;</div>
+        </div>
+
+        <!-- Labels -->
+        <div class="label-banner label-before">Before: Weathered / Degraded</div>
+        <div class="label-banner label-after">After: Conserved / Repointed</div>
+      </div>
+      <p style="font-size: 0.78rem; color: #94a3b8; margin: 0.75rem 0 0;">
+        &bull; Drag the vertical bar or touch to inspect the remedial transformations across joint lines, crack zones, and surface stones.
+      </p>
+    </div>
+
+    <!-- Conservation Specification Schedule -->
+    <div class="spec-table-card">
+      <h3>🏛️ Masonry Conservation & Remedial Works Schedule</h3>
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th style="width: 25%;">Target Pathology</th>
+            <th style="width: 45%;">Prescribed Conservation Intervention</th>
+            <th style="width: 15%;">Standard / Code</th>
+            <th style="width: 15%;">Service Life</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if remedial_specs %}
+            {% for item in remedial_specs %}
+              <tr>
+                <td>
+                  <strong style="color: #f8fafc;">{{ item.title }}</strong>
+                  <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">
+                    Severity: <span style="color: #f59e0b; text-transform: uppercase;">{{ item.severity }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div style="color: #cbd5e1; line-height: 1.4;">{{ item.remedial_desc }}</div>
+                  <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 4px;">
+                    <strong>Materials:</strong> {{ item.materials }}
+                  </div>
+                </td>
+                <td><span class="standard-badge">{{ item.standard }}</span></td>
+                <td style="color: #34d399; font-weight: 600;">{{ item.durability }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td>
+                <strong style="color: #f8fafc;">Mortar Joint Erosion & Washout</strong>
+              </td>
+              <td>
+                <div style="color: #cbd5e1;">Rake out degraded bedding joints to 25mm depth. Flush clean and repoint using Natural Hydraulic Lime (NHL 3.5) with sharp graded sand (1:2.5 ratio).</div>
+                <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 4px;"><strong>Materials:</strong> NHL 3.5 hydraulic lime, washed aggregate</div>
+              </td>
+              <td><span class="standard-badge">BS EN 459-1</span></td>
+              <td style="color: #34d399; font-weight: 600;">35–50 Years</td>
+            </tr>
+            <tr>
+              <td>
+                <strong style="color: #f8fafc;">Structural Stress Cracking</strong>
+              </td>
+              <td>
+                <div style="color: #cbd5e1;">Chase out mortar bed at 450mm vertical centers. Install austenitic stainless steel helical tie bars (6mm) set in thixotropic grout to restore tensile continuity.</div>
+                <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 4px;"><strong>Materials:</strong> 316-grade helical wire, non-shrink grout</div>
+              </td>
+              <td><span class="standard-badge">BRE Digest 329</span></td>
+              <td style="color: #34d399; font-weight: 600;">50+ Years</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const wrapper = document.getElementById("slider-wrapper");
+    const clip = document.getElementById("restored-clip");
+    const handle = document.getElementById("slider-handle");
+    const canvas = document.getElementById("restoration-canvas");
+    const ctx = canvas.getContext("2d");
+    const pinsSvg = document.getElementById("defect-pins-svg");
+    let showPins = true;
+
+    // Defect boxes passed from backend
+    const defectBoxes = {{ defects|tojson }};
+
+    function setSliderPosition(percent) {
+      percent = Math.max(0, Math.min(100, percent));
+      clip.style.clipPath = `polygon(${percent}% 0, 100% 0, 100% 100%, ${percent}% 100%)`;
+      handle.style.left = `${percent}%`;
+
+      document.querySelectorAll(".ctrl-pill").forEach(p => p.classList.remove("active"));
+      if (percent === 50) {
+        document.getElementById("btn-50-split").classList.add("active");
+      }
+    }
+
+    function toggleDefectCallouts() {
+      showPins = !showPins;
+      pinsSvg.style.display = showPins ? "block" : "none";
+      document.getElementById("btn-toggle-defects").innerText = showPins ? "Defect Pins: ON" : "Defect Pins: OFF";
+    }
+
+    // Interactive Dragging
+    let isDragging = false;
+
+    function handleMove(clientX) {
+      const rect = wrapper.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const pct = (x / rect.width) * 100;
+      setSliderPosition(pct);
+    }
+
+    wrapper.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      handleMove(e.clientX);
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      handleMove(e.clientX);
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+
+    // Touch Support
+    wrapper.addEventListener("touchstart", (e) => {
+      isDragging = true;
+      handleMove(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!isDragging) return;
+      handleMove(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => {
+      isDragging = false;
+    });
+
+    // Canvas procedural restoration patches
+    function drawRestorationPatches() {
+      const w = wrapper.clientWidth;
+      const h = wrapper.clientHeight;
+      canvas.width = w;
+      canvas.height = h;
+
+      ctx.clearRect(0, 0, w, h);
+
+      defectBoxes.forEach(d => {
+        const x = d.x_min * w;
+        const y = d.y_min * h;
+        const boxW = (d.x_max - d.x_min) * w;
+        const boxH = (d.y_max - d.y_min) * h;
+
+        // Draw soft restorative blending over defect zones
+        const grad = ctx.createRadialGradient(
+          x + boxW / 2, y + boxH / 2, Math.min(boxW, boxH) * 0.2,
+          x + boxW / 2, y + boxH / 2, Math.max(boxW, boxH) * 0.7
+        );
+        grad.addColorStop(0, "rgba(244, 240, 230, 0.35)"); // Warm lime mortar wash
+        grad.addColorStop(1, "rgba(244, 240, 230, 0)");
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - 5, y - 5, boxW + 10, boxH + 10);
+
+        // If helical stitch or structural crack
+        if (d.remedial_action === "helical_stitch" || d.category.includes("crack") || d.category.includes("shear")) {
+          // Draw subtle concealed stainless steel stitching indicator
+          ctx.strokeStyle = "rgba(148, 163, 184, 0.4)";
+          ctx.lineWidth = 3;
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.moveTo(x, y + boxH * 0.3);
+          ctx.lineTo(x + boxW, y + boxH * 0.3);
+          ctx.moveTo(x, y + boxH * 0.7);
+          ctx.lineTo(x + boxW, y + boxH * 0.7);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // If repointing lime
+        if (d.remedial_action === "repoint_lime" || d.category.includes("mortar") || d.category.includes("washout")) {
+          // Draw crisp light joint line simulations
+          ctx.strokeStyle = "rgba(248, 250, 252, 0.3)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x, y + boxH * 0.5);
+          ctx.lineTo(x + boxW, y + boxH * 0.5);
+          ctx.stroke();
+        }
+      });
+    }
+
+    window.addEventListener("resize", drawRestorationPatches);
+    window.addEventListener("load", () => {
+      drawRestorationPatches();
+      setSliderPosition(50);
+    });
+  </script>
+</body>
+</html>

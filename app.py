@@ -1,6 +1,7 @@
 import os
 import math
 import uuid
+import random
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from werkzeug.utils import secure_filename
@@ -1018,6 +1019,169 @@ def create_app(config_class=Config):
     def view_certificate(cert_code):
         cert = Certificate.query.filter_by(certificate_code=cert_code).first_or_404()
         return render_template("certificate.html", cert=cert)
+
+    @app.route("/wall/<wall_slug>/restoration")
+    def view_wall_restoration(wall_slug):
+        wall = Wall.query.filter_by(slug=wall_slug).first_or_404()
+        defects = Defect.query.filter_by(wall_id=wall.id).all()
+        rem_dict = {r["id"]: r["label"] for r in REMEDIAL_OPTIONS}
+
+        remedial_specs = []
+        for d in defects:
+            rem_action = d.remedial_action or "repoint_lime"
+            rem_label = rem_dict.get(rem_action, rem_action.replace("_", " ").title())
+
+            if rem_action == "repoint_lime":
+                desc = "Rake out failed joint bedding to 25mm depth without damaging arris edges. Flush with clean potable water. Flush-point using NHL 3.5 hydraulic lime and sharp well-graded sand (1:2.5)."
+                mats = "Hydraulic Lime (NHL 2 or 3.5), washed sharp sand (0-4mm), hessian curing sheets"
+                std = "BS EN 459-1 / SPAB Note 7"
+                dur = "30–50 Years"
+            elif rem_action == "helical_stitch":
+                desc = "Cut 10mm slots in mortar beds at 450mm vertical centers across fracture zone. Install twin 6mm austenitic stainless steel helical tie bars anchored in thixotropic grout."
+                mats = "316-grade austenitic helical wire (6mm), thixotropic anchor grout, color-matched pointing"
+                std = "BRE Digest 329"
+                dur = "50+ Years"
+            elif rem_action == "grout_injection":
+                desc = "Core drill 16mm injection ports into rubble core. Flush cavities and inject micro-fine hydraulic lime grout under low pressure (0.5 bar) to consolidate voiding."
+                mats = "Micronized hydraulic lime grout, expander additives, injection ports"
+                std = "Historic England Practical Conservation"
+                dur = "40–60 Years"
+            elif rem_action == "rebuild_section":
+                desc = "Carefully dismantle unstable, out-of-plumb stones numbering and documenting course geometry. Clean sound stones and reconstruct plumb with core packing."
+                mats = "Salvaged stone units, NHL 3.5 hydraulic lime mortar, clean aggregate"
+                std = "BS 8298 Design & Installation"
+                dur = "75+ Years"
+            elif rem_action == "drainage_relief":
+                desc = "Clear clogged weep tubes or core drill 50mm weep holes at 1200mm centers along retaining base. Insert geotextile-wrapped perforated drainage sleeves."
+                mats = "Perforated PVC/HDPE drain sleeves, non-woven geotextile filter fabric, gravel backfill"
+                std = "CIRIA C760 Retaining Walls"
+                dur = "25–40 Years"
+            elif rem_action == "biocide_root":
+                desc = "Apply quaternary ammonium biocide treatment to masonry face. Carefully extract invasive root systems without prying bedding courses. Treat stump regrowth."
+                mats = "Non-acidic conservation biocide, soft bristle brushes, root extraction calipers"
+                std = "SPAB Advisory Note 3"
+                dur = "5–10 Years Cyclical"
+            elif rem_action == "underpin_base":
+                desc = "Construct sequential concrete underpins in 1000mm alternating bays beneath settled masonry foundation to arrest differential ground subsidence."
+                mats = "C28/35 sulfate-resisting structural concrete, high-tensile steel mesh, dry-pack non-shrink mortar"
+                std = "BS 8110 Structural Concrete"
+                dur = "100+ Years"
+            else:
+                desc = "Install calibrated optical crack monitoring gauges with vernier scales to monitor ongoing movement over a 12-month seasonal cycle."
+                mats = "Polycarbonate tell-tale gauge, stainless steel fixing screws, tamper seal"
+                std = "BRE Digest 251 / 361"
+                dur = "12–24 Months Monitoring"
+
+            remedial_specs.append({
+                "title": d.title,
+                "category": d.category,
+                "severity": d.severity,
+                "remedial_action": rem_action,
+                "remedial_label": rem_label,
+                "remedial_desc": desc,
+                "materials": mats,
+                "standard": std,
+                "durability": dur
+            })
+
+        return render_template(
+            "restoration_preview.html",
+            wall=wall.to_dict(),
+            defects=[d.to_dict() for d in defects],
+            remedial_specs=remedial_specs
+        )
+
+    @app.route("/quiz")
+    def view_quiz():
+        return render_template("quiz.html", wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()))
+
+    @app.route("/api/quiz/questions")
+    def get_quiz_questions():
+        archetype_filter = request.args.get("archetype", "all").strip()
+        limit = min(int(request.args.get("limit", 15)), 30)
+
+        walls_query = Wall.query
+        if archetype_filter and archetype_filter != "all":
+            walls_query = walls_query.filter_by(wall_type=archetype_filter)
+        walls = walls_query.all()
+
+        questions = []
+        defects = Defect.query.all()
+        wall_map = {w.id: w for w in Wall.query.all()}
+        for d in defects:
+            w = wall_map.get(d.wall_id)
+            if not w:
+                continue
+            if archetype_filter and archetype_filter != "all" and w.wall_type != archetype_filter:
+                continue
+
+            arch_taxa = TAXONOMY_BY_WALL_TYPE.get(w.wall_type, [])
+            target_item = next((t for t in arch_taxa if t["id"] == d.category), None)
+            target_label = target_item["label"] if target_item else d.title
+
+            other_taxa = [t for t in arch_taxa if t["id"] != d.category]
+            if len(other_taxa) < 3:
+                for other_type, items in TAXONOMY_BY_WALL_TYPE.items():
+                    if other_type != w.wall_type:
+                        other_taxa.extend(items)
+            distractors = random.sample(other_taxa, min(3, len(other_taxa)))
+
+            options = [{"id": d.category, "label": target_label}]
+            for dist in distractors:
+                options.append({"id": dist["id"], "label": dist["label"]})
+            random.shuffle(options)
+
+            questions.append({
+                "id": str(uuid.uuid4()),
+                "image_url": w.to_dict()["image_url"],
+                "archetype": w.wall_type,
+                "archetype_label": w.wall_type.replace("_", " ").title(),
+                "crop_box": {
+                    "x_min": d.x_min,
+                    "y_min": d.y_min,
+                    "x_max": d.x_max,
+                    "y_max": d.y_max
+                },
+                "target_defect_id": d.category,
+                "target_defect_label": target_label,
+                "explanation": d.explanation or f"Characteristic {target_label} diagnosed on {w.wall_type.replace('_', ' ')}.",
+                "options": options
+            })
+
+        archetypes_to_sample = [archetype_filter] if archetype_filter != "all" and archetype_filter in TAXONOMY_BY_WALL_TYPE else list(TAXONOMY_BY_WALL_TYPE.keys())
+        for atype in archetypes_to_sample:
+            items = TAXONOMY_BY_WALL_TYPE.get(atype, [])
+            sample_wall = next((w for w in walls if w.wall_type == atype), None) or (walls[0] if walls else None)
+            wall_img = sample_wall.to_dict()["image_url"] if sample_wall else "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=1200&q=80"
+
+            for item in items:
+                other_taxa = [t for t in items if t["id"] != item["id"]]
+                if len(other_taxa) < 3:
+                    for ot, ot_items in TAXONOMY_BY_WALL_TYPE.items():
+                        if ot != atype:
+                            other_taxa.extend(ot_items)
+                distractors = random.sample(other_taxa, min(3, len(other_taxa)))
+
+                options = [{"id": item["id"], "label": item["label"]}]
+                for dist in distractors:
+                    options.append({"id": dist["id"], "label": dist["label"]})
+                random.shuffle(options)
+
+                questions.append({
+                    "id": str(uuid.uuid4()),
+                    "image_url": wall_img,
+                    "archetype": atype,
+                    "archetype_label": atype.replace("_", " ").title(),
+                    "crop_box": None,
+                    "target_defect_id": item["id"],
+                    "target_defect_label": item["label"],
+                    "explanation": f"Key diagnostic symptom for {item['label']} in {atype.replace('_', ' ').title()} masonry.",
+                    "options": options
+                })
+
+        random.shuffle(questions)
+        return jsonify({"questions": questions[:limit]})
+
 
     @app.route("/admin/export/attempts.csv")
     def export_attempts_csv():

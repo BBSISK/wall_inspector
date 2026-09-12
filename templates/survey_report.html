@@ -219,7 +219,10 @@
 <body>
   <div class="action-bar">
     <a href="javascript:history.back()" class="btn btn-back">&larr; Return to Debrief</a>
-    <button class="btn btn-print" onclick="window.print()">Print / Save PDF Report</button>
+    <div style="display: flex; gap: 0.6rem;">
+      <a href="/wall/{{ wall.slug }}/restoration" target="_blank" class="btn" style="background: #0d9488; color: white;">✨ Restoration Simulation</a>
+      <button class="btn btn-print" onclick="window.print()">Print / Save PDF Report</button>
+    </div>
   </div>
 
   <div class="report-sheet">
@@ -344,6 +347,19 @@
       </tbody>
     </table>
 
+    <!-- Prognostic Restoration & Conservation Section -->
+    <div style="background: #f8fafc; border: 1.5px solid #0d9488; border-radius: 8px; padding: 1.25rem 1.5rem; margin: 2rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <strong style="color: #0f766e; font-size: 1rem; display: block;">✨ Prognostic Conservation Simulation Available</strong>
+        <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
+          Simulate the post-remediation appearance of this masonry subject with repointed hydraulic lime joints and concealed stainless helical stitching.
+        </p>
+      </div>
+      <a href="/wall/{{ wall.slug }}/restoration" target="_blank" class="btn" style="background: #0d9488; color: white; padding: 0.6rem 1.2rem; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem;">
+        Launch Restoration Slider &rarr;
+      </a>
+    </div>
+
     <!-- Assessor Endorsement & Sign-Off -->
     <div class="signoff-section">
       <div class="sig-block">
@@ -372,3 +388,4 @@
   </script>
 </body>
 </html>
+

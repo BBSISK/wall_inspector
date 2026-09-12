@@ -53,6 +53,7 @@
       <p>Structural defect identification, diagnostics, and masonry assessment platform.</p>
     </div>
     <div class="nav-actions">
+      <a href="/quiz" class="btn-action" style="background: #d97706; color: white;">⚡ Reflex Quiz</a>
       <a href="/handbook" class="btn-action" style="background: #0d9488; color: white;">Field Handbook</a>
       <a href="/portal" class="btn-action" style="background: #0284c7; color: white;">Student Portal</a>
       <a href="/admin/assignments" class="btn-action" style="background: #475569; color: #f8fafc;">Assignments</a>
@@ -111,12 +112,13 @@
           <p class="card-desc">{{ wall.description or 'No notes provided.' }}</p>
           <div class="btn-group">
             <a href="/inspect/{{ wall.slug }}" class="btn btn-primary">Start Inspection</a>
-            <a href="/admin/walls/{{ wall.id }}/tagger" class="btn btn-secondary">Admin Tagger</a>
+            <a href="/wall/{{ wall.slug }}/restoration" class="btn" style="background: #0d9488; color: white;">✨ Restoration</a>
           </div>
-          <div class="admin-controls">
-            <a href="/admin/walls/{{ wall.id }}/edit" class="btn btn-edit">Edit Wall</a>
+          <div class="admin-controls" style="grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem;">
+            <a href="/admin/walls/{{ wall.id }}/tagger" class="btn btn-secondary">Tagger</a>
+            <a href="/admin/walls/{{ wall.id }}/edit" class="btn btn-edit">Edit</a>
             <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall?');" style="margin: 0;">
-              <button type="submit" class="btn btn-delete" style="width: 100%;">Delete Wall</button>
+              <button type="submit" class="btn btn-delete" style="width: 100%;">Delete</button>
             </form>
           </div>
         </div>
