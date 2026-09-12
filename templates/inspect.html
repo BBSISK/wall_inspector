@@ -8,8 +8,13 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 1.5rem; background: #0f172a; color: #f8fafc; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .layout { display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; height: calc(100vh - 5.5rem); }
-    .viewport-outer { position: relative; background: #0b1329; border-radius: 8px; overflow: hidden; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; }
-    #wall-img { max-width: 100%; max-height: 100%; display: block; object-fit: contain; }
+    .viewport-outer { position: relative; background: #0b1329; border-radius: 8px; overflow: hidden; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; user-select: none; }
+    .zoom-toolbar { position: absolute; top: 12px; left: 12px; z-index: 50; display: flex; gap: 6px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); padding: 4px; border-radius: 6px; border: 1px solid #334155; }
+    .zoom-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+    .zoom-btn:hover { background: #334155; color: white; }
+    .zoom-btn.active { background: #2563eb; color: white; border-color: #3b82f6; }
+    #pan-zoom-container { transform-origin: 0 0; position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    #wall-img { max-width: 100%; max-height: 100%; display: block; object-fit: contain; pointer-events: none; }
     #canvas-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
     .sidebar { background: #1e293b; border-radius: 8px; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; border: 1px solid #334155; }
     input, select { width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 0.6rem; font-size: 0.85rem; }
@@ -18,7 +23,7 @@
     .btn:hover { background: #047857; }
     .btn-toggle { background: #334155; color: #93c5fd; padding: 0.4rem 0.6rem; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; }
     .btn-toggle.active { background: #2563eb; color: white; }
-    .card-feedback { background: #0f172a; border-radius: 6px; padding: 0.75rem; border-left: 4px solid #64748b; cursor: pointer; }
+    .card-feedback { background: #0f172a; border-radius: 6px; padding: 0.75rem; border-left: 4px solid #64748b; }
     .card-correct { border-left-color: #10b981; }
     .card-partial { border-left-color: #f59e0b; }
     .card-misclassified { border-left-color: #eab308; }
@@ -29,36 +34,49 @@
   <div class="header">
     <div>
       <h2 style="margin: 0;">{{ wall.title }}</h2>
-      <small style="color: #94a3b8;">{{ wall.wall_type }} • {{ wall.difficulty }}</small>
+      <small style="color: #94a3b8;">{{ wall.wall_type }} • {{ wall.difficulty }} Tier</small>
     </div>
     <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.9rem;">&larr; Exit to Catalog</a>
   </div>
 
   <div class="layout">
     <div class="viewport-outer" id="viewport-outer">
-      <img id="wall-img" src="{{ wall.image_url }}" alt="Inspection Subject" crossorigin="anonymous">
-      <svg id="canvas-overlay"></svg>
+      <div class="zoom-toolbar">
+        <button type="button" class="zoom-btn" id="zoom-in">+</button>
+        <button type="button" class="zoom-btn" id="zoom-out">&minus;</button>
+        <button type="button" class="zoom-btn" id="zoom-reset">100%</button>
+        <button type="button" class="zoom-btn" id="tool-pan">Pan Mode</button>
+        <button type="button" class="zoom-btn active" id="tool-draw">Box Defect</button>
+      </div>
+
+      <div id="pan-zoom-container">
+        <img id="wall-img" src="{{ wall.image_url }}" alt="Inspection Subject" crossorigin="anonymous">
+        <svg id="canvas-overlay"></svg>
+      </div>
     </div>
 
     <div class="sidebar" id="sidebar">
       <div id="setup-panel">
-        <label>Inspector Candidate Name</label>
-        <input type="text" id="student-name" placeholder="Enter your full name" value="Inspector Candidate">
-        <hr style="border-color: #334155; margin: 0.5rem 0;">
+        <label>Inspector Full Name</label>
+        <input type="text" id="student-name" placeholder="e.g. Sarah Kelly" value="Inspector Candidate">
+        
+        <label style="margin-top: 0.6rem; display: block;">Classroom Cohort Code</label>
+        <input type="text" id="cohort-code" placeholder="e.g. MASONRY-2026" style="text-transform: uppercase;">
+        <hr style="border-color: #334155; margin: 0.75rem 0;">
       </div>
 
       <div id="tagging-panel">
         <h3 style="margin: 0;">Diagnostic Marker</h3>
-        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Click & drag on the wall to outline a suspected structural defect.</p>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Outline a defect or switch to Pan Mode to zoom into hairline joint cracks.</p>
         
-        <label>Suspected Defect Category</label>
+        <label>Defect Category</label>
         <select id="marker-category">
           {% for cat in categories %}
             <option value="{{ cat.id }}">{{ cat.label }}</option>
           {% endfor %}
         </select>
         
-        <button type="button" class="btn" id="add-marker-btn" style="background: #2563eb;">Pin Marker</button>
+        <button type="button" class="btn" id="add-marker-btn" style="background: #2563eb; margin-top: 0.5rem;">Pin Marker</button>
         <hr style="border-color: #334155; margin: 0.5rem 0;">
         
         <h4 style="margin: 0;">Identified Zones (<span id="marker-count">0</span>)</h4>
@@ -70,7 +88,7 @@
       <div id="results-panel" style="display: none; flex-direction: column; gap: 1rem;">
         <h3 style="margin: 0;" id="score-header">Evaluation Debrief</h3>
         <div style="display: flex; gap: 0.5rem;">
-          <button class="btn-toggle active" id="toggle-student">Your Markers (Blue)</button>
+          <button class="btn-toggle active" id="toggle-student">My Boxes (Blue)</button>
           <button class="btn-toggle active" id="toggle-truth">Ground Truth (Red)</button>
         </div>
         <div id="feedback-container" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
@@ -86,21 +104,30 @@
     const SLUG = "{{ wall.slug }}";
     const img = document.getElementById("wall-img");
     const svg = document.getElementById("canvas-overlay");
+    const container = document.getElementById("pan-zoom-container");
     const outer = document.getElementById("viewport-outer");
+
+    let currentScale = 1.0, panX = 0, panY = 0;
+    let activeTool = "draw"; // 'draw' | 'pan'
+    let isPanning = false, panStartX = 0, panStartY = 0;
+
     let isDrawing = false, startX = 0, startY = 0, currentRect = null;
     let pendingBox = null;
     let markers = [];
     let submittedData = null;
-    let showStudent = true;
-    let showTruth = true;
+    let showStudent = true, showTruth = true;
+
+    function applyTransform() {
+      container.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+    }
 
     function syncOverlay() {
       const rect = img.getBoundingClientRect();
-      const outerRect = outer.getBoundingClientRect();
-      svg.style.width = `${rect.width}px`;
-      svg.style.height = `${rect.height}px`;
-      svg.style.left = `${rect.left - outerRect.left}px`;
-      svg.style.top = `${rect.top - outerRect.top}px`;
+      const contRect = container.getBoundingClientRect();
+      svg.style.width = `${img.offsetWidth}px`;
+      svg.style.height = `${img.offsetHeight}px`;
+      svg.style.left = `${img.offsetLeft}px`;
+      svg.style.top = `${img.offsetTop}px`;
       renderMarkers();
     }
 
@@ -108,12 +135,55 @@
     else img.addEventListener("load", syncOverlay);
     window.addEventListener("resize", syncOverlay);
 
+    // Zoom Controls
+    document.getElementById("zoom-in").addEventListener("click", () => {
+      currentScale = Math.min(currentScale * 1.25, 4.0);
+      applyTransform();
+    });
+    document.getElementById("zoom-out").addEventListener("click", () => {
+      currentScale = Math.max(currentScale / 1.25, 0.75);
+      applyTransform();
+    });
+    document.getElementById("zoom-reset").addEventListener("click", () => {
+      currentScale = 1.0;
+      panX = 0;
+      panY = 0;
+      applyTransform();
+    });
+
+    // Tool Toggles
+    const btnPan = document.getElementById("tool-pan");
+    const btnDraw = document.getElementById("tool-draw");
+
+    btnPan.addEventListener("click", () => {
+      activeTool = "pan";
+      btnPan.classList.add("active");
+      btnDraw.classList.remove("active");
+      svg.style.cursor = "grab";
+    });
+
+    btnDraw.addEventListener("click", () => {
+      activeTool = "draw";
+      btnDraw.classList.add("active");
+      btnPan.classList.remove("active");
+      svg.style.cursor = "crosshair";
+    });
+
+    // Pan & Draw Event Handling
     svg.addEventListener("mousedown", (e) => {
+      if (activeTool === "pan") {
+        isPanning = true;
+        panStartX = e.clientX - panX;
+        panStartY = e.clientY - panY;
+        svg.style.cursor = "grabbing";
+        return;
+      }
+
       if (submittedData) return;
       const bounds = svg.getBoundingClientRect();
       isDrawing = true;
-      startX = e.clientX - bounds.left;
-      startY = e.clientY - bounds.top;
+      startX = (e.clientX - bounds.left) / currentScale;
+      startY = (e.clientY - bounds.top) / currentScale;
 
       if (currentRect) currentRect.remove();
       currentRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -124,34 +194,57 @@
       svg.appendChild(currentRect);
     });
 
-    svg.addEventListener("mousemove", (e) => {
+    window.addEventListener("mousemove", (e) => {
+      if (isPanning) {
+        panX = e.clientX - panStartX;
+        panY = e.clientY - panStartY;
+        applyTransform();
+        return;
+      }
+
       if (!isDrawing) return;
       const bounds = svg.getBoundingClientRect();
-      const curX = Math.max(0, Math.min(e.clientX - bounds.left, bounds.width));
-      const curY = Math.max(0, Math.min(e.clientY - bounds.top, bounds.height));
+      const curX = (e.clientX - bounds.left) / currentScale;
+      const curY = (e.clientY - bounds.top) / currentScale;
 
-      currentRect.setAttribute("x", Math.min(startX, curX));
-      currentRect.setAttribute("y", Math.min(startY, curY));
-      currentRect.setAttribute("width", Math.abs(curX - startX));
-      currentRect.setAttribute("height", Math.abs(curY - startY));
-    });
-
-    window.addEventListener("mouseup", (e) => {
-      if (!isDrawing) return;
-      isDrawing = false;
-      const bounds = svg.getBoundingClientRect();
-      const curX = Math.max(0, Math.min(e.clientX - bounds.left, bounds.width));
-      const curY = Math.max(0, Math.min(e.clientY - bounds.top, bounds.height));
-
+      const x = Math.min(startX, curX);
+      const y = Math.min(startY, curY);
       const w = Math.abs(curX - startX);
       const h = Math.abs(curY - startY);
 
-      if (w > 15 && h > 15) {
+      currentRect.setAttribute("x", x);
+      currentRect.setAttribute("y", y);
+      currentRect.setAttribute("width", w);
+      currentRect.setAttribute("height", h);
+    });
+
+    window.addEventListener("mouseup", (e) => {
+      if (isPanning) {
+        isPanning = false;
+        if (activeTool === "pan") svg.style.cursor = "grab";
+        return;
+      }
+
+      if (!isDrawing) return;
+      isDrawing = false;
+      const bounds = svg.getBoundingClientRect();
+      const naturalWidth = img.offsetWidth;
+      const naturalHeight = img.offsetHeight;
+
+      const curX = (e.clientX - bounds.left) / currentScale;
+      const curY = (e.clientY - bounds.top) / currentScale;
+
+      const x = Math.min(startX, curX);
+      const y = Math.min(startY, curY);
+      const w = Math.abs(curX - startX);
+      const h = Math.abs(curY - startY);
+
+      if (w > 12 && h > 12) {
         pendingBox = {
-          x_min: Math.min(startX, curX) / bounds.width,
-          y_min: Math.min(startY, curY) / bounds.height,
-          x_max: Math.max(startX, curX) / bounds.width,
-          y_max: Math.max(startY, curY) / bounds.height
+          x_min: x / naturalWidth,
+          y_min: y / naturalHeight,
+          x_max: (x + w) / naturalWidth,
+          y_max: (y + h) / naturalHeight
         };
       } else if (currentRect) {
         currentRect.remove();
@@ -161,7 +254,7 @@
 
     document.getElementById("add-marker-btn").addEventListener("click", () => {
       if (!pendingBox) {
-        alert("Please drag a box over a suspected defect first.");
+        alert("Please outline a defect zone on the wall image first.");
         return;
       }
       const catSelect = document.getElementById("marker-category");
@@ -176,16 +269,17 @@
     });
 
     function renderMarkers() {
-      const bounds = svg.getBoundingClientRect();
+      const boundsWidth = img.offsetWidth;
+      const boundsHeight = img.offsetHeight;
       svg.innerHTML = "";
 
       if (!submittedData) {
         markers.forEach((m, idx) => {
           const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          rect.setAttribute("x", m.x_min * bounds.width);
-          rect.setAttribute("y", m.y_min * bounds.height);
-          rect.setAttribute("width", (m.x_max - m.x_min) * bounds.width);
-          rect.setAttribute("height", (m.y_max - m.y_min) * bounds.height);
+          rect.setAttribute("x", m.x_min * boundsWidth);
+          rect.setAttribute("y", m.y_min * boundsHeight);
+          rect.setAttribute("width", (m.x_max - m.x_min) * boundsWidth);
+          rect.setAttribute("height", (m.y_max - m.y_min) * boundsHeight);
           rect.setAttribute("stroke", "#38bdf8");
           rect.setAttribute("stroke-width", "2");
           rect.setAttribute("fill", "rgba(56, 189, 248, 0.2)");
@@ -199,14 +293,13 @@
           </div>
         `).join("");
       } else {
-        // Render Review Mode
         if (showTruth && submittedData.ground_truth) {
           submittedData.ground_truth.forEach(gt => {
             const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            rect.setAttribute("x", gt.x_min * bounds.width);
-            rect.setAttribute("y", gt.y_min * bounds.height);
-            rect.setAttribute("width", (gt.x_max - gt.x_min) * bounds.width);
-            rect.setAttribute("height", (gt.y_max - gt.y_min) * bounds.height);
+            rect.setAttribute("x", gt.x_min * boundsWidth);
+            rect.setAttribute("y", gt.y_min * boundsHeight);
+            rect.setAttribute("width", (gt.x_max - gt.x_min) * boundsWidth);
+            rect.setAttribute("height", (gt.y_max - gt.y_min) * boundsHeight);
             rect.setAttribute("stroke", "#ef4444");
             rect.setAttribute("stroke-width", "2");
             rect.setAttribute("stroke-dasharray", "4");
@@ -217,10 +310,10 @@
         if (showStudent && submittedData.submitted_markers) {
           submittedData.submitted_markers.forEach(m => {
             const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            rect.setAttribute("x", m.x_min * bounds.width);
-            rect.setAttribute("y", m.y_min * bounds.height);
-            rect.setAttribute("width", (m.x_max - m.x_min) * bounds.width);
-            rect.setAttribute("height", (m.y_max - m.y_min) * bounds.height);
+            rect.setAttribute("x", m.x_min * boundsWidth);
+            rect.setAttribute("y", m.y_min * boundsHeight);
+            rect.setAttribute("width", (m.x_max - m.x_min) * boundsWidth);
+            rect.setAttribute("height", (m.y_max - m.y_min) * boundsHeight);
             rect.setAttribute("stroke", "#38bdf8");
             rect.setAttribute("stroke-width", "2");
             rect.setAttribute("fill", "rgba(56, 189, 248, 0.25)");
@@ -237,11 +330,14 @@
 
     document.getElementById("submit-inspection-btn").addEventListener("click", async () => {
       const studentName = document.getElementById("student-name").value.trim() || "Inspector Candidate";
+      const cohortCode = document.getElementById("cohort-code").value.trim().toUpperCase() || "GENERAL";
+
       const res = await fetch(`/inspect/${SLUG}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           student_name: studentName,
+          cohort_code: cohortCode,
           markers: markers
         })
       });

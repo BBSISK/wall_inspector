@@ -22,13 +22,12 @@ class Wall(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
-        # Prefer direct Cloudinary URL, otherwise fall back to local static asset
         if self.image_url_direct:
             url = self.image_url_direct
         elif self.image_filename:
             url = f"/static/img/walls/{self.image_filename}"
         else:
-            url = "https://placehold.co/600x400/1e293b/94a3b8?text=Image+Pending"
+            url = "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=1200&q=80"
 
         return {
             "id": self.id,
@@ -81,6 +80,7 @@ class AssessmentAttempt(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     wall_id = db.Column(db.String(36), db.ForeignKey("walls.id"), nullable=False)
     student_session_id = db.Column(db.String(100), nullable=False)
+    cohort_code = db.Column(db.String(50), default="GENERAL")
     student_name = db.Column(db.String(100), default="Anonymous")
     submitted_markers = db.Column(db.JSON)
     true_positives = db.Column(db.Integer, default=0)

@@ -42,6 +42,11 @@ TAXONOMY_BY_WALL_TYPE = {
         {"id": "ashlar_spall", "label": "Surface Face Delamination / Exfoliation"},
         {"id": "joint_separation", "label": "Fine Ashlar Joint Separation"},
         {"id": "iron_cramp_burst", "label": "Oxidized Iron Cramp Stone Fracture"}
+    ],
+    "retaining_wall": [
+        {"id": "hydrostatic_bulge", "label": "Hydrostatic Outward Bulge"},
+        {"id": "weep_blockage", "label": "Blocked / Missing Weep Hole Drainage"},
+        {"id": "shear_slip", "label": "Base Shear Foundation Displacement"}
     ]
 }
 
@@ -81,47 +86,145 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        # Schema migration checks
         try:
             inspector = inspect(db.engine)
-            cols = [c["name"] for c in inspector.get_columns("walls")]
-            if "image_url_direct" not in cols:
+            wall_cols = [c["name"] for c in inspector.get_columns("walls")]
+            if "image_url_direct" not in wall_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
+                    conn.commit()
+
+            attempt_cols = [c["name"] for c in inspector.get_columns("assessment_attempts")]
+            if "cohort_code" not in attempt_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assessment_attempts ADD COLUMN cohort_code VARCHAR(50) DEFAULT 'GENERAL';"))
                     conn.commit()
         except Exception as e:
             print(f"Migration note: {e}")
 
-        brick = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
-        if not brick:
-            brick = Wall(
-                slug="industrial-brick-efflorescence",
-                title="Industrial Red Brick Cavity Wall",
-                description="Red brick masonry exhibiting heavy white crystalline efflorescence and weathered bed joint pointing.",
-                country="United Kingdom",
-                region="Manchester",
-                wall_type="brick_cavity",
-                structural_function="load_bearing",
-                difficulty="beginner",
-                image_filename="brick_efflorescence_01.jpg",
-                is_published=True
-            )
-            db.session.add(brick)
-            db.session.commit()
+        # Pre-seed Comprehensive Masonry Curriculum Bank
+        seed_catalog = [
+            {
+                "slug": "industrial-brick-efflorescence",
+                "title": "Industrial Red Brick Cavity Wall",
+                "description": "Red brick masonry exhibiting heavy crystalline salt leaching and weathered bed joint pointing.",
+                "country": "United Kingdom",
+                "region": "Manchester",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "beginner",
+                "image_filename": "brick_efflorescence_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.18, "y_min": 0.20, "x_max": 0.82, "y_max": 0.80,
+                        "category": "efflorescence", "severity": "moderate",
+                        "title": "Crystalline Salt Efflorescence",
+                        "explanation": "White salt deposits migrated through porous brickwork during moisture evaporation."
+                    }
+                ]
+            },
+            {
+                "slug": "historic-lime-mortar-rubble",
+                "title": "Historic Lime Mortar Rubble Wall",
+                "description": "18th-century random rubble masonry wall showing mortar washout, ivy displacement, and hollow render delamination.",
+                "country": "Ireland",
+                "region": "Wicklow",
+                "wall_type": "lime_mortar",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": None,
+                "image_url_direct": "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=1200&q=80",
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.22, "y_min": 0.30, "x_max": 0.65, "y_max": 0.75,
+                        "category": "lime_washout", "severity": "critical",
+                        "title": "Deep Joint Lime Washout",
+                        "explanation": "Driving rain and freeze-thaw cycles have eroded the sacrificial lime mortar bed."
+                    }
+                ]
+            },
+            {
+                "slug": "ashlar-dressed-limestone-facade",
+                "title": "Georgian Dressed Ashlar Masonry",
+                "description": "Fine-jointed ashlar limestone masonry displaying iron cramp oxidation fractures and surface spalling.",
+                "country": "Ireland",
+                "region": "Dublin",
+                "wall_type": "ashlar",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": None,
+                "image_url_direct": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.35, "y_min": 0.25, "x_max": 0.70, "y_max": 0.68,
+                        "category": "joint_separation", "severity": "moderate",
+                        "title": "Ashlar Joint Shear & Separation",
+                        "explanation": "Differential thermal movement and foundation settlement opening fine precision arrises."
+                    }
+                ]
+            },
+            {
+                "slug": "granite-retaining-wall-failure",
+                "title": "Granite Gravity Retaining Wall",
+                "description": "Heavy dry-jointed granite retaining structure experiencing hydrostatic outward bulging and drainage weep hole blockage.",
+                "country": "Ireland",
+                "region": "Galway",
+                "wall_type": "retaining_wall",
+                "structural_function": "retaining",
+                "difficulty": "advanced",
+                "image_filename": None,
+                "image_url_direct": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80",
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.28, "y_min": 0.35, "x_max": 0.75, "y_max": 0.85,
+                        "category": "hydrostatic_bulge", "severity": "critical",
+                        "title": "Hydrostatic Outward Bulge",
+                        "explanation": "Excess pore water pressure behind the masonry facing forcing stones out-of-plumb."
+                    }
+                ]
+            }
+        ]
 
-            gt = Defect(
-                wall_id=brick.id,
-                target_type="bounding_box",
-                x_min=0.18,
-                y_min=0.20,
-                x_max=0.82,
-                y_max=0.80,
-                category="efflorescence",
-                severity="moderate",
-                title="Crystalline Salt Efflorescence",
-                explanation="White salt deposits migrated through porous brickwork during evaporative drying."
-            )
-            db.session.add(gt)
-            db.session.commit()
+        for seed in seed_catalog:
+            existing = Wall.query.filter_by(slug=seed["slug"]).first()
+            if not existing:
+                w = Wall(
+                    slug=seed["slug"],
+                    title=seed["title"],
+                    description=seed["description"],
+                    country=seed["country"],
+                    region=seed["region"],
+                    wall_type=seed["wall_type"],
+                    structural_function=seed["structural_function"],
+                    difficulty=seed["difficulty"],
+                    image_filename=seed["image_filename"],
+                    image_url_direct=seed["image_url_direct"],
+                    is_published=True
+                )
+                db.session.add(w)
+                db.session.commit()
+
+                for d in seed["defects"]:
+                    gt = Defect(
+                        wall_id=w.id,
+                        target_type=d["target_type"],
+                        x_min=d["x_min"],
+                        y_min=d["y_min"],
+                        x_max=d["x_max"],
+                        y_max=d["y_max"],
+                        category=d["category"],
+                        severity=d["severity"],
+                        title=d["title"],
+                        explanation=d["explanation"]
+                    )
+                    db.session.add(gt)
+                db.session.commit()
 
     @app.route("/")
     def index():
@@ -147,21 +250,34 @@ def create_app(config_class=Config):
 
     @app.route("/dashboard")
     def dashboard():
-        attempts_raw = AssessmentAttempt.query.all()
-        attempts_raw.sort(key=lambda x: getattr(x, 'created_at', None) or getattr(x, 'timestamp', datetime.min), reverse=True)
-        attempts = attempts_raw[:25]
-        certificates = Certificate.query.all()
+        selected_cohort = request.args.get("cohort", "").strip().upper()
+        query = AssessmentAttempt.query
+        if selected_cohort:
+            query = query.filter_by(cohort_code=selected_cohort)
+
+        attempts_raw = query.all()
+        attempts_raw.sort(key=lambda x: getattr(x, 'created_at', None) or datetime.min, reverse=True)
+        attempts = attempts_raw[:40]
+
+        all_attempts = AssessmentAttempt.query.all()
+        cohorts = sorted(list(set(a.cohort_code or "GENERAL" for a in all_attempts)))
 
         total_attempts = len(attempts_raw)
         total_passed = sum(1 for a in attempts_raw if getattr(a, 'passed', False))
         pass_rate = round((total_passed / total_attempts * 100), 1) if total_attempts > 0 else 0
+        avg_score = round(sum(a.score_percentage for a in attempts_raw) / total_attempts, 1) if total_attempts > 0 else 0.0
+
+        certificates = Certificate.query.all()
 
         return render_template(
             "dashboard.html",
             attempts=attempts,
             certificates=certificates,
             total_attempts=total_attempts,
-            pass_rate=pass_rate
+            pass_rate=pass_rate,
+            avg_score=avg_score,
+            cohorts=cohorts,
+            selected_cohort=selected_cohort
         )
 
     @app.route("/admin/walls/new", methods=["GET", "POST"])
@@ -265,7 +381,6 @@ def create_app(config_class=Config):
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
         return render_template("inspect.html", wall=wall.to_dict(), categories=categories)
 
-    # --- Dual Adaptive IoU + Proximity Scoring Engine ---
     @app.route("/inspect/<wall_slug>/submit", methods=["POST"])
     def submit_inspection(wall_slug):
         wall = Wall.query.filter_by(slug=wall_slug, is_published=True).first_or_404()
@@ -273,6 +388,7 @@ def create_app(config_class=Config):
 
         submitted_markers = data.get("markers", [])
         student_name = data.get("student_name", "Inspector Candidate").strip()
+        cohort_code = data.get("cohort_code", "GENERAL").strip().upper() or "GENERAL"
         session_id = data.get("session_id", "session_default")
 
         ground_truth = Defect.query.filter_by(wall_id=wall.id).all()
@@ -301,7 +417,6 @@ def create_app(config_class=Config):
 
             if best_gt:
                 category_match = (marker.get("category") == best_gt["category"])
-                # Case 1: Solid IoU overlap
                 if best_iou >= 0.15:
                     if category_match:
                         matched_defect_ids.add(best_gt["id"])
@@ -318,14 +433,13 @@ def create_app(config_class=Config):
                             "status": "misclassified",
                             "explanation": f"Location identified, but fault was classified incorrectly. {best_gt['explanation']}"
                         })
-                # Case 2: Proximity Match (Partial credit: near defect center)
                 elif closest_dist <= 0.18 and category_match:
                     partial_defect_ids.add(best_gt["id"])
                     feedback.append({
                         "title": best_gt["title"],
                         "category": best_gt["category"],
                         "status": "partial",
-                        "explanation": f"Near-Target Identification: Center placed accurately, but boundary margins varied. {best_gt['explanation']}"
+                        "explanation": f"Near-Target Identification: Center accurate. {best_gt['explanation']}"
                     })
                 else:
                     false_positives += 1
@@ -358,6 +472,7 @@ def create_app(config_class=Config):
         attempt = AssessmentAttempt(
             wall_id=wall.id,
             student_session_id=session_id,
+            cohort_code=cohort_code,
             student_name=student_name,
             submitted_markers=submitted_markers,
             true_positives=full_hits + partial_hits,
@@ -375,16 +490,16 @@ def create_app(config_class=Config):
         cert_code = None
 
         if len(student_attempts) >= 2:
-            avg_score = sum(a.score_percentage for a in student_attempts) / len(student_attempts)
-            if avg_score >= 70.0:
+            avg_s = sum(a.score_percentage for a in student_attempts) / len(student_attempts)
+            if avg_s >= 70.0:
                 qualifies_for_cert = True
                 existing_cert = Certificate.query.filter_by(student_name=student_name).first()
                 if not existing_cert:
-                    tier = "Level 2 Inspector (Distinction)" if avg_score >= 85.0 else "Level 1 Certified Inspector"
+                    tier = "Level 2 Inspector (Distinction)" if avg_s >= 85.0 else "Level 1 Certified Inspector"
                     new_cert = Certificate(
                         student_name=student_name,
                         tier=tier,
-                        average_score=round(avg_score, 1),
+                        average_score=round(avg_s, 1),
                         total_walls_evaluated=len(student_attempts)
                     )
                     db.session.add(new_cert)
