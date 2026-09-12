@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structural Survey Report: {{ wall.title }} - {{ attempt.student_name }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #0b1329;
+      color: #0f172a;
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .action-bar {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-back { background: #334155; color: #93c5fd; }
+    .btn-back:hover { background: #475569; }
+    .btn-print { background: #059669; color: white; }
+    .btn-print:hover { background: #047857; }
+
+    /* Report Sheet */
+    .report-sheet {
+      width: 100%;
+      max-width: 960px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 3rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      color: #1e293b;
+    }
+
+    .report-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .report-header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      color: #0f172a;
+      text-transform: uppercase;
+    }
+    .report-header p {
+      margin: 0.3rem 0 0;
+      color: #64748b;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .badge-ref {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    /* Meta Grid */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .meta-item label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.2rem;
+    }
+    .meta-item span {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* Executive Risk Card */
+    .risk-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-radius: 6px;
+      margin-bottom: 2rem;
+    }
+    .risk-high { background: #fef2f2; border: 1.5px solid #ef4444; color: #991b1b; }
+    .risk-moderate { background: #fffbeb; border: 1.5px solid #f59e0b; color: #92400e; }
+    .risk-low { background: #f0fdf4; border: 1.5px solid #10b981; color: #166534; }
+
+    /* Photo Plate with Pins */
+    .plate-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      background: #0f172a;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .plate-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .callout-pin {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      background: #ef4444;
+      color: white;
+      border: 2px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.75rem;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+      transform: translate(-50%, -50%);
+    }
+
+    /* Schedule Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2.5rem;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #0f172a;
+      color: white;
+      text-align: left;
+      padding: 0.85rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 0.85rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .badge-sev {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .badge-critical { background: #fee2e2; color: #991b1b; }
+    .badge-moderate { background: #fef3c7; color: #92400e; }
+    .badge-minor { background: #dcfce7; color: #166534; }
+
+    /* Sign-off */
+    .signoff-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      border-top: 1.5px solid #cbd5e1;
+      padding-top: 1.5rem;
+      align-items: center;
+    }
+    .sig-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .sig-name {
+      font-family: 'Brush Script MT', 'Dancing Script', cursive;
+      font-size: 2rem;
+      color: #1e3a8a;
+      margin-top: 0.5rem;
+    }
+
+    @media print {
+      body { background: #ffffff !important; padding: 0 !important; }
+      .action-bar { display: none !important; }
+      .report-sheet { box-shadow: none !important; padding: 1.5cm !important; max-width: 100% !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="action-bar">
+    <a href="javascript:history.back()" class="btn btn-back">&larr; Return to Debrief</a>
+    <button class="btn btn-print" onclick="window.print()">Print / Save PDF Report</button>
+  </div>
+
+  <div class="report-sheet">
+    <div class="report-header">
+      <div>
+        <h1>Masonry Structural Condition Survey</h1>
+        <p>Diagnostic Defect Identification & Conservation Schedule</p>
+      </div>
+      <div style="text-align: right;">
+        <span class="badge-ref">REF: {{ attempt.id[:8].upper() }}</span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;">Issued: {{ attempt.created_at.strftime('%Y-%m-%d %H:%M UTC') if attempt.created_at else '2026-09-12' }}</div>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <label>Subject Asset</label>
+        <span>{{ wall.title }}</span>
+      </div>
+      <div class="meta-item">
+        <label>Masonry Archetype</label>
+        <span>{{ wall.wall_type.replace('_', ' ').title() }}</span>
+      </div>
+      <div class="meta-item">
+        <label>Location / Country</label>
+        <span>{{ wall.region or 'National' }}, {{ wall.country }}</span>
+      </div>
+      <div class="meta-item">
+        <label>Structural Function</label>
+        <span>{{ (wall.structural_function or 'Boundary').title() }}</span>
+      </div>
+      <div class="meta-item">
+        <label>Lead Surveyor</label>
+        <span>{{ attempt.student_name }}</span>
+      </div>
+      <div class="meta-item">
+        <label>Cohort / PIN</label>
+        <span>{{ attempt.assignment_code or attempt.cohort_code or 'GENERAL' }}</span>
+      </div>
+      <div class="meta-item">
+        <label>Diagnostic Precision</label>
+        <span style="color: {% if attempt.passed %}#059669{% else %}#dc2626{% endif %}; font-weight: bold;">
+          {{ attempt.score_percentage }}% ({% if attempt.passed %}QUALIFIED{% else %}REVISE{% endif %})
+        </span>
+      </div>
+      <div class="meta-item">
+        <label>Recorded Hits / Alarms</label>
+        <span>{{ attempt.true_positives }} Verified &bull; {{ attempt.false_positives }} False</span>
+      </div>
+    </div>
+
+    <!-- Executive Risk Classification -->
+    <div class="risk-banner risk-{{ risk_level }}">
+      <div>
+        <strong style="font-size: 1.1rem; display: block;">Executive Structural Risk: {{ risk_title }}</strong>
+        <p style="margin: 0.25rem 0 0; font-size: 0.85rem;">{{ risk_summary }}</p>
+      </div>
+      <div style="font-size: 1.4rem; font-weight: 800; text-transform: uppercase;">
+        {{ risk_level }}
+      </div>
+    </div>
+
+    <!-- Photographic Plate with Callout Pins -->
+    <h3 style="margin: 0 0 0.75rem; font-size: 1.1rem; color: #0f172a; text-transform: uppercase;">Figure 1: Photographic Plate with Defect Callouts</h3>
+    <div class="plate-container">
+      <img src="{{ wall.image_url }}" alt="{{ wall.title }}" class="plate-img">
+      {% for item in defect_items %}
+        <div class="callout-pin" style="left: {{ item.x_pct }}%; top: {{ item.y_pct }}%;">
+          {{ loop.index }}
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Formal Schedule of Dilapidations Table -->
+    <h3 style="margin: 0 0 0.75rem; font-size: 1.1rem; color: #0f172a; text-transform: uppercase;">Schedule of Dilapidations & Remedial Prescriptions</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 45px;">Ref</th>
+          <th style="width: 180px;">Defect Pathology</th>
+          <th style="width: 100px;">Severity</th>
+          <th style="width: 120px;">Crack Width / Scope</th>
+          <th>Prescribed Conservation Intervention</th>
+          <th style="width: 130px;">Remedial Window</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in defect_items %}
+          <tr>
+            <td><strong style="color: #ef4444;">#{{ loop.index }}</strong></td>
+            <td>
+              <strong>{{ item.title }}</strong>
+              <small style="display: block; color: #64748b;">Code: <code>{{ item.category }}</code></small>
+            </td>
+            <td>
+              <span class="badge-sev badge-{{ item.severity }}">{{ item.severity }}</span>
+            </td>
+            <td>
+              <span>{{ item.crack_width or 'Surface Zone' }}</span>
+            </td>
+            <td>
+              <strong style="color: #059669; display: block;">{{ item.remedial_label }}</strong>
+              <p style="margin: 3px 0 0; color: #475569; font-size: 0.8rem;">{{ item.explanation }}</p>
+            </td>
+            <td>
+              <span style="font-weight: 600; color: {% if item.severity == 'critical' %}#dc2626{% elif item.severity == 'moderate' %}#d97706{% else %}#4b5563{% endif %};">
+                {% if item.severity == 'critical' %}
+                  Immediate (30 Days)
+                {% elif item.severity == 'moderate' %}
+                  3 to 6 Months
+                {% else %}
+                  Routine Maintenance
+                {% endif %}
+              </span>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: #64748b; padding: 2rem;">No defect markers recorded for this subject.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Assessor Endorsement & Sign-Off -->
+    <div class="signoff-section">
+      <div class="sig-block">
+        <label style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Surveyor Endorsement & Statement of Competence</label>
+        <p style="margin: 0.3rem 0; font-size: 0.8rem; color: #475569; line-height: 1.4;">
+          I hereby confirm that this survey assessment was conducted under the standardized diagnostic protocols of the Global Wall Inspector framework, encompassing visual pathology, joint condition analysis, and remedial intervention scheduling.
+        </p>
+        <div class="sig-name">{{ attempt.student_name }}</div>
+        <small style="color: #64748b;">Accredited Structural Masonry Surveyor Candidate</small>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        <img id="report-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://wall-inspector.onrender.com/report/{{ attempt.id }}" alt="Verification QR" style="width: 76px; height: 76px; border: 1px solid #cbd5e1; padding: 3px; background: white; border-radius: 4px;">
+        <small style="font-size: 0.7rem; color: #64748b; margin-top: 0.3rem; font-weight: 600;">Scan to Authenticate Report</small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const qr = document.getElementById("report-qr");
+      if (qr) {
+        qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.href)}`;
+      }
+    });
+  </script>
+</body>
+</html>

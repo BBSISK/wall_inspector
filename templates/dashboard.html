@@ -68,6 +68,7 @@
           <th>Score</th>
           <th>Status</th>
           <th>Hits / Partial / Alarms</th>
+          <th>Survey Report</th>
         </tr>
       </thead>
       <tbody>
@@ -85,10 +86,13 @@
               {% endif %}
             </td>
             <td>{{ a.true_positives }} hits &bull; {{ a.false_positives }} false alarms</td>
+            <td>
+              <a href="/report/{{ a.id }}" target="_blank" style="background: #1e3a8a; color: #93c5fd; padding: 3px 8px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: 600;">View Report &rarr;</a>
+            </td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">No assessments recorded under this cohort filter.</td>
+            <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">No assessments recorded under this cohort filter.</td>
           </tr>
         {% endfor %}
       </tbody>

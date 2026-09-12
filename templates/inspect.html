@@ -31,6 +31,12 @@
     /* Loupe Tool */
     #loupe-lens { display: none; position: absolute; width: 170px; height: 170px; border-radius: 50%; border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(0,0,0,0.8); pointer-events: none; overflow: hidden; z-index: 60; background-color: #0b1329; background-repeat: no-repeat; }
 
+    /* Optical Crack Comparator Card */
+    #crack-gauge-card { display: none; position: absolute; top: 70px; left: 20px; z-index: 70; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(4px); border: 2px solid #0f172a; border-radius: 6px; padding: 8px 12px; color: #0f172a; width: 230px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); cursor: move; user-select: none; transition: transform 0.2s ease; }
+
+    /* Acoustic Feedback Toast */
+    #acoustic-toast { display: none; position: absolute; z-index: 85; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; pointer-events: none; transform: translate(-50%, -100%); transition: opacity 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+
     .sidebar { background: #1e293b; border-radius: 8px; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; border: 1px solid #334155; }
     input, select { width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 0.6rem; font-size: 0.85rem; }
     label { font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
@@ -100,6 +106,8 @@
         <button type="button" class="zoom-btn" id="tool-pan">Pan Mode</button>
         <button type="button" class="zoom-btn active" id="tool-draw">Box Defect</button>
         <button type="button" class="zoom-btn" id="tool-loupe">Loupe Tool</button>
+        <button type="button" class="zoom-btn" id="tool-gauge">Crack Gauge</button>
+        <button type="button" class="zoom-btn" id="tool-hammer">Sounding Hammer</button>
       </div>
 
       <div id="pan-zoom-container">
@@ -108,6 +116,43 @@
       </div>
 
       <div id="loupe-lens"></div>
+
+      <!-- Optical Crack Width Comparator Card -->
+      <div id="crack-gauge-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #94a3b8; padding-bottom: 4px; margin-bottom: 6px;">
+          <strong style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Optical Crack Comparator</strong>
+          <button type="button" id="btn-rotate-gauge" style="background: #0f172a; color: white; border: none; border-radius: 4px; font-size: 0.7rem; padding: 2px 6px; cursor: pointer;">↻ Rotate</button>
+        </div>
+        <div id="gauge-lines" style="display: flex; flex-direction: column; gap: 4px; font-family: monospace; font-size: 0.68rem; font-weight: bold;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>0.1mm</span> <div style="flex: 1; height: 1px; background: #000; margin-left: 8px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>0.2mm</span> <div style="flex: 1; height: 1.5px; background: #000; margin-left: 8px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>0.5mm</span> <div style="flex: 1; height: 2px; background: #000; margin-left: 8px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>1.0mm</span> <div style="flex: 1; height: 3px; background: #000; margin-left: 8px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>1.5mm</span> <div style="flex: 1; height: 4px; background: #000; margin-left: 8px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>2.5mm</span> <div style="flex: 1; height: 6px; background: #000; margin-left: 8px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>5.0mm</span> <div style="flex: 1; height: 8px; background: #000; margin-left: 8px;"></div>
+          </div>
+        </div>
+        <div style="margin-top: 6px; font-size: 0.65rem; color: #475569; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
+          BRE Digest 251 Scale &bull; Drag to align
+        </div>
+      </div>
+
+      <!-- Acoustic Transient Feedback Ripple -->
+      <div id="acoustic-toast"></div>
     </div>
 
     <div class="sidebar" id="sidebar">
@@ -122,7 +167,7 @@
 
       <div id="tagging-panel">
         <h3 style="margin: 0;">Diagnostic Marker</h3>
-        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Outline a defect zone on the wall, determine severity, and prescribe conservation remediation.</p>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Outline a defect zone, determine severity, and prescribe conservation remediation.</p>
         
         <label style="margin-top: 0.5rem; display: block;">Pathology Category</label>
         <select id="marker-category">
@@ -149,12 +194,17 @@
             </select>
           </div>
         </div>
+
+        <div style="margin-top: 0.5rem;">
+          <label>Measured Crack Width (Optional, mm)</label>
+          <input type="text" id="marker-width" placeholder="e.g. 1.5mm (BRE Cat 2)">
+        </div>
         
         <button type="button" class="btn" id="add-marker-btn" style="background: #2563eb; margin-top: 0.75rem;">Pin Clinical Marker</button>
         <hr style="border-color: #334155; margin: 0.75rem 0;">
         
         <h4 style="margin: 0;">Identified Zones (<span id="marker-count">0</span>)</h4>
-        <div id="marker-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
+        <div id="marker-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 160px; overflow-y: auto;"></div>
 
         <button type="button" class="btn" id="submit-inspection-btn" style="margin-top: 1rem;">Submit Assessment &rarr;</button>
       </div>
@@ -166,7 +216,12 @@
           <button class="btn-toggle active" id="toggle-truth">Ground Truth (Red)</button>
         </div>
         
-        <div id="feedback-container" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 260px; overflow-y: auto;"></div>
+        <div id="feedback-container" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 240px; overflow-y: auto;"></div>
+
+        <!-- Direct Building Survey Report Link -->
+        <a id="report-btn" href="#" target="_blank" class="btn" style="background: #1e3a8a; color: #93c5fd; text-align: center; text-decoration: none; display: none;">
+          📄 View Official Building Survey Report &rarr;
+        </a>
 
         {% if next_index is not none and assignment_code %}
           <a id="btn-next-wall" href="/portal/run/{{ assignment_code }}?wall_idx={{ next_index }}&student_name={{ student_name }}" class="btn" style="background: #2563eb; text-align: center; text-decoration: none; display: block;">
@@ -235,9 +290,11 @@
     const container = document.getElementById("pan-zoom-container");
     const outer = document.getElementById("viewport-outer");
     const loupe = document.getElementById("loupe-lens");
+    const gaugeCard = document.getElementById("crack-gauge-card");
+    const acousticToast = document.getElementById("acoustic-toast");
 
     let currentScale = 1.0, panX = 0, panY = 0;
-    let activeTool = "draw"; // 'draw' | 'pan' | 'loupe'
+    let activeTool = "draw"; // 'draw' | 'pan' | 'loupe' | 'hammer'
     let isPanning = false, panStartX = 0, panStartY = 0;
 
     let isDrawing = false, startX = 0, startY = 0, currentRect = null;
@@ -245,6 +302,75 @@
     let markers = [];
     let submittedData = null;
     let showStudent = true, showTruth = true;
+    let gaugeRotation = 0;
+
+    // Ground truth defects for sounding hammer acoustic simulation
+    let cachedGroundTruth = [];
+    async function loadGroundTruthForAudio() {
+      try {
+        const res = await fetch(`/admin/walls/{{ wall.id }}/defects`);
+        cachedGroundTruth = await res.json();
+      } catch (e) {
+        cachedGroundTruth = [];
+      }
+    }
+    loadGroundTruthForAudio();
+
+    // Native Web Audio Synthesizer
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+
+    function playSoundingHit(isHollow) {
+      initAudio();
+      const now = audioCtx.currentTime;
+
+      if (isHollow) {
+        // Low frequency resonant cavity hollow drum thud
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.22);
+
+        filter.type = "bandpass";
+        filter.frequency.setValueAtTime(220, now);
+        filter.Q.setValueAtTime(3.5, now);
+
+        gain.gain.setValueAtTime(0.7, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else {
+        // High frequency sharp solid stone metallic click
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1800, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+    }
 
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
@@ -282,24 +408,63 @@
     const btnPan = document.getElementById("tool-pan");
     const btnDraw = document.getElementById("tool-draw");
     const btnLoupe = document.getElementById("tool-loupe");
+    const btnGauge = document.getElementById("tool-gauge");
+    const btnHammer = document.getElementById("tool-hammer");
 
     function setTool(tool) {
       activeTool = tool;
       btnPan.classList.toggle("active", tool === "pan");
       btnDraw.classList.toggle("active", tool === "draw");
       btnLoupe.classList.toggle("active", tool === "loupe");
+      btnHammer.classList.toggle("active", tool === "hammer");
       loupe.style.display = (tool === "loupe") ? "block" : "none";
 
       if (tool === "pan") svg.style.cursor = "grab";
       else if (tool === "draw") svg.style.cursor = "crosshair";
       else if (tool === "loupe") svg.style.cursor = "zoom-in";
+      else if (tool === "hammer") svg.style.cursor = "pointer";
     }
 
     btnPan.addEventListener("click", () => setTool("pan"));
     btnDraw.addEventListener("click", () => setTool("draw"));
     btnLoupe.addEventListener("click", () => setTool("loupe"));
+    btnHammer.addEventListener("click", () => setTool("hammer"));
 
-    // Pan, Draw & Loupe Event Handling
+    btnGauge.addEventListener("click", () => {
+      const isVisible = gaugeCard.style.display === "block";
+      gaugeCard.style.display = isVisible ? "none" : "block";
+      btnGauge.classList.toggle("active", !isVisible);
+    });
+
+    document.getElementById("btn-rotate-gauge").addEventListener("click", (e) => {
+      e.stopPropagation();
+      gaugeRotation = (gaugeRotation + 45) % 180;
+      gaugeCard.style.transform = `rotate(${gaugeRotation}deg)`;
+    });
+
+    // Draggable Crack Gauge Card
+    let isDraggingGauge = false, gaugeStartX = 0, gaugeStartY = 0;
+    gaugeCard.addEventListener("mousedown", (e) => {
+      isDraggingGauge = true;
+      const rect = gaugeCard.getBoundingClientRect();
+      gaugeStartX = e.clientX - rect.left;
+      gaugeStartY = e.clientY - rect.top;
+      e.stopPropagation();
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (isDraggingGauge) {
+        const outerRect = outer.getBoundingClientRect();
+        gaugeCard.style.left = `${e.clientX - outerRect.left - gaugeStartX}px`;
+        gaugeCard.style.top = `${e.clientY - outerRect.top - gaugeStartY}px`;
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDraggingGauge = false;
+    });
+
+    // Pan, Draw, Loupe & Sounding Hammer Event Handling
     outer.addEventListener("mousemove", (e) => {
       if (activeTool === "loupe") {
         const outerRect = outer.getBoundingClientRect();
@@ -332,6 +497,50 @@
         svg.style.cursor = "grabbing";
         return;
       }
+
+      if (activeTool === "hammer") {
+        const bounds = svg.getBoundingClientRect();
+        const clickX = (e.clientX - bounds.left) / (bounds.width || 1);
+        const clickY = (e.clientY - bounds.top) / (bounds.height || 1);
+
+        const voidCategories = [
+          "lime_washout", "render_delamination", "rubble_voiding",
+          "hearting_washout", "core_void", "hydrostatic_bulge", "coping_displacement"
+        ];
+
+        const isVoid = cachedGroundTruth.some(gt => 
+          voidCategories.includes(gt.category) &&
+          clickX >= gt.x_min && clickX <= gt.x_max &&
+          clickY >= gt.y_min && clickY <= gt.y_max
+        );
+
+        playSoundingHit(isVoid);
+
+        // Transient visual feedback toast
+        const outerRect = outer.getBoundingClientRect();
+        acousticToast.style.left = `${e.clientX - outerRect.left}px`;
+        acousticToast.style.top = `${e.clientY - outerRect.top - 15}px`;
+        acousticToast.style.display = "block";
+        acousticToast.style.opacity = "1";
+
+        if (isVoid) {
+          acousticToast.innerText = "🔔 Hollow Response: Internal Void / Delamination";
+          acousticToast.style.background = "#ef4444";
+          acousticToast.style.color = "#ffffff";
+        } else {
+          acousticToast.innerText = "🔨 Solid Masonry Strike: Sound Bedding";
+          acousticToast.style.background = "#059669";
+          acousticToast.style.color = "#ffffff";
+        }
+
+        setTimeout(() => {
+          acousticToast.style.opacity = "0";
+          setTimeout(() => { acousticToast.style.display = "none"; }, 300);
+        }, 1200);
+
+        return;
+      }
+
       if (activeTool === "loupe") return;
       if (submittedData) return;
 
@@ -416,6 +625,7 @@
       const catSelect = document.getElementById("marker-category");
       const sevSelect = document.getElementById("marker-severity");
       const remSelect = document.getElementById("marker-remedial");
+      const widthVal = document.getElementById("marker-width").value.trim();
 
       markers.push({
         ...pendingBox,
@@ -423,11 +633,13 @@
         categoryLabel: catSelect.options[catSelect.selectedIndex].text,
         severity: sevSelect.value,
         remedial_action: remSelect.value,
-        remedialLabel: remSelect.options[remSelect.selectedIndex].text
+        remedialLabel: remSelect.options[remSelect.selectedIndex].text,
+        crack_width: widthVal
       });
 
       pendingBox = null;
       if (currentRect) { currentRect.remove(); currentRect = null; }
+      document.getElementById("marker-width").value = "";
       renderMarkers();
     });
 
@@ -454,7 +666,10 @@
           <div style="background: #0f172a; padding: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.8rem; border-left: 3px solid #38bdf8;">
             <div>
               <strong>${m.categoryLabel}</strong>
-              <small style="display: block; color: #94a3b8;">${m.severity.toUpperCase()} &bull; ${m.remedialLabel}</small>
+              <small style="display: block; color: #94a3b8;">
+                ${m.severity.toUpperCase()} &bull; ${m.remedialLabel}
+                ${m.crack_width ? ' &bull; W: ' + m.crack_width : ''}
+              </small>
             </div>
             <button onclick="removeMarker(${i})" style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 1rem;">&times;</button>
           </div>
@@ -543,6 +758,13 @@
           <p style="margin: 4px 0 0; font-size: 0.8rem; color: #cbd5e1;">${f.explanation}</p>
         </div>
       `).join("");
+
+      // Link Condition Survey Report
+      if (submittedData.attempt_id) {
+        const repBtn = document.getElementById("report-btn");
+        repBtn.href = `/report/${submittedData.attempt_id}`;
+        repBtn.style.display = "block";
+      }
 
       if (submittedData.qualifies_for_cert && submittedData.certificate_code) {
         const certBox = document.getElementById("cert-link-box");

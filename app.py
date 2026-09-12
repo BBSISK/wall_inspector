@@ -936,6 +936,7 @@ def create_app(config_class=Config):
                     cert_code = existing_cert.certificate_code
 
         return jsonify({
+            "attempt_id": attempt.id,
             "score": score,
             "passed": passed,
             "true_positives": full_hits,
@@ -948,6 +949,70 @@ def create_app(config_class=Config):
             "qualifies_for_cert": qualifies_for_cert,
             "certificate_code": cert_code
         })
+
+    @app.route("/report/<attempt_id>")
+    def view_survey_report(attempt_id):
+        attempt = AssessmentAttempt.query.get_or_404(attempt_id)
+        wall = Wall.query.get_or_404(attempt.wall_id)
+
+        rem_dict = {r["id"]: r["label"] for r in REMEDIAL_OPTIONS}
+
+        defect_items = []
+        markers = attempt.submitted_markers or []
+        for idx, m in enumerate(markers):
+            cx = (m.get("x_min", 0.5) + m.get("x_max", 0.5)) / 2.0 * 100
+            cy = (m.get("y_min", 0.5) + m.get("y_max", 0.5)) / 2.0 * 100
+            cat_id = m.get("category", "unspecified")
+            sev = m.get("severity", "moderate")
+            rem_id = m.get("remedial_action", "repoint_lime")
+            width_val = m.get("crack_width")
+
+            item_title = cat_id.replace("_", " ").title()
+            item_explanation = "Localized structural defect identified during candidate visual survey."
+            if attempt.feedback_notes and isinstance(attempt.feedback_notes, dict):
+                items = attempt.feedback_notes.get("items", [])
+                if idx < len(items):
+                    item_title = items[idx].get("title", item_title)
+                    item_explanation = items[idx].get("explanation", item_explanation)
+
+            defect_items.append({
+                "index": idx + 1,
+                "x_pct": round(cx, 1),
+                "y_pct": round(cy, 1),
+                "category": cat_id,
+                "title": item_title,
+                "severity": sev,
+                "remedial_action": rem_id,
+                "remedial_label": rem_dict.get(rem_id, rem_id.replace("_", " ").title()),
+                "crack_width": width_val,
+                "explanation": item_explanation
+            })
+
+        has_critical = any(d.get("severity") == "critical" for d in defect_items)
+        has_moderate = any(d.get("severity") == "moderate" for d in defect_items)
+
+        if has_critical or attempt.score_percentage < 70:
+            risk_level = "high"
+            risk_title = "Category A: Priority Remedial Action Required"
+            risk_summary = "Active structural defects or severe joint failure posing progressive stability risks. Immediate stabilization recommended."
+        elif has_moderate:
+            risk_level = "moderate"
+            risk_title = "Category B: Monitored Degradation"
+            risk_summary = "Localized masonry distress and weather erosion observed. Interventions scheduled within a 3 to 6-month conservation window."
+        else:
+            risk_level = "low"
+            risk_title = "Category C: Low Risk / Maintenance Standard"
+            risk_summary = "Minor superficial weathering. Managed via standard cyclical lime pointing and non-destructive crack gauge monitoring."
+
+        return render_template(
+            "survey_report.html",
+            attempt=attempt,
+            wall=wall.to_dict(),
+            defect_items=defect_items,
+            risk_level=risk_level,
+            risk_title=risk_title,
+            risk_summary=risk_summary
+        )
 
     @app.route("/certificate/<cert_code>")
     def view_certificate(cert_code):
