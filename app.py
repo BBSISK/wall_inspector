@@ -8,7 +8,7 @@ from sqlalchemy import text, inspect
 import cloudinary
 import cloudinary.uploader
 from config import Config
-from models import db, Wall, Defect, AssessmentAttempt, Certificate
+from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment
 
 cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
 if cloudinary_url:
@@ -435,6 +435,49 @@ def create_app(config_class=Config):
         db.session.delete(defect)
         db.session.commit()
         return jsonify({"status": "deleted", "id": defect_id})
+
+    # --- Student Assignment Portal ---
+    @app.route("/portal", methods=["GET", "POST"])
+    def student_portal():
+        if request.method == "POST":
+            code = request.form.get("assignment_code", "").strip().upper()
+            student_name = request.form.get("student_name", "Inspector Candidate").strip()
+            assignment = Assignment.query.filter_by(code=code, is_active=True).first()
+            if not assignment:
+                return render_template("student_portal.html", error="Invalid or inactive assignment code.")
+            return redirect(url_for("run_assignment", code=code, student_name=student_name))
+        return render_template("student_portal.html")
+
+    @app.route("/portal/run/<code>")
+    def run_assignment(code):
+        assignment = Assignment.query.filter_by(code=code, is_active=True).first_or_404()
+        wall = assignment.wall
+        student_name = request.args.get("student_name", "Inspector Candidate")
+        categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
+        return render_template(
+            "inspect.html",
+            wall=wall.to_dict(),
+            categories=categories,
+            assignment_code=code,
+            student_name=student_name
+        )
+
+    # --- Instructor Assignment Creator ---
+    @app.route("/admin/assignments", methods=["GET", "POST"])
+    def admin_assignments():
+        if request.method == "POST":
+            title = request.form.get("title", "Masonry Assessment").strip()
+            code = request.form.get("code", "").strip().upper() or uuid.uuid4().hex[:6].upper()
+            wall_id = request.form.get("wall_id")
+            
+            assignment = Assignment(code=code, title=title, wall_id=wall_id, is_active=True)
+            db.session.add(assignment)
+            db.session.commit()
+            return redirect(url_for("admin_assignments"))
+
+        assignments = Assignment.query.order_by(Assignment.created_at.desc()).all()
+        walls = Wall.query.filter_by(is_published=True).all()
+        return render_template("admin_assignments.html", assignments=assignments, walls=walls)
 
     @app.route("/inspect/<wall_slug>")
     def inspect_wall(wall_slug):

@@ -91,6 +91,18 @@ class AssessmentAttempt(db.Model):
     feedback_notes = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+class Assignment(db.Model):
+    __tablename__ = "assignments"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    code = db.Column(db.String(30), unique=True, nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    wall_id = db.Column(db.String(36), db.ForeignKey("walls.id"), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    wall = db.relationship("Wall", backref=db.backref("assignments", lazy=True))
+
 class Certificate(db.Model):
     __tablename__ = "certificates"
 

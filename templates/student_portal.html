@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Inspection Portal</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .portal-card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; padding: 2.5rem; max-width: 460px; width: 100%; box-shadow: 0 15px 35px rgba(0,0,0,0.3); }
+    h2 { margin: 0 0 0.5rem; font-size: 1.75rem; text-align: center; }
+    p { color: #94a3b8; font-size: 0.9rem; text-align: center; margin: 0 0 1.5rem; }
+    label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; font-weight: 600; }
+    input { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 1rem; margin-top: 0.35rem; }
+    .code-input { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; text-align: center; font-size: 1.25rem; color: #38bdf8; }
+    .btn { display: block; width: 100%; background: #2563eb; color: white; border: none; padding: 0.85rem; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; }
+    .btn:hover { background: #1d4ed8; }
+    .error-msg { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; text-align: center; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="portal-card">
+    <h2>Student Inspection Portal</h2>
+    <p>Enter your assigned assessment credentials to access your diagnostic examination.</p>
+
+    {% if error %}
+      <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      <label>Full Name</label>
+      <input type="text" name="student_name" placeholder="e.g. Kelly O'Connor" required>
+
+      <label>Assignment Access Code</label>
+      <input type="text" name="assignment_code" class="code-input" placeholder="e.g. STONE-01" required>
+
+      <button type="submit" class="btn">Launch Assessment &rarr;</button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 1.5rem;">
+      <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.8rem;">&larr; Return to Main Catalog</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Assigned Inspections</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 2rem; }
+    .panel { background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 1.5rem; }
+    label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; font-weight: 600; }
+    input, select { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.6rem; border-radius: 6px; font-size: 0.9rem; margin-top: 0.3rem; }
+    .btn { display: block; width: 100%; background: #059669; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1.25rem; }
+    .btn:hover { background: #047857; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; padding: 0.75rem; background: #0f172a; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; }
+    td { padding: 0.75rem; border-bottom: 1px solid #334155; }
+    .badge-code { background: #0f172a; padding: 3px 8px; border-radius: 4px; border: 1px solid #38bdf8; color: #38bdf8; font-family: monospace; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 style="margin: 0; font-size: 1.8rem;">Classroom Assignments</h1>
+        <p style="margin: 0.3rem 0 0; color: #94a3b8;">Create specific inspection access codes for your cohorts.</p>
+      </div>
+      <div>
+        <a href="/portal" target="_blank" style="background: #2563eb; color: white; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">Open Student Portal &rarr;</a>
+        <a href="/" style="background: #334155; color: #93c5fd; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">&larr; Catalog</a>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="panel">
+        <h3 style="margin-top: 0;">Create Assignment</h3>
+        <form method="POST">
+          <label>Assignment Title</label>
+          <input type="text" name="title" placeholder="e.g. Week 4: Mortar Erosion Assessment" required>
+
+          <label>Access Code (PIN)</label>
+          <input type="text" name="code" placeholder="e.g. LIME-01" style="text-transform: uppercase;" required>
+
+          <label>Target Masonry Subject</label>
+          <select name="wall_id" required>
+            {% for w in walls %}
+              <option value="{{ w.id }}">{{ w.title }} ({{ w.wall_type }})</option>
+            {% endfor %}
+          </select>
+
+          <button type="submit" class="btn">Generate Assignment</button>
+        </form>
+      </div>
+
+      <div class="panel" style="padding: 0; overflow: hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Assignment Title</th>
+              <th>Assigned Wall</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in assignments %}
+              <tr>
+                <td><span class="badge-code">{{ a.code }}</span></td>
+                <td><strong>{{ a.title }}</strong></td>
+                <td>{{ a.wall.title }}</td>
+                <td><span style="color: #34d399; font-weight: bold;">Active</span></td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">No assignments generated yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
