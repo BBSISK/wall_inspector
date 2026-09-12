@@ -20,6 +20,131 @@ def calculate_iou(box_a, box_b):
     return intersection_area / union_area if union_area > 0 else 0.0
 
 
+WALL_CATALOG = [
+    {
+        "slug": "sample-drystone-collapse",
+        "title": "Traditional Irish Dry Stone Field Boundary",
+        "description": "Double-faced dry stone wall with coping loss and hearting stone washout.",
+        "country": "Ireland",
+        "region": "Galway / Connemara",
+        "wall_type": "dry_stone",
+        "structural_function": "boundary",
+        "difficulty": "beginner",
+        "image_filename": "drystone_01.jpg",
+    },
+    {
+        "slug": "rustic-retaining-dyke",
+        "title": "Rustic Field Stone Retaining Dyke",
+        "description": "Agricultural stone revetment showing root wedge displacement and out-of-plumb face.",
+        "country": "United Kingdom",
+        "region": "Cumbria",
+        "wall_type": "dry_stone",
+        "structural_function": "retaining",
+        "difficulty": "intermediate",
+        "image_filename": "drystone_02.jpg",
+    },
+    {
+        "slug": "industrial-brick-efflorescence",
+        "title": "Industrial Red Brick Cavity Wall",
+        "description": "Severe crystalline salt leaching (efflorescence) and eroded bed joint mortar.",
+        "country": "United Kingdom",
+        "region": "Manchester",
+        "wall_type": "brick_cavity",
+        "structural_function": "load_bearing",
+        "difficulty": "beginner",
+        "image_filename": "brick_efflorescence_01.jpg",
+    },
+    {
+        "slug": "historic-lime-rubble",
+        "title": "Historic Lime-Mortared Rubble Wall",
+        "description": "Rubble masonry with deep weathered lime mortar washout and loose bonding stones.",
+        "country": "Ireland",
+        "region": "Meath",
+        "wall_type": "lime_mortar",
+        "structural_function": "boundary",
+        "difficulty": "intermediate",
+        "image_filename": "stone_rubble_01.jpg",
+    },
+    {
+        "slug": "aran-karst-boundary",
+        "title": "Limestone Karst Dry Boundary",
+        "description": "Single-stone lace karst wall vulnerable to lateral wind load and coping displacement.",
+        "country": "Ireland",
+        "region": "Inis Mór, Aran Islands",
+        "wall_type": "dry_stone",
+        "structural_function": "boundary",
+        "difficulty": "intermediate",
+        "image_filename": "drystone_aran_01.jpg",
+    },
+    {
+        "slug": "granite-dyke-subsidence",
+        "title": "Granite Field Dyke with Subsidence",
+        "description": "Heavy boulder base showing differential ground settlement and core collapse.",
+        "country": "United Kingdom",
+        "region": "Scottish Highlands",
+        "wall_type": "dry_stone",
+        "structural_function": "boundary",
+        "difficulty": "advanced",
+        "image_filename": "stone_bulge_01.jpg",
+    },
+    {
+        "slug": "ashlar-spalling-parapet",
+        "title": "Dressed Ashlar Masonry Parapet",
+        "description": "Finely dressed ashlar stonework showing surface spalling and frost-thaw delamination.",
+        "country": "France",
+        "region": "Normandy",
+        "wall_type": "ashlar",
+        "structural_function": "parapet",
+        "difficulty": "advanced",
+        "image_filename": "ashlar_cracking_01.jpg",
+    },
+    {
+        "slug": "factory-brick-decay",
+        "title": "Aged Factory Boundary with Spalling",
+        "description": "Frost-heaved brickwork with blown faces and degraded cementitious repointing.",
+        "country": "Germany",
+        "region": "Ruhr",
+        "wall_type": "brick_cavity",
+        "structural_function": "boundary",
+        "difficulty": "intermediate",
+        "image_filename": "old_brick_decay_01.jpg",
+    },
+    {
+        "slug": "terrace-retaining-wall",
+        "title": "Terraced Dry Stone Retaining Boundary",
+        "description": "Hillside gravity retaining wall subjected to hydrostatic pressure and lateral bulge.",
+        "country": "Italy",
+        "region": "Cinque Terre",
+        "wall_type": "dry_stone",
+        "structural_function": "retaining",
+        "difficulty": "advanced",
+        "image_filename": "retaining_drystone_01.jpg",
+    },
+    {
+        "slug": "coursed-limestone-farm",
+        "title": "Coursed Limestone Farm Wall",
+        "description": "Substantial farm boundary showing invasive ivy root penetration and joint expansion.",
+        "country": "Ireland",
+        "region": "Kilkenny",
+        "wall_type": "lime_mortar",
+        "structural_function": "boundary",
+        "difficulty": "beginner",
+        "image_filename": "lime_coursed_01.jpg",
+    },
+    {
+        "slug": "perimeter-brick-expansion",
+        "title": "Perimeter Brick Wall with Joint Separation",
+        "description": "Modern brick perimeter lacking expansion joints, showing vertical thermal fractures.",
+        "country": "United Kingdom",
+        "region": "York",
+        "wall_type": "brick_cavity",
+        "structural_function": "boundary",
+        "difficulty": "intermediate",
+        "image_filename": "modern_brick_damage_01.jpg",
+    },
+]
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -29,24 +154,27 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-        # Seed sample dry-stone wall if table is empty
-        if not Wall.query.filter_by(slug="sample-drystone-collapse").first():
-            sample_wall = Wall(
-                slug="sample-drystone-collapse",
-                title="Collapsed Dry Stone Field Boundary",
-                description="Traditional dry stone wall showing core collapse and structural bowing.",
-                country="United Kingdom",
-                region="Yorkshire Dales",
-                wall_type="dry_stone",
-                structural_function="boundary",
-                difficulty="beginner",
-                image_filename="drystone_collapse_01.jpg",
-                is_published=True
-            )
-            db.session.add(sample_wall)
-            db.session.commit()
+        for w_data in WALL_CATALOG:
+            existing = Wall.query.filter_by(slug=w_data["slug"]).first()
+            if not existing:
+                wall = Wall(
+                    slug=w_data["slug"],
+                    title=w_data["title"],
+                    description=w_data["description"],
+                    country=w_data["country"],
+                    region=w_data["region"],
+                    wall_type=w_data["wall_type"],
+                    structural_function=w_data["structural_function"],
+                    difficulty=w_data["difficulty"],
+                    image_filename=w_data["image_filename"],
+                    is_published=True,
+                )
+                db.session.add(wall)
+            else:
+                existing.image_filename = w_data["image_filename"]
+                existing.title = w_data["title"]
+        db.session.commit()
 
-    # --- Home & Health Routes ---
     @app.route("/")
     def index():
         walls = Wall.query.filter_by(is_published=True).all()
@@ -54,9 +182,8 @@ def create_app(config_class=Config):
 
     @app.route("/health")
     def health():
-        return jsonify({"status": "ok", "app": "wall_inspector"})
+        return jsonify({"status": "ok", "app": "wall_inspector", "walls_count": len(WALL_CATALOG)})
 
-    # --- Admin Tagger Endpoints ---
     @app.route("/admin/walls/<wall_id>/tagger")
     def admin_tagger(wall_id):
         wall = Wall.query.get_or_404(wall_id)
@@ -84,7 +211,7 @@ def create_app(config_class=Config):
             category=data.get("category", "unspecified"),
             severity=data.get("severity", "moderate"),
             title=data.get("title", "Untitled Defect"),
-            explanation=data.get("explanation", "")
+            explanation=data.get("explanation", ""),
         )
         db.session.add(defect)
         db.session.commit()
@@ -97,7 +224,6 @@ def create_app(config_class=Config):
         db.session.commit()
         return jsonify({"status": "deleted", "id": defect_id})
 
-    # --- Student Inspection Endpoints ---
     @app.route("/inspect/<wall_slug>")
     def inspect_wall(wall_slug):
         wall = Wall.query.filter_by(slug=wall_slug, is_published=True).first_or_404()
@@ -130,7 +256,7 @@ def create_app(config_class=Config):
                         "title": gt["title"],
                         "category": gt["category"],
                         "status": "correct",
-                        "explanation": gt["explanation"]
+                        "explanation": gt["explanation"],
                     })
                     break
             if not hit:
@@ -158,7 +284,7 @@ def create_app(config_class=Config):
             false_negatives=false_negatives,
             score_percentage=score,
             passed=passed,
-            feedback_notes={"items": feedback}
+            feedback_notes={"items": feedback},
         )
         db.session.add(attempt)
         db.session.commit()
@@ -170,7 +296,7 @@ def create_app(config_class=Config):
             "false_positives": false_positives,
             "false_negatives": false_negatives,
             "ground_truth": ground_truth_dicts,
-            "feedback": feedback
+            "feedback": feedback,
         })
 
     return app
