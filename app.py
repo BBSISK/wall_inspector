@@ -1,4 +1,5 @@
 import os
+import math
 import uuid
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, redirect, url_for
@@ -60,6 +61,12 @@ def calculate_iou(box_a, box_b):
     union = area_a + area_b - intersection
     return intersection / union if union > 0 else 0.0
 
+def calculate_center_distance(box_a, box_b):
+    center_a_x = (box_a["x_min"] + box_a["x_max"]) / 2.0
+    center_a_y = (box_a["y_min"] + box_a["y_max"]) / 2.0
+    center_b_x = (box_b["x_min"] + box_b["x_max"]) / 2.0
+    center_b_y = (box_b["y_min"] + box_b["y_max"]) / 2.0
+    return math.hypot(center_a_x - center_b_x, center_a_y - center_b_y)
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -169,7 +176,6 @@ def create_app(config_class=Config):
 
             title = request.form.get("title", "Untitled Wall").strip()
             slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
-
             image_url_direct = None
             filename = None
 
@@ -185,7 +191,7 @@ def create_app(config_class=Config):
                     )
                     image_url_direct = upload_result.get("secure_url")
                 except Exception as cloud_err:
-                    print(f"Cloudinary upload error, falling back to local: {cloud_err}")
+                    print(f"Cloudinary upload error, fallback to local: {cloud_err}")
                     file.seek(0)
                     ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
                     filename = f"{slug}{ext}"
@@ -259,6 +265,7 @@ def create_app(config_class=Config):
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
         return render_template("inspect.html", wall=wall.to_dict(), categories=categories)
 
+    # --- Dual Adaptive IoU + Proximity Scoring Engine ---
     @app.route("/inspect/<wall_slug>/submit", methods=["POST"])
     def submit_inspection(wall_slug):
         wall = Wall.query.filter_by(slug=wall_slug, is_published=True).first_or_404()
@@ -272,51 +279,77 @@ def create_app(config_class=Config):
         ground_truth_dicts = [d.to_dict() for d in ground_truth]
 
         matched_defect_ids = set()
+        partial_defect_ids = set()
         feedback = []
         false_positives = 0
 
         for marker in submitted_markers:
-            hit = False
+            best_iou = 0.0
+            best_gt = None
+            closest_dist = 1.0
+
             for gt in ground_truth_dicts:
                 iou = calculate_iou(marker, gt)
-                if iou >= 0.20 and marker.get("category") == gt["category"]:
-                    hit = True
-                    matched_defect_ids.add(gt["id"])
+                dist = calculate_center_distance(marker, gt)
+                if iou > best_iou:
+                    best_iou = iou
+                    best_gt = gt
+                if dist < closest_dist and best_gt is None:
+                    closest_dist = dist
+                    if dist <= 0.20:
+                        best_gt = gt
+
+            if best_gt:
+                category_match = (marker.get("category") == best_gt["category"])
+                # Case 1: Solid IoU overlap
+                if best_iou >= 0.15:
+                    if category_match:
+                        matched_defect_ids.add(best_gt["id"])
+                        feedback.append({
+                            "title": best_gt["title"],
+                            "category": best_gt["category"],
+                            "status": "correct",
+                            "explanation": f"Diagnostic Confirmed (IoU {round(best_iou*100)}%): {best_gt['explanation']}"
+                        })
+                    else:
+                        feedback.append({
+                            "title": best_gt["title"],
+                            "category": best_gt["category"],
+                            "status": "misclassified",
+                            "explanation": f"Location identified, but fault was classified incorrectly. {best_gt['explanation']}"
+                        })
+                # Case 2: Proximity Match (Partial credit: near defect center)
+                elif closest_dist <= 0.18 and category_match:
+                    partial_defect_ids.add(best_gt["id"])
                     feedback.append({
-                        "title": gt["title"],
-                        "category": gt["category"],
-                        "status": "correct",
-                        "explanation": f"Diagnostic Confirmed: {gt['explanation']}"
+                        "title": best_gt["title"],
+                        "category": best_gt["category"],
+                        "status": "partial",
+                        "explanation": f"Near-Target Identification: Center placed accurately, but boundary margins varied. {best_gt['explanation']}"
                     })
-                    break
-                elif iou >= 0.20:
-                    hit = True
-                    feedback.append({
-                        "title": gt["title"],
-                        "category": gt["category"],
-                        "status": "misclassified",
-                        "explanation": f"Zone located, but fault was {gt['category'].replace('_', ' ')}. {gt['explanation']}"
-                    })
-                    break
-            if not hit:
+                else:
+                    false_positives += 1
+            else:
                 false_positives += 1
 
-        true_positives = len(matched_defect_ids)
         total_defects = len(ground_truth_dicts)
-        false_negatives = max(0, total_defects - true_positives)
+        full_hits = len(matched_defect_ids)
+        partial_hits = len(partial_defect_ids - matched_defect_ids)
+        false_negatives = max(0, total_defects - (full_hits + partial_hits))
 
         for gt in ground_truth_dicts:
-            if gt["id"] not in matched_defect_ids and not any(f["title"] == gt["title"] for f in feedback):
-                feedback.append({
-                    "title": gt["title"],
-                    "category": gt["category"],
-                    "status": "missed",
-                    "explanation": f"Missed structural fault: {gt['explanation']}"
-                })
+            if gt["id"] not in matched_defect_ids and gt["id"] not in partial_defect_ids:
+                if not any(f["title"] == gt["title"] for f in feedback):
+                    feedback.append({
+                        "title": gt["title"],
+                        "category": gt["category"],
+                        "status": "missed",
+                        "explanation": f"Missed structural fault: {gt['explanation']}"
+                    })
 
         if total_defects > 0:
-            raw_score = (true_positives / total_defects) * 100
-            score = max(0.0, round(raw_score - (false_positives * 15), 1))
+            raw_score = ((full_hits * 1.0 + partial_hits * 0.70) / total_defects) * 100
+            score = max(0.0, round(raw_score - (false_positives * 10), 1))
         else:
             score = 100.0 if false_positives == 0 else 0.0
 
@@ -327,7 +360,7 @@ def create_app(config_class=Config):
             student_session_id=session_id,
             student_name=student_name,
             submitted_markers=submitted_markers,
-            true_positives=true_positives,
+            true_positives=full_hits + partial_hits,
             false_positives=false_positives,
             false_negatives=false_negatives,
             score_percentage=score,
@@ -363,10 +396,12 @@ def create_app(config_class=Config):
         return jsonify({
             "score": score,
             "passed": passed,
-            "true_positives": true_positives,
+            "true_positives": full_hits,
+            "partial_positives": partial_hits,
             "false_positives": false_positives,
             "false_negatives": false_negatives,
             "ground_truth": ground_truth_dicts,
+            "submitted_markers": submitted_markers,
             "feedback": feedback,
             "qualifies_for_cert": qualifies_for_cert,
             "certificate_code": cert_code
