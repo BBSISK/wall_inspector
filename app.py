@@ -1245,22 +1245,32 @@ def create_app(config_class=Config):
         manifest = {
             "name": "Wall Capture Admin - Global Wall Inspector",
             "short_name": "WallCapture",
+            "id": "/mobile/admin",
             "description": "On-site masonry wall photo capture and catalog publishing.",
             "start_url": "/mobile/admin",
+            "scope": "/mobile/admin",
             "display": "standalone",
             "background_color": "#0b1329",
             "theme_color": "#0f172a",
             "orientation": "portrait-primary",
             "icons": [
                 {
-                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=192&q=80",
+                    "src": "/static/icons/admin-192.png",
                     "sizes": "192x192",
-                    "type": "image/jpeg"
+                    "type": "image/png",
+                    "purpose": "any"
                 },
                 {
-                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=512&q=80",
+                    "src": "/static/icons/admin-512.png",
                     "sizes": "512x512",
-                    "type": "image/jpeg"
+                    "type": "image/png",
+                    "purpose": "any"
+                },
+                {
+                    "src": "/static/icons/admin-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "maskable"
                 }
             ]
         }
@@ -1271,22 +1281,32 @@ def create_app(config_class=Config):
         manifest = {
             "name": "Student Stonework Portfolio - Global Wall Inspector",
             "short_name": "StonePortfolio",
+            "id": "/mobile/student",
             "description": "Student masonry coursework photography and self-critique portfolio.",
             "start_url": "/mobile/student",
+            "scope": "/mobile/student",
             "display": "standalone",
             "background_color": "#0b1329",
             "theme_color": "#0f172a",
             "orientation": "portrait-primary",
             "icons": [
                 {
-                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=192&q=80",
+                    "src": "/static/icons/student-192.png",
                     "sizes": "192x192",
-                    "type": "image/jpeg"
+                    "type": "image/png",
+                    "purpose": "any"
                 },
                 {
-                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=512&q=80",
+                    "src": "/static/icons/student-512.png",
                     "sizes": "512x512",
-                    "type": "image/jpeg"
+                    "type": "image/png",
+                    "purpose": "any"
+                },
+                {
+                    "src": "/static/icons/student-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "maskable"
                 }
             ]
         }

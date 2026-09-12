@@ -1,6 +1,12 @@
-const CACHE_NAME = "gwi-mobile-v1";
+const CACHE_NAME = "gwi-mobile-v2";
 const PRECACHE_URLS = [
-  "/manifest.json"
+  "/manifest.json",
+  "/manifest-admin.json",
+  "/manifest-student.json",
+  "/static/icons/admin-192.png",
+  "/static/icons/admin-512.png",
+  "/static/icons/student-192.png",
+  "/static/icons/student-512.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -26,4 +32,3 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
-

@@ -4,9 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Wall Capture">
+  <link rel="apple-touch-icon" href="/static/icons/admin-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/admin-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/static/icons/admin-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/admin-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/admin-512.png">
   <link rel="manifest" href="/manifest-admin.json">
   <title>Admin Mobile Field Capture - Global Wall Inspector</title>
   <style>
@@ -456,6 +462,17 @@
       btnSubmit.innerHTML = `<span>🚀 Upload & Publish Wall</span>`;
     }
 
+    // Service Worker Registration for true PWA App Installation
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          console.log('PWA Service Worker registered:', reg.scope);
+        }).catch((err) => {
+          console.warn('PWA Service Worker registration failed:', err);
+        });
+      });
+    }
+
     // PWA Installation Handling
     let deferredPrompt = null;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -483,7 +500,11 @@
       } else if (isIos) {
         document.getElementById("ios-install-modal").style.display = "flex";
       } else {
-        alert("To add this app to your phone, open your browser menu (⋮) and tap 'Install App' or 'Add to Home Screen'.");
+        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          alert("📱 Android Note:\n\nAndroid Chrome requires HTTPS to generate a native WebAPK app package. Because this is running over local HTTP (" + window.location.host + "), Chrome creates a 1-tap home screen shortcut.\n\nOnce deployed to your production HTTPS domain, Android will automatically install it as a full standalone app button!");
+        } else {
+          alert("To add this app to your phone, open your browser menu (⋮) and tap 'Install App' or 'Add to Home Screen'.");
+        }
       }
     }
   </script>
