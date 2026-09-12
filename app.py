@@ -3,8 +3,17 @@ import uuid
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 from config import Config
 from models import db, Wall, Defect, AssessmentAttempt, Certificate
+
+# Configure Cloudinary automatically if environment variable is set
+cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
+if cloudinary_url:
+    if cloudinary_url.startswith("CLOUDINARY_URL="):
+        cloudinary_url = cloudinary_url.replace("CLOUDINARY_URL=", "", 1).strip()
+    cloudinary.config(cloudinary_url=cloudinary_url)
 
 TAXONOMY_BY_WALL_TYPE = {
     "brick_cavity": [
@@ -56,12 +65,7 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    if os.path.isdir("/var/data"):
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////var/data/wall_inspector.db"
-        upload_folder = "/var/data/walls"
-    else:
-        upload_folder = os.path.join(app.root_path, "static", "img", "walls")
-
+    upload_folder = os.path.join(app.root_path, "static", "img", "walls")
     os.makedirs(upload_folder, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = upload_folder
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
@@ -71,7 +75,7 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-        # Seed the baseline Industrial Brick Wall if missing
+        # Seed baseline Industrial Brick Wall if missing
         brick = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
         if not brick:
             brick = Wall(
@@ -156,13 +160,25 @@ def create_app(config_class=Config):
 
         title = request.form.get("title", "Untitled Wall").strip()
         slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
-        ext = os.path.splitext(file.filename)[1].lower()
-        if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
-            return "Invalid image format", 400
+        
+        image_url_direct = None
+        filename = None
 
-        filename = f"{slug}{ext}"
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(filepath)
+        # Upload directly to Cloudinary if configured
+        if os.getenv("CLOUDINARY_URL"):
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder="wall_inspector",
+                public_id=slug,
+                overwrite=True,
+                resource_type="image"
+            )
+            image_url_direct = upload_result.get("secure_url")
+        else:
+            # Fallback to local storage
+            ext = os.path.splitext(file.filename)[1].lower()
+            filename = f"{slug}{ext}"
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
         wall = Wall(
             slug=slug,
@@ -174,6 +190,7 @@ def create_app(config_class=Config):
             structural_function=request.form.get("structural_function", "boundary"),
             difficulty=request.form.get("difficulty", "beginner"),
             image_filename=filename,
+            image_url_direct=image_url_direct,
             is_published=True
         )
         db.session.add(wall)
@@ -184,7 +201,7 @@ def create_app(config_class=Config):
     def admin_tagger(wall_id):
         wall = Wall.query.get_or_404(wall_id)
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
-        return render_template("tagger.html", wall=wall, categories=categories)
+        return render_template("tagger.html", wall=wall.to_dict(), categories=categories)
 
     @app.route("/admin/walls/<wall_id>/defects", methods=["GET"])
     def get_admin_defects(wall_id):
@@ -222,7 +239,7 @@ def create_app(config_class=Config):
     def inspect_wall(wall_slug):
         wall = Wall.query.filter_by(slug=wall_slug, is_published=True).first_or_404()
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
-        return render_template("inspect.html", wall=wall, categories=categories)
+        return render_template("inspect.html", wall=wall.to_dict(), categories=categories)
 
     @app.route("/inspect/<wall_slug>/submit", methods=["POST"])
     def submit_inspection(wall_slug):
