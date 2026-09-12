@@ -86,7 +86,6 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
-        # Schema migration checks
         try:
             inspector = inspect(db.engine)
             wall_cols = [c["name"] for c in inspector.get_columns("walls")]
@@ -103,7 +102,6 @@ def create_app(config_class=Config):
         except Exception as e:
             print(f"Migration note: {e}")
 
-        # Pre-seed Comprehensive Masonry Curriculum Bank
         seed_catalog = [
             {
                 "slug": "industrial-brick-efflorescence",
@@ -230,6 +228,55 @@ def create_app(config_class=Config):
     def index():
         walls = Wall.query.filter_by(is_published=True).all()
         return render_template("index.html", walls=[w.to_dict() for w in walls])
+
+    @app.route("/admin/walls/<wall_id>/edit", methods=["GET", "POST"])
+    def admin_edit_wall(wall_id):
+        wall = Wall.query.get_or_404(wall_id)
+        if request.method == "GET":
+            return render_template("admin_edit_wall.html", wall=wall.to_dict())
+
+        try:
+            wall.title = request.form.get("title", wall.title).strip()
+            wall.description = request.form.get("description", wall.description)
+            wall.country = request.form.get("country", wall.country)
+            wall.region = request.form.get("region", wall.region)
+            wall.wall_type = request.form.get("wall_type", wall.wall_type)
+            wall.difficulty = request.form.get("difficulty", wall.difficulty)
+
+            file = request.files.get("wall_image")
+            if file and file.filename:
+                slug = wall.slug
+                c_url = os.getenv("CLOUDINARY_URL", "").strip()
+                if c_url:
+                    try:
+                        upload_result = cloudinary.uploader.upload(
+                            file,
+                            folder="wall_inspector",
+                            public_id=slug,
+                            overwrite=True,
+                            resource_type="image"
+                        )
+                        wall.image_url_direct = upload_result.get("secure_url")
+                    except Exception as cloud_err:
+                        print(f"Cloudinary upload error in edit: {cloud_err}")
+                        file.seek(0)
+                        ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                        filename = f"{slug}{ext}"
+                        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                        wall.image_filename = filename
+                        wall.image_url_direct = None
+                else:
+                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                    filename = f"{slug}{ext}"
+                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                    wall.image_filename = filename
+                    wall.image_url_direct = None
+
+            db.session.commit()
+            return redirect(url_for("index"))
+        except Exception as e:
+            db.session.rollback()
+            return f"Error updating wall: {str(e)}", 500
 
     @app.route("/admin/walls/<wall_id>/delete", methods=["POST"])
     def admin_delete_wall(wall_id):
