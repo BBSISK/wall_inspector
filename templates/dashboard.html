@@ -89,5 +89,22 @@
       </tbody>
     </table>
   </div>
+  <!-- Issued Credentials Registry -->
+  <div style="max-width: 1100px; margin: 2rem auto 0; background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 1.5rem;">
+    <h3 style="margin: 0 0 1rem; font-size: 1.15rem; color: #f8fafc;">Issued Credentials & Accreditation Registry</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+      {% for c in certificates %}
+        <div style="background: #0f172a; padding: 1rem; border-radius: 6px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="display: block; color: #38bdf8;">{{ c.student_name }}</strong>
+            <small style="color: #94a3b8;">{{ c.tier }} &bull; {{ c.average_score }}%</small>
+          </div>
+          <a href="/certificate/{{ c.certificate_code }}" target="_blank" style="background: #059669; color: white; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">View PDF</a>
+        </div>
+      {% else %}
+        <p style="color: #94a3b8; font-size: 0.85rem; margin: 0;">No certificates issued yet.</p>
+      {% endfor %}
+    </div>
+  </div>
 </body>
 </html>

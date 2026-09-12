@@ -102,6 +102,20 @@ def create_app(config_class=Config):
         except Exception as e:
             print(f"Migration note: {e}")
 
+                # Auto-seed demo certificate
+        cert_code = "GWI-DEMO2026"
+        demo_cert = Certificate.query.filter_by(certificate_code=cert_code).first()
+        if not demo_cert:
+            demo_cert = Certificate(
+                certificate_code=cert_code,
+                student_name="Barry Sisk",
+                tier="Level 2 Inspector (Distinction)",
+                average_score=94.5,
+                total_walls_evaluated=4
+            )
+            db.session.add(demo_cert)
+            db.session.commit()
+
         seed_catalog = [
             {
                 "slug": "industrial-brick-efflorescence",
