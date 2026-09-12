@@ -148,7 +148,7 @@ def create_app(config_class=Config):
                 "structural_function": "boundary",
                 "difficulty": "intermediate",
                 "image_filename": None,
-                "image_url_direct": "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=1200&q=80",
+                "image_url_direct": "https://res.cloudinary.com/iltvgpiy/image/upload/v1789227079/wall_inspector/historic-lime-mortar-rubble.png",
                 "defects": [
                     {
                         "target_type": "bounding_box",
