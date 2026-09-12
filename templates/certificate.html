@@ -2,60 +2,188 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Certificate of Competence - {{ cert.student_name }}</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>Certificate of Competence: {{ cert.student_name }}</title>
   <style>
-    body { font-family: "Georgia", serif; background: #0f172a; color: #1e293b; margin: 0; padding: 2.5rem; display: flex; flex-direction: column; align-items: center; }
-    .toolbar { width: 850px; display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
-    .btn-pdf { background: #059669; color: white; border: none; padding: 0.6rem 1.25rem; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
-    .btn-pdf:hover { background: #047857; }
-    .cert-frame { background: #fffcf5; width: 850px; padding: 3.5rem; border: 8px double #065f46; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; box-sizing: border-box; }
-    h1 { font-size: 2.4rem; color: #064e3b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.5rem; }
-    h3 { font-style: italic; font-weight: normal; color: #475569; margin-top: 0; }
-    .name { font-size: 2.2rem; font-weight: bold; color: #0f172a; border-bottom: 2px solid #065f46; display: inline-block; padding: 0 2rem 0.5rem; margin: 1.5rem 0; }
-    .tier { font-size: 1.25rem; font-weight: bold; color: #047857; text-transform: uppercase; }
-    .meta-box { margin-top: 2rem; display: flex; justify-content: space-around; border-top: 1px solid #cbd5e1; padding-top: 1.5rem; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.85rem; color: #64748b; }
-    .seal { display: inline-block; width: 70px; height: 70px; border-radius: 50%; border: 2px dashed #065f46; line-height: 70px; font-weight: bold; color: #065f46; margin: 1.5rem 0; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', serif;
+      background: #0b1329;
+      color: #0f172a;
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .action-bar {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .btn-action {
+      background: #059669;
+      color: #ffffff;
+      padding: 0.6rem 1.25rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-decoration: none;
+    }
+    .btn-action:hover { background: #047857; }
+    .btn-back {
+      background: #334155;
+      color: #93c5fd;
+    }
+    .btn-back:hover { background: #475569; }
+
+    /* Certificate Canvas */
+    .certificate-container {
+      width: 100%;
+      max-width: 860px;
+      background: #fdfbf7;
+      border: 14px solid #1e293b;
+      padding: 3rem 2.5rem;
+      position: relative;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      text-align: center;
+    }
+    .inner-border {
+      border: 2px solid #b45309;
+      padding: 2.5rem 2rem;
+      position: relative;
+    }
+    .badge-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      background: #b45309;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.8rem;
+    }
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #0f172a;
+      margin: 0 0 0.5rem;
+    }
+    .sub-title {
+      font-size: 1rem;
+      letter-spacing: 1px;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .cert-body {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: #334155;
+      margin-bottom: 2rem;
+    }
+    .student-name {
+      font-size: 2.4rem;
+      font-weight: bold;
+      color: #0f172a;
+      border-bottom: 2px solid #cbd5e1;
+      display: inline-block;
+      padding: 0 2rem 0.3rem;
+      margin: 0.5rem 0 1.5rem;
+    }
+    .tier-label {
+      font-weight: bold;
+      color: #b45309;
+      font-size: 1.25rem;
+    }
+    .details-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+    }
+    .detail-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .detail-lbl {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      margin-top: 0.25rem;
+    }
+
+    /* Print / PDF Generation Rules */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .action-bar { display: none; }
+      .certificate-container {
+        border-color: #0f172a;
+        box-shadow: none;
+        max-width: 100%;
+        width: 100%;
+        page-break-inside: avoid;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <a href="/dashboard" style="color: #38bdf8; text-decoration: none; font-size: 0.9rem; align-self: center;">&larr; Return to Dashboard</a>
-    <button class="btn-pdf" id="download-btn">Download Official PDF</button>
+
+  <div class="action-bar">
+    <a href="/" class="btn-action btn-back">&larr; Return to Catalog</a>
+    <button class="btn-action" onclick="window.print()">Download / Print PDF</button>
   </div>
 
-  <div class="cert-frame" id="certificate-target">
-    <h1>Global Wall Inspector</h1>
-    <h3>Certificate of Structural Assessment Competence</h3>
+  <div class="certificate-container">
+    <div class="inner-border">
+      <div class="badge-icon">&#9733;</div>
+      <h1>Certificate of Competence</h1>
+      <div class="sub-title">Global Wall Inspector Accreditation</div>
 
-    <p style="margin-top: 2rem; color: #475569;">This credential certifies that</p>
-    <div class="name">{{ cert.student_name }}</div>
+      <div class="cert-body">
+        This document formally certifies that
+        <br>
+        <div class="student-name">{{ cert.student_name }}</div>
+        <br>
+        has demonstrated technical accuracy in visual structural pathology, defect zone isolation, and diagnostic classification across multiple heritage and load-bearing masonry assets, attaining the standard of
+        <br><br>
+        <span class="tier-label">{{ cert.tier }}</span>
+      </div>
 
-    <p>has successfully completed diagnostic defect evaluations on masonry structures, attaining the award of:</p>
-    <div class="tier">{{ cert.tier }}</div>
-
-    <div class="seal">VERIFIED</div>
-
-    <div class="meta-box">
-      <div><strong>Certificate Code:</strong><br>{{ cert.certificate_code }}</div>
-      <div><strong>Evaluation Benchmark:</strong><br>{{ cert.average_score }}%</div>
-      <div><strong>Assessed Structures:</strong><br>{{ cert.total_walls_evaluated }}</div>
-      <div><strong>Date Issued:</strong><br>{{ cert.issued_at.strftime('%B %d, %Y') }}</div>
+      <div class="details-row">
+        <div>
+          <div class="detail-val">{{ cert.average_score }}%</div>
+          <div class="detail-lbl">Assessment Precision</div>
+        </div>
+        <div>
+          <div class="detail-val">{{ cert.total_walls_evaluated }} Walls</div>
+          <div class="detail-lbl">Assets Inspected</div>
+        </div>
+        <div>
+          <div class="detail-val">{{ cert.certificate_code }}</div>
+          <div class="detail-lbl">Verification Identifier</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <script>
-    document.getElementById("download-btn").addEventListener("click", () => {
-      const element = document.getElementById("certificate-target");
-      const opt = {
-        margin: 10,
-        filename: "Wall_Inspector_Certificate_{{ cert.student_name|replace(' ', '_') }}.pdf",
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-      };
-      html2pdf().set(opt).from(element).save();
-    });
-  </script>
 </body>
 </html>
