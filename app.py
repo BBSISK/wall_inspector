@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
 from config import Config
+from sqlalchemy import text, inspect
 from models import db, Wall, Defect, AssessmentAttempt, Certificate
 
 # Configure Cloudinary automatically if environment variable is set
@@ -72,15 +73,17 @@ def create_app(config_class=Config):
 
     db.init_app(app)
 
-    with app.app_context():
+        with app.app_context():
         db.create_all()
-        # Self-healing migration for SQLite
         try:
-            with db.engine.connect() as conn:
-                conn.execute(db.text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
-                conn.commit()
-        except Exception:
-            pass
+            inspector = inspect(db.engine)
+            cols = [c["name"] for c in inspector.get_columns("walls")]
+            if "image_url_direct" not in cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
+                    conn.commit()
+        except Exception as e:
+            print(f"Migration notice: {e}")
 
         # Seed baseline Industrial Brick Wall if missing
         brick = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
@@ -161,48 +164,58 @@ def create_app(config_class=Config):
         if request.method == "GET":
             return render_template("admin_create_wall.html")
 
-        file = request.files.get("wall_image")
-        if not file or not file.filename:
-            return "No image selected", 400
+        try:
+            file = request.files.get("wall_image")
+            if not file or not file.filename:
+                return "No image file selected", 400
 
-        title = request.form.get("title", "Untitled Wall").strip()
-        slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
-        
-        image_url_direct = None
-        filename = None
+            title = request.form.get("title", "Untitled Wall").strip()
+            slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
+            
+            image_url_direct = None
+            filename = None
 
-        # Upload directly to Cloudinary if configured
-        if os.getenv("CLOUDINARY_URL"):
-            upload_result = cloudinary.uploader.upload(
-                file,
-                folder="wall_inspector",
-                public_id=slug,
-                overwrite=True,
-                resource_type="image"
+            c_url = os.getenv("CLOUDINARY_URL", "").strip()
+            if c_url:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="wall_inspector",
+                        public_id=slug,
+                        overwrite=True,
+                        resource_type="image"
+                    )
+                    image_url_direct = upload_result.get("secure_url")
+                except Exception as cloud_err:
+                    print(f"Cloudinary upload error, falling back to local: {cloud_err}")
+                    file.seek(0)
+                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                    filename = f"{slug}{ext}"
+                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            else:
+                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                filename = f"{slug}{ext}"
+                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+            wall = Wall(
+                slug=slug,
+                title=title,
+                description=request.form.get("description", ""),
+                country=request.form.get("country", "Unknown"),
+                region=request.form.get("region", ""),
+                wall_type=request.form.get("wall_type", "dry_stone"),
+                structural_function=request.form.get("structural_function", "boundary"),
+                difficulty=request.form.get("difficulty", "beginner"),
+                image_filename=filename,
+                image_url_direct=image_url_direct,
+                is_published=True
             )
-            image_url_direct = upload_result.get("secure_url")
-        else:
-            # Fallback to local storage
-            ext = os.path.splitext(file.filename)[1].lower()
-            filename = f"{slug}{ext}"
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-
-        wall = Wall(
-            slug=slug,
-            title=title,
-            description=request.form.get("description", ""),
-            country=request.form.get("country", "Unknown"),
-            region=request.form.get("region", ""),
-            wall_type=request.form.get("wall_type", "dry_stone"),
-            structural_function=request.form.get("structural_function", "boundary"),
-            difficulty=request.form.get("difficulty", "beginner"),
-            image_filename=filename,
-            image_url_direct=image_url_direct,
-            is_published=True
-        )
-        db.session.add(wall)
-        db.session.commit()
-        return redirect(url_for("admin_tagger", wall_id=wall.id))
+            db.session.add(wall)
+            db.session.commit()
+            return redirect(url_for("admin_tagger", wall_id=wall.id))
+        except Exception as e:
+            db.session.rollback()
+            return f"Error creating wall: {str(e)}", 500
 
     @app.route("/admin/walls/<wall_id>/tagger")
     def admin_tagger(wall_id):
