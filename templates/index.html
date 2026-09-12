@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2rem; background: #0f172a; color: #f8fafc; }
-    .header { max-width: 1100px; margin: 0 auto 2rem; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; }
+    .header { max-width: 1150px; margin: 0 auto 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; }
     .header h1 { margin: 0 0 0.5rem; font-size: 2rem; }
     .header p { margin: 0; color: #94a3b8; }
     .nav-actions { display: flex; gap: 0.75rem; }
@@ -16,11 +16,20 @@
     .btn-dash:hover { background: #475569; }
     .btn-upload { background: #2563eb; color: white; }
     .btn-upload:hover { background: #1d4ed8; }
-    .grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+
+    /* Filter Bar */
+    .filter-bar { max-width: 1150px; margin: 0 auto 2rem; background: #1e293b; padding: 1rem 1.25rem; border-radius: 8px; border: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+    .filter-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 180px; }
+    .filter-group label { font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
+    .filter-group select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; }
+    .btn-reset { background: #334155; color: #f8fafc; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; height: fit-content; }
+    .btn-reset:hover { background: #475569; }
+
+    .grid { max-width: 1150px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
     .card { background: #1e293b; border-radius: 8px; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
     .card-img { width: 100%; height: 200px; object-fit: cover; background: #0b1329; }
     .card-body { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #334155; color: #cbd5e1; margin-right: 0.5rem; margin-bottom: 0.5rem; text-transform: capitalize; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #334155; color: #cbd5e1; margin-right: 0.4rem; margin-bottom: 0.5rem; text-transform: capitalize; }
     .badge-diff { background: #065f46; color: #6ee7b7; }
     .card-title { margin: 0.25rem 0 0.5rem; font-size: 1.15rem; }
     .card-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; margin-bottom: 1.25rem; }
@@ -44,12 +53,49 @@
       <p>Structural defect identification, diagnostics, and masonry assessment platform.</p>
     </div>
     <div class="nav-actions">
+      <a href="/handbook" class="btn-action" style="background: #0d9488; color: white;">Field Handbook</a>
       <a href="/portal" class="btn-action" style="background: #0284c7; color: white;">Student Portal</a>
       <a href="/admin/assignments" class="btn-action" style="background: #475569; color: #f8fafc;">Assignments</a>
       <a href="/dashboard" class="btn-action btn-dash">Dashboard</a>
       <a href="/admin/walls/new" class="btn-action btn-upload">+ Add New Wall</a>
     </div>
   </div>
+
+  <form method="GET" action="/" class="filter-bar">
+    <div class="filter-group">
+      <label>Wall Archetype</label>
+      <select name="wall_type" onchange="this.form.submit()">
+        <option value="">All Archetypes</option>
+        {% for t in wall_types %}
+          <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t.replace('_', ' ').title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Difficulty Tier</label>
+      <select name="difficulty" onchange="this.form.submit()">
+        <option value="">All Difficulties</option>
+        {% for d in difficulties %}
+          <option value="{{ d }}" {% if selected_difficulty == d %}selected{% endif %}>{{ d.title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Country / Location</label>
+      <select name="country" onchange="this.form.submit()">
+        <option value="">All Locations</option>
+        {% for loc in locations %}
+          <option value="{{ loc }}" {% if selected_location == loc %}selected{% endif %}>{{ loc }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if selected_type or selected_difficulty or selected_location %}
+      <a href="/" class="btn-reset">Reset Filters</a>
+    {% endif %}
+  </form>
 
   <div class="grid">
     {% for wall in walls %}
@@ -69,11 +115,16 @@
           </div>
           <div class="admin-controls">
             <a href="/admin/walls/{{ wall.id }}/edit" class="btn btn-edit">Edit Wall</a>
-            <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall image?');" style="margin: 0;">
+            <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall?');" style="margin: 0;">
               <button type="submit" class="btn btn-delete" style="width: 100%;">Delete Wall</button>
             </form>
           </div>
         </div>
+      </div>
+    {% else %}
+      <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: #94a3b8;">
+        <h3>No masonry walls match your current filter criteria.</h3>
+        <a href="/" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Clear filters to view all walls &rarr;</a>
       </div>
     {% endfor %}
   </div>

@@ -7,36 +7,88 @@
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 1.5rem; background: #0f172a; color: #f8fafc; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .layout { display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; height: calc(100vh - 5.5rem); }
+    .header-left { display: flex; flex-direction: column; gap: 0.25rem; }
+    .progress-bar-wrap { width: 180px; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .progress-bar-fill { height: 100%; background: #38bdf8; transition: width 0.3s ease; }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .timer-badge { background: #991b1b; color: #fecaca; border: 1px solid #ef4444; padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 700; font-family: monospace; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; }
+    .btn-hint { background: #d97706; color: white; border: none; padding: 0.45rem 0.8rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    .btn-hint:hover { background: #b45309; }
+    .btn-guide { background: #0d9488; color: white; border: none; padding: 0.45rem 0.8rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; text-decoration: none; }
+    .btn-guide:hover { background: #0f766e; }
+
+    .layout { display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; height: calc(100vh - 5.5rem); position: relative; }
     .viewport-outer { position: relative; background: #0b1329; border-radius: 8px; overflow: hidden; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; user-select: none; }
     .zoom-toolbar { position: absolute; top: 12px; left: 12px; z-index: 50; display: flex; gap: 6px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); padding: 4px; border-radius: 6px; border: 1px solid #334155; }
     .zoom-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
     .zoom-btn:hover { background: #334155; color: white; }
     .zoom-btn.active { background: #2563eb; color: white; border-color: #3b82f6; }
+    
     #pan-zoom-container { transform-origin: 0 0; position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
     #wall-img { max-width: 100%; max-height: 100%; display: block; object-fit: contain; pointer-events: none; }
     #canvas-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+
+    /* Loupe Tool */
+    #loupe-lens { display: none; position: absolute; width: 170px; height: 170px; border-radius: 50%; border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(0,0,0,0.8); pointer-events: none; overflow: hidden; z-index: 60; background-color: #0b1329; background-repeat: no-repeat; }
+
     .sidebar { background: #1e293b; border-radius: 8px; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; border: 1px solid #334155; }
     input, select { width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 0.6rem; font-size: 0.85rem; }
-    label { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 600; }
+    label { font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
     .btn { background: #059669; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; }
     .btn:hover { background: #047857; }
     .btn-toggle { background: #334155; color: #93c5fd; padding: 0.4rem 0.6rem; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; }
     .btn-toggle.active { background: #2563eb; color: white; }
+    
     .card-feedback { background: #0f172a; border-radius: 6px; padding: 0.75rem; border-left: 4px solid #64748b; }
     .card-correct { border-left-color: #10b981; }
     .card-partial { border-left-color: #f59e0b; }
     .card-misclassified { border-left-color: #eab308; }
     .card-missed { border-left-color: #ef4444; }
+
+    /* Field Handbook Slide-over Drawer */
+    #handbook-drawer { display: none; position: absolute; top: 0; right: 0; width: 440px; height: 100%; background: #0f172a; border-left: 2px solid #334155; z-index: 90; padding: 1.5rem; overflow-y: auto; box-shadow: -10px 0 25px rgba(0,0,0,0.5); }
+    #handbook-drawer.active { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* Cumulative Modal */
+    #cumulative-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; max-width: 580px; width: 100%; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
   </style>
 </head>
 <body>
   <div class="header">
-    <div>
-      <h2 style="margin: 0;">{{ wall.title }}</h2>
-      <small style="color: #94a3b8;">{{ wall.wall_type }} • {{ wall.difficulty }} Tier</small>
+    <div class="header-left">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <h2 style="margin: 0; font-size: 1.35rem;">{{ wall.title }}</h2>
+        {% if total_assigned and total_assigned > 1 %}
+          <span style="background: #1e3a8a; color: #93c5fd; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">
+            Queue: Wall {{ current_index }} of {{ total_assigned }}
+          </span>
+        {% endif %}
+      </div>
+      <small style="color: #94a3b8;">
+        Archetype: <strong>{{ wall.wall_type.replace('_', ' ').title() }}</strong> &bull; {{ wall.difficulty.title() }} Tier
+      </small>
+      {% if total_assigned and total_assigned > 1 %}
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width: {{ (current_index / total_assigned * 100)|round }}%;"></div>
+        </div>
+      {% endif %}
     </div>
-    <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.9rem;">&larr; Exit to Catalog</a>
+
+    <div class="header-actions">
+      {% if time_limit_minutes and time_limit_minutes > 0 %}
+        <div class="timer-badge" id="exam-timer-box">
+          ⏱️ <span id="timer-display">--:--</span>
+        </div>
+      {% endif %}
+
+      {% if assignment_mode == 'practice' %}
+        <button type="button" class="btn-hint" id="btn-hint" onclick="showSurveyorHint()">💡 Senior Hint</button>
+      {% endif %}
+
+      <button type="button" class="btn-guide" id="btn-toggle-guide">📖 Field Guide</button>
+      <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem; margin-left: 0.5rem;">&larr; Exit</a>
+    </div>
   </div>
 
   <div class="layout">
@@ -47,42 +99,64 @@
         <button type="button" class="zoom-btn" id="zoom-reset">100%</button>
         <button type="button" class="zoom-btn" id="tool-pan">Pan Mode</button>
         <button type="button" class="zoom-btn active" id="tool-draw">Box Defect</button>
+        <button type="button" class="zoom-btn" id="tool-loupe">Loupe Tool</button>
       </div>
 
       <div id="pan-zoom-container">
         <img id="wall-img" src="{{ wall.image_url }}" alt="Inspection Subject" crossorigin="anonymous">
         <svg id="canvas-overlay"></svg>
       </div>
+
+      <div id="loupe-lens"></div>
     </div>
 
     <div class="sidebar" id="sidebar">
       <div id="setup-panel">
         <label>Inspector Full Name</label>
-        <input type="text" id="student-name" placeholder="e.g. Sarah Kelly" value="Inspector Candidate">
+        <input type="text" id="student-name" placeholder="e.g. Sarah Kelly" value="{{ student_name or 'Inspector Candidate' }}">
         
-        <label style="margin-top: 0.6rem; display: block;">Classroom Cohort Code</label>
-        <input type="text" id="cohort-code" placeholder="e.g. MASONRY-2026" style="text-transform: uppercase;">
+        <label style="margin-top: 0.6rem; display: block;">Classroom Cohort / PIN</label>
+        <input type="text" id="cohort-code" placeholder="e.g. MASONRY-2026" value="{{ assignment_code or '' }}" style="text-transform: uppercase;">
         <hr style="border-color: #334155; margin: 0.75rem 0;">
       </div>
 
       <div id="tagging-panel">
         <h3 style="margin: 0;">Diagnostic Marker</h3>
-        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Outline a defect or switch to Pan Mode to zoom into hairline joint cracks.</p>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Outline a defect zone on the wall, determine severity, and prescribe conservation remediation.</p>
         
-        <label>Defect Category</label>
+        <label style="margin-top: 0.5rem; display: block;">Pathology Category</label>
         <select id="marker-category">
           {% for cat in categories %}
             <option value="{{ cat.id }}">{{ cat.label }}</option>
           {% endfor %}
         </select>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+          <div>
+            <label>Severity Level</label>
+            <select id="marker-severity">
+              <option value="minor">Minor (Cosmetic)</option>
+              <option value="moderate" selected>Moderate (Active)</option>
+              <option value="critical">Critical (Failure)</option>
+            </select>
+          </div>
+          <div>
+            <label>Remedial Action</label>
+            <select id="marker-remedial">
+              {% for r in remedial_options %}
+                <option value="{{ r.id }}">{{ r.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
         
-        <button type="button" class="btn" id="add-marker-btn" style="background: #2563eb; margin-top: 0.5rem;">Pin Marker</button>
-        <hr style="border-color: #334155; margin: 0.5rem 0;">
+        <button type="button" class="btn" id="add-marker-btn" style="background: #2563eb; margin-top: 0.75rem;">Pin Clinical Marker</button>
+        <hr style="border-color: #334155; margin: 0.75rem 0;">
         
         <h4 style="margin: 0;">Identified Zones (<span id="marker-count">0</span>)</h4>
-        <div id="marker-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+        <div id="marker-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto;"></div>
 
-        <button type="button" class="btn" id="submit-inspection-btn" style="margin-top: 1rem;">Submit Final Assessment</button>
+        <button type="button" class="btn" id="submit-inspection-btn" style="margin-top: 1rem;">Submit Assessment &rarr;</button>
       </div>
 
       <div id="results-panel" style="display: none; flex-direction: column; gap: 1rem;">
@@ -91,10 +165,57 @@
           <button class="btn-toggle active" id="toggle-student">My Boxes (Blue)</button>
           <button class="btn-toggle active" id="toggle-truth">Ground Truth (Red)</button>
         </div>
-        <div id="feedback-container" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+        
+        <div id="feedback-container" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 260px; overflow-y: auto;"></div>
+
+        {% if next_index is not none and assignment_code %}
+          <a id="btn-next-wall" href="/portal/run/{{ assignment_code }}?wall_idx={{ next_index }}&student_name={{ student_name }}" class="btn" style="background: #2563eb; text-align: center; text-decoration: none; display: block;">
+            Proceed to Wall {{ next_index + 1 }} of {{ total_assigned }} &rarr;
+          </a>
+        {% elif total_assigned and total_assigned > 1 %}
+          <button type="button" class="btn" id="btn-show-cumulative" style="background: #7c3aed;">
+            View Cumulative Assessment Scorecard &rarr;
+          </button>
+        {% endif %}
+
         <div id="cert-link-box" style="display: none;">
           <a id="cert-btn" href="#" target="_blank" class="btn" style="background: #059669; text-align: center; text-decoration: none; display: block;">Claim Official Certificate &rarr;</a>
         </div>
+        <a href="/" class="btn" style="background: #334155; text-align: center; text-decoration: none;">Return to Catalog</a>
+      </div>
+    </div>
+
+    <!-- Field Handbook Slide-over Panel -->
+    <div id="handbook-drawer">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; color: #38bdf8;">{{ wall.wall_type.replace('_', ' ').title() }} Pathology Guide</h3>
+        <button onclick="toggleHandbook()" style="background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+      </div>
+      <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;">
+        <strong style="color: #f8fafc; display: block; margin-top: 0.5rem;">Clinical Diagnostic Cues:</strong>
+        {% for cat in categories %}
+          <div style="background: #1e293b; padding: 0.6rem; border-radius: 6px; margin-top: 0.5rem; border-left: 3px solid #38bdf8;">
+            <strong style="color: #38bdf8; display: block;">{{ cat.label }}</strong>
+            <small style="color: #94a3b8;">Identifier: <code>{{ cat.id }}</code></small>
+          </div>
+        {% endfor %}
+      </div>
+      <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid #334155;">
+        <a href="/handbook" target="_blank" style="color: #38bdf8; text-decoration: none; font-size: 0.8rem; font-weight: 600;">Open Full 11-Archetype Field Guide &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cumulative Assessment Modal -->
+  <div id="cumulative-modal">
+    <div class="modal-card">
+      <h2 style="margin: 0 0 0.5rem; font-size: 1.6rem; color: #f8fafc;">Assessment Queue Completed</h2>
+      <p style="color: #94a3b8; font-size: 0.9rem; margin: 0 0 1.5rem;">Cumulative performance review across all {{ total_assigned }} assigned masonry subjects.</p>
+      
+      <div id="cumulative-stats" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;"></div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <a id="cum-cert-btn" href="#" target="_blank" class="btn" style="background: #059669; text-align: center; text-decoration: none; display: none;">Claim Official Credential &rarr;</a>
         <a href="/" class="btn" style="background: #334155; text-align: center; text-decoration: none;">Return to Catalog</a>
       </div>
     </div>
@@ -102,13 +223,21 @@
 
   <script>
     const SLUG = "{{ wall.slug }}";
+    const ASSIGNMENT_CODE = "{{ assignment_code or '' }}";
+    const TOTAL_ASSIGNED = parseInt("{{ total_assigned or 1 }}");
+    const CURRENT_INDEX = parseInt("{{ current_index or 1 }}");
+    const TIME_LIMIT_MINUTES = parseInt("{{ time_limit_minutes or 0 }}");
+    const ASSIGNMENT_MODE = "{{ assignment_mode or 'exam' }}";
+    const WALL_TYPE = "{{ wall.wall_type }}";
+
     const img = document.getElementById("wall-img");
     const svg = document.getElementById("canvas-overlay");
     const container = document.getElementById("pan-zoom-container");
     const outer = document.getElementById("viewport-outer");
+    const loupe = document.getElementById("loupe-lens");
 
     let currentScale = 1.0, panX = 0, panY = 0;
-    let activeTool = "draw"; // 'draw' | 'pan'
+    let activeTool = "draw"; // 'draw' | 'pan' | 'loupe'
     let isPanning = false, panStartX = 0, panStartY = 0;
 
     let isDrawing = false, startX = 0, startY = 0, currentRect = null;
@@ -122,8 +251,6 @@
     }
 
     function syncOverlay() {
-      const rect = img.getBoundingClientRect();
-      const contRect = container.getBoundingClientRect();
       svg.style.width = `${img.offsetWidth}px`;
       svg.style.height = `${img.offsetHeight}px`;
       svg.style.left = `${img.offsetLeft}px`;
@@ -154,22 +281,49 @@
     // Tool Toggles
     const btnPan = document.getElementById("tool-pan");
     const btnDraw = document.getElementById("tool-draw");
+    const btnLoupe = document.getElementById("tool-loupe");
 
-    btnPan.addEventListener("click", () => {
-      activeTool = "pan";
-      btnPan.classList.add("active");
-      btnDraw.classList.remove("active");
-      svg.style.cursor = "grab";
+    function setTool(tool) {
+      activeTool = tool;
+      btnPan.classList.toggle("active", tool === "pan");
+      btnDraw.classList.toggle("active", tool === "draw");
+      btnLoupe.classList.toggle("active", tool === "loupe");
+      loupe.style.display = (tool === "loupe") ? "block" : "none";
+
+      if (tool === "pan") svg.style.cursor = "grab";
+      else if (tool === "draw") svg.style.cursor = "crosshair";
+      else if (tool === "loupe") svg.style.cursor = "zoom-in";
+    }
+
+    btnPan.addEventListener("click", () => setTool("pan"));
+    btnDraw.addEventListener("click", () => setTool("draw"));
+    btnLoupe.addEventListener("click", () => setTool("loupe"));
+
+    // Pan, Draw & Loupe Event Handling
+    outer.addEventListener("mousemove", (e) => {
+      if (activeTool === "loupe") {
+        const outerRect = outer.getBoundingClientRect();
+        const mouseX = e.clientX - outerRect.left;
+        const mouseY = e.clientY - outerRect.top;
+        
+        loupe.style.left = `${mouseX - 85}px`;
+        loupe.style.top = `${mouseY - 85}px`;
+
+        const imgRect = img.getBoundingClientRect();
+        const relX = (e.clientX - imgRect.left) / imgRect.width;
+        const relY = (e.clientY - imgRect.top) / imgRect.height;
+
+        if (relX >= 0 && relX <= 1 && relY >= 0 && relY <= 1) {
+          loupe.style.display = "block";
+          loupe.style.backgroundImage = `url(${img.src})`;
+          loupe.style.backgroundSize = `${imgRect.width * 2.5}px ${imgRect.height * 2.5}px`;
+          loupe.style.backgroundPosition = `-${relX * imgRect.width * 2.5 - 85}px -${relY * imgRect.height * 2.5 - 85}px`;
+        } else {
+          loupe.style.display = "none";
+        }
+      }
     });
 
-    btnDraw.addEventListener("click", () => {
-      activeTool = "draw";
-      btnDraw.classList.add("active");
-      btnPan.classList.remove("active");
-      svg.style.cursor = "crosshair";
-    });
-
-    // Pan & Draw Event Handling
     svg.addEventListener("mousedown", (e) => {
       if (activeTool === "pan") {
         isPanning = true;
@@ -178,8 +332,9 @@
         svg.style.cursor = "grabbing";
         return;
       }
-
+      if (activeTool === "loupe") return;
       if (submittedData) return;
+
       const bounds = svg.getBoundingClientRect();
       isDrawing = true;
       startX = (e.clientX - bounds.left) / currentScale;
@@ -227,10 +382,10 @@
 
       if (!isDrawing) return;
       isDrawing = false;
-      const bounds = svg.getBoundingClientRect();
       const naturalWidth = img.offsetWidth;
       const naturalHeight = img.offsetHeight;
 
+      const bounds = svg.getBoundingClientRect();
       const curX = (e.clientX - bounds.left) / currentScale;
       const curY = (e.clientY - bounds.top) / currentScale;
 
@@ -252,17 +407,25 @@
       }
     });
 
+    // Marker Management
     document.getElementById("add-marker-btn").addEventListener("click", () => {
       if (!pendingBox) {
         alert("Please outline a defect zone on the wall image first.");
         return;
       }
       const catSelect = document.getElementById("marker-category");
+      const sevSelect = document.getElementById("marker-severity");
+      const remSelect = document.getElementById("marker-remedial");
+
       markers.push({
         ...pendingBox,
         category: catSelect.value,
-        categoryLabel: catSelect.options[catSelect.selectedIndex].text
+        categoryLabel: catSelect.options[catSelect.selectedIndex].text,
+        severity: sevSelect.value,
+        remedial_action: remSelect.value,
+        remedialLabel: remSelect.options[remSelect.selectedIndex].text
       });
+
       pendingBox = null;
       if (currentRect) { currentRect.remove(); currentRect = null; }
       renderMarkers();
@@ -274,7 +437,7 @@
       svg.innerHTML = "";
 
       if (!submittedData) {
-        markers.forEach((m, idx) => {
+        markers.forEach((m) => {
           const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
           rect.setAttribute("x", m.x_min * boundsWidth);
           rect.setAttribute("y", m.y_min * boundsHeight);
@@ -285,11 +448,15 @@
           rect.setAttribute("fill", "rgba(56, 189, 248, 0.2)");
           svg.appendChild(rect);
         });
+
         document.getElementById("marker-count").innerText = markers.length;
         document.getElementById("marker-list").innerHTML = markers.map((m, i) => `
-          <div style="background: #0f172a; padding: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.8rem;">
-            <span>${m.categoryLabel}</span>
-            <button onclick="removeMarker(${i})" style="background: none; border: none; color: #f87171; cursor: pointer;">&times;</button>
+          <div style="background: #0f172a; padding: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.8rem; border-left: 3px solid #38bdf8;">
+            <div>
+              <strong>${m.categoryLabel}</strong>
+              <small style="display: block; color: #94a3b8;">${m.severity.toUpperCase()} &bull; ${m.remedialLabel}</small>
+            </div>
+            <button onclick="removeMarker(${i})" style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 1rem;">&times;</button>
           </div>
         `).join("");
       } else {
@@ -328,7 +495,9 @@
       renderMarkers();
     };
 
+    // Assessment Submission
     document.getElementById("submit-inspection-btn").addEventListener("click", async () => {
+      clearInterval(timerInterval);
       const studentName = document.getElementById("student-name").value.trim() || "Inspector Candidate";
       const cohortCode = document.getElementById("cohort-code").value.trim().toUpperCase() || "GENERAL";
 
@@ -338,10 +507,23 @@
         body: JSON.stringify({
           student_name: studentName,
           cohort_code: cohortCode,
+          assignment_code: ASSIGNMENT_CODE,
           markers: markers
         })
       });
       submittedData = await res.json();
+
+      // Record in Session Storage for Cumulative Tracker
+      if (ASSIGNMENT_CODE) {
+        const key = `GWI_SESSION_${ASSIGNMENT_CODE}`;
+        let queueHistory = JSON.parse(sessionStorage.getItem(key) || "[]");
+        queueHistory.push({
+          wall_title: "{{ wall.title }}",
+          score: submittedData.score,
+          passed: submittedData.passed
+        });
+        sessionStorage.setItem(key, JSON.stringify(queueHistory));
+      }
 
       document.getElementById("tagging-panel").style.display = "none";
       document.getElementById("setup-panel").style.display = "none";
@@ -353,8 +535,11 @@
       const fbContainer = document.getElementById("feedback-container");
       fbContainer.innerHTML = submittedData.feedback.map(f => `
         <div class="card-feedback card-${f.status}">
-          <strong style="display: block; text-transform: uppercase; font-size: 0.75rem; color: #94a3b8;">${f.status}</strong>
-          <strong>${f.title}</strong>
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <strong style="text-transform: uppercase; font-size: 0.72rem; color: #94a3b8;">${f.status}</strong>
+            <small style="color: #64748b;">${f.severity || ''}</small>
+          </div>
+          <strong style="display: block; margin-top: 2px;">${f.title}</strong>
           <p style="margin: 4px 0 0; font-size: 0.8rem; color: #cbd5e1;">${f.explanation}</p>
         </div>
       `).join("");
@@ -363,11 +548,51 @@
         const certBox = document.getElementById("cert-link-box");
         certBox.style.display = "block";
         document.getElementById("cert-btn").href = `/certificate/${submittedData.certificate_code}`;
+        
+        const cumCertBtn = document.getElementById("cum-cert-btn");
+        if (cumCertBtn) {
+          cumCertBtn.style.display = "block";
+          cumCertBtn.href = `/certificate/${submittedData.certificate_code}`;
+        }
       }
 
       renderMarkers();
     });
 
+    // Cumulative Modal Trigger
+    const btnShowCum = document.getElementById("btn-show-cumulative");
+    if (btnShowCum) {
+      btnShowCum.addEventListener("click", () => {
+        const key = `GWI_SESSION_${ASSIGNMENT_CODE}`;
+        const queueHistory = JSON.parse(sessionStorage.getItem(key) || "[]");
+        const statsEl = document.getElementById("cumulative-stats");
+
+        if (queueHistory.length > 0) {
+          const avg = Math.round(queueHistory.reduce((acc, curr) => acc + curr.score, 0) / queueHistory.length);
+          statsEl.innerHTML = `
+            <div style="background: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid #334155; text-align: center;">
+              <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Overall Cohort Standing</span>
+              <div style="font-size: 2.2rem; font-weight: 800; color: ${avg >= 70 ? '#34d399' : '#f87171'};">${avg}%</div>
+              <small style="color: #94a3b8;">${avg >= 70 ? 'Competence Standard Achieved' : 'Further Inspection Revision Required'}</small>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto;">
+              ${queueHistory.map((q, idx) => `
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: #0f172a; border-radius: 4px; font-size: 0.85rem;">
+                  <span>Wall ${idx + 1}: ${q.wall_title}</span>
+                  <strong style="color: ${q.passed ? '#34d399' : '#f87171'};">${q.score}%</strong>
+                </div>
+              `).join("")}
+            </div>
+          `;
+        } else {
+          statsEl.innerHTML = `<p style="color: #94a3b8;">No assignment queue history found.</p>`;
+        }
+
+        document.getElementById("cumulative-modal").style.display = "flex";
+      });
+    }
+
+    // Toggle Ground Truth / Student Layers
     document.getElementById("toggle-student").addEventListener("click", function() {
       showStudent = !showStudent;
       this.classList.toggle("active", showStudent);
@@ -379,6 +604,59 @@
       this.classList.toggle("active", showTruth);
       renderMarkers();
     });
+
+    // Field Handbook Drawer
+    const drawer = document.getElementById("handbook-drawer");
+    document.getElementById("btn-toggle-guide").addEventListener("click", toggleHandbook);
+    function toggleHandbook() {
+      drawer.classList.toggle("active");
+    }
+
+    // Senior Surveyor Hint (Practice Mode)
+    function showSurveyorHint() {
+      const hints = {
+        "brick_cavity": "Senior Advice: Examine the low-level damp course for salt blooms (efflorescence) and joint mortar erosion along outer wythe courses.",
+        "dry_stone": "Senior Advice: Check stone alignment along the coping spine. Look for lateral out-of-plumb bulging or missing through-stones in the middle tier.",
+        "lime_mortar": "Senior Advice: Test joints for deep sacrificial lime washout and check if vegetation roots have penetrated the core rubble.",
+        "ashlar": "Senior Advice: Look closely at fine arrises (<3mm joints). Search for stone exfoliation or oxidation fracturing around concealed iron cramps.",
+        "retaining_wall": "Senior Advice: Inspect drainage weep holes at the wall base for blockages and check for outward hydrostatic stone displacement.",
+        "cob_earth": "Senior Advice: Focus on the basal splash zone near the foundation plinth for rain undercutting and vertical desiccation cracks.",
+        "flint_knapped": "Senior Advice: Examine the chalk matrix surrounding individual flint nodules for unseating and loss of protective gallet dressing.",
+        "terracotta_faience": "Senior Advice: Inspect glazed faience skins for surface web crazing and rust stains indicating hidden iron anchor jacking.",
+        "concrete_block": "Senior Advice: Check horizontal bed joints for longitudinal shear fractures and check blocks for crystalline sulfate crumble.",
+        "boulder_fieldstone": "Senior Advice: Examine the base boulders for foundation slide-out and inspect voids where smaller chinking stones have washed away.",
+        "granite_quoin": "Senior Advice: Check corner dressing arrises for compressive crushing and check vertical quoin return joints for relief shear."
+      };
+      const hint = hints[WALL_TYPE] || "Senior Advice: Perform a systematic sweep starting from the foundation base and progress vertically along all bed joints.";
+      alert(hint);
+    }
+
+    // Timed Assessment Countdown
+    let timerInterval = null;
+    if (TIME_LIMIT_MINUTES > 0) {
+      let remainingSeconds = TIME_LIMIT_MINUTES * 60;
+      const displayEl = document.getElementById("timer-display");
+
+      function updateClock() {
+        const m = Math.floor(remainingSeconds / 60);
+        const s = remainingSeconds % 60;
+        displayEl.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+        if (remainingSeconds <= 60) {
+          document.getElementById("exam-timer-box").style.background = "#7f1d1d";
+        }
+
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          alert("Assessment time limit expired. Auto-submitting current markers.");
+          document.getElementById("submit-inspection-btn").click();
+        }
+        remainingSeconds--;
+      }
+
+      updateClock();
+      timerInterval = setInterval(updateClock, 1000);
+    }
   </script>
 </body>
 </html>

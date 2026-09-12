@@ -161,17 +161,28 @@
 
     /* Print Formatting */
     @media print {
-      body {
-        background: #ffffff;
-        padding: 0;
+      @page {
+        size: landscape;
+        margin: 0.8cm;
       }
-      .action-bar { display: none; }
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .action-bar { display: none !important; }
       .certificate-container {
-        border-color: #0f172a;
-        box-shadow: none;
-        max-width: 100%;
-        width: 100%;
+        border: 10px solid #1e293b !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 2rem 1.5rem !important;
+        background: #fdfbf7 !important;
         page-break-inside: avoid;
+      }
+      .inner-border {
+        border-color: #b45309 !important;
       }
     }
   </style>
@@ -221,13 +232,22 @@
           <div class="sig-title">Global Wall Inspector Board</div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://wall-inspector.onrender.com/certificate/{{ cert.certificate_code }}" alt="Verification QR" style="width: 72px; height: 72px; border: 1px solid #cbd5e1; padding: 3px; background: #ffffff; border-radius: 4px;">
+          <img id="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://wall-inspector.onrender.com/certificate/{{ cert.certificate_code }}" alt="Verification QR" style="width: 80px; height: 80px; border: 1px solid #cbd5e1; padding: 4px; background: #ffffff; border-radius: 4px;">
           <div class="sig-label" style="margin-top: 0.35rem;">Scan to Verify Accreditation</div>
-          <div class="sig-title">Digital Public Registry Token</div>
+          <div class="sig-title">Live Public Registry Token</div>
         </div>
       </div>
     </div>
   </div>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const fullUrl = encodeURIComponent(window.location.href);
+      const qrEl = document.getElementById("qr-img");
+      if (qrEl) {
+        qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${fullUrl}`;
+      }
+    });
+  </script>
 </body>
 </html>

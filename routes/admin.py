@@ -30,6 +30,7 @@ def add_defect(wall_id):
         y_max=float(data["y_max"]),
         category=data.get("category", "unspecified"),
         severity=data.get("severity", "moderate"),
+        remedial_action=data.get("remedial_action", "repoint_lime"),
         title=data.get("title", "Untitled Defect"),
         explanation=data.get("explanation", "")
     )

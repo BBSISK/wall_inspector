@@ -56,6 +56,13 @@
         <option value="critical">Critical</option>
       </select>
 
+      <label>Remedial Action Prescription</label>
+      <select id="defect-remedial">
+        {% for rem in remedial_options %}
+          <option value="{{ rem.id }}">{{ rem.label }}</option>
+        {% endfor %}
+      </select>
+
       <label>Educational Explanation</label>
       <textarea id="defect-explanation" rows="3" placeholder="Why this failure occurred and remediation needed..."></textarea>
 
@@ -180,7 +187,7 @@
             <strong style="color: #ef4444;">${d.title}</strong>
             <button onclick="deleteDefect('${d.id}')" style="background: none; border: none; color: #f87171; cursor: pointer;">&times;</button>
           </div>
-          <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.75rem;">${d.category} • ${d.severity}</p>
+          <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.75rem;">${d.category} • ${d.severity} • Rx: ${d.remedial_action || 'repoint_lime'}</p>
         </div>
       `).join("");
     }
@@ -201,6 +208,7 @@
         title: document.getElementById("defect-title").value || "Structural Defect",
         category: document.getElementById("defect-category").value,
         severity: document.getElementById("defect-severity").value,
+        remedial_action: document.getElementById("defect-remedial").value,
         explanation: document.getElementById("defect-explanation").value
       };
 

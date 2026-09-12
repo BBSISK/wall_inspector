@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Pathology Handbook - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+    .container { max-width: 1150px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    .header h1 { margin: 0; font-size: 2rem; }
+    .header p { margin: 0.4rem 0 0; color: #94a3b8; }
+    .btn-nav { background: #334155; color: #93c5fd; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    .btn-nav:hover { background: #475569; }
+    
+    /* Search & Archetype Filter */
+    .controls { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .search-box { flex: 1; min-width: 250px; }
+    .search-box input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 0.75rem 1rem; color: #f8fafc; font-size: 0.95rem; }
+    
+    .grid-archetypes { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.5rem; }
+    .arch-card { background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 1.5rem; display: flex; flex-direction: column; }
+    .arch-title { font-size: 1.25rem; margin: 0 0 0.5rem; color: #38bdf8; display: flex; justify-content: space-between; align-items: baseline; }
+    .arch-badge { font-size: 0.7rem; text-transform: uppercase; background: #0f172a; border: 1px solid #334155; padding: 2px 8px; border-radius: 4px; color: #94a3b8; }
+    .arch-desc { font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem; }
+    
+    .defect-list { background: #0f172a; border-radius: 6px; border: 1px solid #334155; padding: 0.85rem; margin-top: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+    .defect-item { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; }
+    .defect-lbl { font-weight: 600; color: #f1f5f9; }
+    .defect-tag { font-size: 0.7rem; color: #38bdf8; font-family: monospace; }
+    
+    /* Remedial Guide Section */
+    .remedial-section { margin-top: 3rem; background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 2rem; }
+    .remedial-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 1.25rem; }
+    .remedial-card { background: #0f172a; border-radius: 6px; border-left: 4px solid #059669; padding: 1rem; }
+    .remedial-title { font-size: 0.95rem; font-weight: 700; color: #34d399; margin: 0 0 0.4rem; }
+    .remedial-text { font-size: 0.8rem; color: #cbd5e1; line-height: 1.4; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Masonry Pathology & Diagnostic Field Handbook</h1>
+        <p>Comprehensive reference standard for 11 structural masonry archetypes, defect taxonomy, and conservation remedies.</p>
+      </div>
+      <div>
+        <a href="/portal" class="btn-nav" style="background: #2563eb; color: white; margin-right: 0.5rem;">Student Portal</a>
+        <a href="/" class="btn-nav">&larr; Wall Catalog</a>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-box">
+        <input type="text" id="handbook-search" placeholder="Filter archetypes, defect names, or pathology terms..." onkeyup="filterHandbook()">
+      </div>
+    </div>
+
+    <div class="grid-archetypes" id="archetypes-container">
+      {% for arch_key, defect_list in taxonomies.items() %}
+        <div class="arch-card" data-search="{{ arch_key }} {{ arch_key.replace('_', ' ') }} {% for d in defect_list %}{{ d.id }} {{ d.label }} {% endfor %}">
+          <div class="arch-title">
+            <span>{{ arch_key.replace('_', ' ').title() }}</span>
+            <span class="arch-badge">{{ defect_list|length }} Fault Codes</span>
+          </div>
+          <p class="arch-desc">
+            {% if arch_key == 'brick_cavity' %}
+              Dual-wythe modular clay or calcium silicate brick construction with metal wall ties and an internal cavity. Susceptible to moisture salt transport and frost heave.
+            {% elif arch_key == 'dry_stone' %}
+              Traditional gravity-interlocked stone masonry without mortar binder. Relies on hearting packing, through-stones, and friction against lateral thrust.
+            {% elif arch_key == 'lime_mortar' %}
+              Historic mass rubble or dressed masonry bedded with hydraulic or non-hydraulic lime. Sacrificial joints susceptible to chemical acid leaching and root expansion.
+            {% elif arch_key == 'ashlar' %}
+              Precision-cut stone blocks with hairline arrises (<3mm joints). Concentrated compressive loads expose iron cramp expansion fractures and face exfoliation.
+            {% elif arch_key == 'retaining_wall' %}
+              Earth-retaining stone or masonry structures resisting lateral pore-water pressure and soil shear. Critical vulnerability to clogged weep holes and basal slip.
+            {% elif arch_key == 'cob_earth' %}
+              Monolithic mass unbaked subsoil mixed with straw and water. Exceptional thermal mass but highly vulnerable to ground-splash undercut and desiccation fissures.
+            {% elif arch_key == 'flint_knapped' %}
+              Irregular or squared knapped flint nodules set in lime mortar matrix. Prone to unseating and loss of protective gallet dressings under freeze-thaw cycles.
+            {% elif arch_key == 'terracotta_faience' %}
+              Hollow-cast glazed architectural ceramic blocks tied to internal steel or masonry frame. Vulnerable to crazing and concealed iron bracket heave.
+            {% elif arch_key == 'concrete_block' %}
+              Standard modular lightweight or dense concrete masonry units. Prone to longitudinal bed shear, sulfate attack breakdown, and moisture movement.
+            {% elif arch_key == 'boulder_fieldstone' %}
+              Glacial erratic boulders and unshaped field dykes. Susceptible to basal sliding, pin chinking voiding, and perma-freeze frost heave.
+            {% elif arch_key == 'granite_quoin' %}
+              Heavy squared corner dressings stabilizing building returns. Vulnerable to concentrated quoin corner crush, lead dowel expansion, and return joint shear.
+            {% else %}
+              Specialized regional masonry construction exhibiting unique pathology characteristics.
+            {% endif %}
+          </p>
+
+          <div class="defect-list">
+            <span style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Pathology Taxonomy</span>
+            {% for d in defect_list %}
+              <div class="defect-item">
+                <span class="defect-lbl">&bull; {{ d.label }}</span>
+                <span class="defect-tag">Code: {{ d.id }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Remedial Actions Clinical Standard -->
+    <div class="remedial-section">
+      <h2 style="margin: 0; font-size: 1.4rem; color: #f8fafc;">Standard Conservation & Remedial Interventions</h2>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin: 0.3rem 0 1rem;">Official survey intervention codes prescribed under European and British masonry preservation standards.</p>
+      
+      <div class="remedial-grid">
+        {% for r in remedial_options %}
+          <div class="remedial-card">
+            <div class="remedial-title">{{ r.label }}</div>
+            <p class="remedial-text">
+              <strong>Prescription Code:</strong> <code>{{ r.id }}</code><br>
+              Applied when structural movement has stabilized or sacrificial joint degradation requires compatible breathable mortars or mechanical structural stitching.
+            </p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function filterHandbook() {
+      const query = document.getElementById("handbook-search").value.toLowerCase().trim();
+      const cards = document.querySelectorAll(".arch-card");
+      cards.forEach(card => {
+        const text = card.getAttribute("data-search").toLowerCase();
+        if (!query || text.includes(query)) {
+          card.style.display = "flex";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+

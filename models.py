@@ -56,6 +56,7 @@ class Defect(db.Model):
     y_max = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(50), nullable=False)
     severity = db.Column(db.String(20), default="moderate")
+    remedial_action = db.Column(db.String(150), default="repoint_lime")
     title = db.Column(db.String(100), nullable=False)
     explanation = db.Column(db.Text)
 
@@ -70,6 +71,7 @@ class Defect(db.Model):
             "y_max": self.y_max,
             "category": self.category,
             "severity": self.severity,
+            "remedial_action": self.remedial_action,
             "title": self.title,
             "explanation": self.explanation
         }
@@ -81,6 +83,7 @@ class AssessmentAttempt(db.Model):
     wall_id = db.Column(db.String(36), db.ForeignKey("walls.id"), nullable=False)
     student_session_id = db.Column(db.String(100), nullable=False)
     cohort_code = db.Column(db.String(50), default="GENERAL")
+    assignment_code = db.Column(db.String(50), nullable=True)
     student_name = db.Column(db.String(100), default="Anonymous")
     submitted_markers = db.Column(db.JSON)
     true_positives = db.Column(db.Integer, default=0)
@@ -104,10 +107,24 @@ class Assignment(db.Model):
     code = db.Column(db.String(30), unique=True, nullable=False)
     title = db.Column(db.String(150), nullable=False)
     wall_id = db.Column(db.String(36), nullable=True)
+    time_limit_minutes = db.Column(db.Integer, default=0)
+    mode = db.Column(db.String(20), default="exam")
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     walls = db.relationship("Wall", secondary=assignment_walls, backref=db.backref("assignments", lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "title": self.title,
+            "wall_id": self.wall_id,
+            "time_limit_minutes": self.time_limit_minutes or 0,
+            "mode": self.mode or "exam",
+            "is_active": self.is_active,
+            "walls_count": len(self.walls) if self.walls else (1 if self.wall_id else 0)
+        }
 
 class Certificate(db.Model):
     __tablename__ = "certificates"

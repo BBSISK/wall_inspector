@@ -59,6 +59,26 @@
           <label>Access Code (PIN)</label>
           <input type="text" name="code" placeholder="e.g. STONE-2026" style="text-transform: uppercase;" required>
 
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label>Examination Mode</label>
+              <select name="assignment_mode">
+                <option value="exam" selected>Exam (Strict Testing)</option>
+                <option value="practice">Practice (Surveyor Hints)</option>
+              </select>
+            </div>
+            <div>
+              <label>Time Limit per Wall</label>
+              <select name="time_limit_minutes">
+                <option value="0" selected>Untimed</option>
+                <option value="5">5 Minutes</option>
+                <option value="10">10 Minutes</option>
+                <option value="15">15 Minutes</option>
+                <option value="20">20 Minutes</option>
+              </select>
+            </div>
+          </div>
+
           <label>Assignment Strategy</label>
           <select name="assign_mode" id="assign-mode" onchange="toggleAssignMode(this.value)">
             <option value="selected">Select Specific Individual Walls (Multiple)</option>
@@ -148,6 +168,7 @@
               <th>PIN Code</th>
               <th>Assignment Title</th>
               <th>Wall Queue</th>
+              <th>Mode / Timer</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -159,11 +180,15 @@
                 <td>
                   <span class="badge-count">{{ a.walls|length }} wall{% if a.walls|length != 1 %}s{% endif %}</span>
                 </td>
+                <td>
+                  <span style="font-size: 0.75rem; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">{{ (a.mode or 'exam').title() }}</span>
+                  <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 4px;">{% if a.time_limit_minutes %}{{ a.time_limit_minutes }}m{% else %}Untimed{% endif %}</span>
+                </td>
                 <td><span style="color: #34d399; font-weight: bold;">Active</span></td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="4" style="text-align: center; padding: 2.5rem; color: #94a3b8;">No assignments issued yet.</td>
+                <td colspan="5" style="text-align: center; padding: 2.5rem; color: #94a3b8;">No assignments issued yet.</td>
               </tr>
             {% endfor %}
           </tbody>

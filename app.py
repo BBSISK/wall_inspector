@@ -80,6 +80,17 @@ TAXONOMY_BY_WALL_TYPE = {
     ]
 }
 
+REMEDIAL_OPTIONS = [
+    {"id": "repoint_lime", "label": "Hydraulic Lime Mortar Repointing (NHL 2 / 3.5)"},
+    {"id": "helical_stitch", "label": "Helical Stainless Steel Crack Stitching"},
+    {"id": "grout_injection", "label": "Internal Core Void Grout Injection"},
+    {"id": "rebuild_section", "label": "Localized Stone/Brick Dismantling & Rebuild Plumb"},
+    {"id": "drainage_relief", "label": "Weep Hole Core-Drilling & Hydrostatic Relief"},
+    {"id": "biocide_root", "label": "Controlled Biocide Treatment & Root Extraction"},
+    {"id": "underpin_base", "label": "Differential Foundation Underpinning"},
+    {"id": "monitor_gauge", "label": "Calibrated Tell-Tale Crack Gauge Monitoring"}
+]
+
 def calculate_iou(box_a, box_b):
     x_left = max(box_a["x_min"], box_b["x_min"])
     y_top = max(box_a["y_min"], box_b["y_min"])
@@ -124,10 +135,30 @@ def create_app(config_class=Config):
                     conn.execute(text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
                     conn.commit()
 
+            defect_cols = [c["name"] for c in inspector.get_columns("defects")]
+            if "remedial_action" not in defect_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE defects ADD COLUMN remedial_action VARCHAR(150) DEFAULT 'repoint_lime';"))
+                    conn.commit()
+
             attempt_cols = [c["name"] for c in inspector.get_columns("assessment_attempts")]
             if "cohort_code" not in attempt_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE assessment_attempts ADD COLUMN cohort_code VARCHAR(50) DEFAULT 'GENERAL';"))
+                    conn.commit()
+            if "assignment_code" not in attempt_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assessment_attempts ADD COLUMN assignment_code VARCHAR(50);"))
+                    conn.commit()
+
+            assign_cols = [c["name"] for c in inspector.get_columns("assignments")]
+            if "time_limit_minutes" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN time_limit_minutes INTEGER DEFAULT 0;"))
+                    conn.commit()
+            if "mode" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN mode VARCHAR(20) DEFAULT 'exam';"))
                     conn.commit()
         except Exception as e:
             print(f"Migration note: {e}")
@@ -163,6 +194,7 @@ def create_app(config_class=Config):
                         "target_type": "bounding_box",
                         "x_min": 0.18, "y_min": 0.20, "x_max": 0.82, "y_max": 0.80,
                         "category": "efflorescence", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
                         "title": "Crystalline Salt Efflorescence",
                         "explanation": "White salt deposits migrated through porous brickwork during moisture evaporation."
                     }
@@ -184,6 +216,7 @@ def create_app(config_class=Config):
                         "target_type": "bounding_box",
                         "x_min": 0.22, "y_min": 0.30, "x_max": 0.65, "y_max": 0.75,
                         "category": "lime_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
                         "title": "Deep Joint Lime Washout",
                         "explanation": "Driving rain and freeze-thaw cycles have eroded the sacrificial lime mortar bed."
                     }
@@ -205,6 +238,7 @@ def create_app(config_class=Config):
                         "target_type": "bounding_box",
                         "x_min": 0.35, "y_min": 0.25, "x_max": 0.70, "y_max": 0.68,
                         "category": "joint_separation", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
                         "title": "Ashlar Joint Shear & Separation",
                         "explanation": "Differential thermal movement and foundation settlement opening fine precision arrises."
                     }
@@ -226,6 +260,7 @@ def create_app(config_class=Config):
                         "target_type": "bounding_box",
                         "x_min": 0.28, "y_min": 0.35, "x_max": 0.75, "y_max": 0.85,
                         "category": "hydrostatic_bulge", "severity": "critical",
+                        "remedial_action": "drainage_relief",
                         "title": "Hydrostatic Outward Bulge",
                         "explanation": "Excess pore water pressure behind the masonry facing forcing stones out-of-plumb."
                     }
@@ -339,6 +374,7 @@ def create_app(config_class=Config):
                         y_max=d["y_max"],
                         category=d["category"],
                         severity=d["severity"],
+                        remedial_action=d.get("remedial_action", "repoint_lime"),
                         title=d["title"],
                         explanation=d["explanation"]
                     )
@@ -408,14 +444,29 @@ def create_app(config_class=Config):
 
         student_name = request.args.get("student_name", "Inspector Candidate")
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
+        next_wall_idx = (wall_idx + 1) if (wall_idx + 1) < len(assigned_walls) else None
+
         return render_template(
             "inspect.html",
             wall=wall.to_dict(),
             categories=categories,
+            remedial_options=REMEDIAL_OPTIONS,
             assignment_code=code,
+            assignment_title=assignment.title,
             student_name=student_name,
             total_assigned=len(assigned_walls),
-            current_index=wall_idx + 1
+            current_index=wall_idx + 1,
+            next_index=next_wall_idx,
+            time_limit_minutes=assignment.time_limit_minutes or 0,
+            assignment_mode=assignment.mode or "exam"
+        )
+
+    @app.route("/handbook")
+    def handbook():
+        return render_template(
+            "handbook.html",
+            taxonomies=TAXONOMY_BY_WALL_TYPE,
+            remedial_options=REMEDIAL_OPTIONS
         )
 
     # --- Instructor Assignment Creator with Filters & Bulk Assign ---
@@ -425,6 +476,8 @@ def create_app(config_class=Config):
             title = request.form.get("title", "Masonry Assessment").strip()
             code = request.form.get("code", "").strip().upper() or uuid.uuid4().hex[:6].upper()
             assign_mode = request.form.get("assign_mode", "selected")
+            time_limit_minutes = request.form.get("time_limit_minutes", 0, type=int)
+            mode = request.form.get("assignment_mode", "exam").strip()
 
             target_walls = []
             if assign_mode == "by_type":
@@ -449,6 +502,8 @@ def create_app(config_class=Config):
                 code=code,
                 title=title,
                 wall_id=target_walls[0].id if target_walls else None,
+                time_limit_minutes=time_limit_minutes,
+                mode=mode,
                 is_active=True
             )
             assignment.walls = target_walls
@@ -670,7 +725,12 @@ def create_app(config_class=Config):
     def admin_tagger(wall_id):
         wall = Wall.query.get_or_404(wall_id)
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
-        return render_template("tagger.html", wall=wall.to_dict(), categories=categories)
+        return render_template(
+            "tagger.html",
+            wall=wall.to_dict(),
+            categories=categories,
+            remedial_options=REMEDIAL_OPTIONS
+        )
 
     @app.route("/admin/walls/<wall_id>/defects", methods=["GET"])
     def get_admin_defects(wall_id):
@@ -690,6 +750,7 @@ def create_app(config_class=Config):
             y_max=float(data["y_max"]),
             category=data.get("category", "unspecified"),
             severity=data.get("severity", "moderate"),
+            remedial_action=data.get("remedial_action", "repoint_lime"),
             title=data.get("title", "Structural Defect"),
             explanation=data.get("explanation", "")
         )
@@ -708,7 +769,18 @@ def create_app(config_class=Config):
     def inspect_wall(wall_slug):
         wall = Wall.query.filter_by(slug=wall_slug, is_published=True).first_or_404()
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
-        return render_template("inspect.html", wall=wall.to_dict(), categories=categories)
+        return render_template(
+            "inspect.html",
+            wall=wall.to_dict(),
+            categories=categories,
+            remedial_options=REMEDIAL_OPTIONS,
+            assignment_code=None,
+            total_assigned=1,
+            current_index=1,
+            next_index=None,
+            time_limit_minutes=0,
+            assignment_mode="practice"
+        )
 
     @app.route("/inspect/<wall_slug>/submit", methods=["POST"])
     def submit_inspection(wall_slug):
@@ -718,6 +790,7 @@ def create_app(config_class=Config):
         submitted_markers = data.get("markers", [])
         student_name = data.get("student_name", "Inspector Candidate").strip()
         cohort_code = data.get("cohort_code", "GENERAL").strip().upper() or "GENERAL"
+        assignment_code = data.get("assignment_code", "").strip().upper() or None
         session_id = data.get("session_id", "session_default")
 
         ground_truth = Defect.query.filter_by(wall_id=wall.id).all()
@@ -727,6 +800,7 @@ def create_app(config_class=Config):
         partial_defect_ids = set()
         feedback = []
         false_positives = 0
+        earned_points = 0.0
 
         for marker in submitted_markers:
             best_iou = 0.0
@@ -745,30 +819,51 @@ def create_app(config_class=Config):
                         best_gt = gt
 
             if best_gt:
-                category_match = (marker.get("category") == best_gt["category"])
+                category_match = (marker.get("category") == best_gt.get("category"))
+                severity_match = (marker.get("severity") == best_gt.get("severity", "moderate"))
+                remedial_match = (marker.get("remedial_action") == best_gt.get("remedial_action", "repoint_lime"))
+
                 if best_iou >= 0.15:
-                    if category_match:
-                        matched_defect_ids.add(best_gt["id"])
-                        feedback.append({
-                            "title": best_gt["title"],
-                            "category": best_gt["category"],
-                            "status": "correct",
-                            "explanation": f"Diagnostic Confirmed (IoU {round(best_iou*100)}%): {best_gt['explanation']}"
-                        })
-                    else:
-                        feedback.append({
-                            "title": best_gt["title"],
-                            "category": best_gt["category"],
-                            "status": "misclassified",
-                            "explanation": f"Location identified, but fault was classified incorrectly. {best_gt['explanation']}"
-                        })
-                elif closest_dist <= 0.18 and category_match:
-                    partial_defect_ids.add(best_gt["id"])
+                    matched_defect_ids.add(best_gt["id"])
+                    # Location (0.60) + Category (0.20) + Severity (0.10) + Remediation (0.10)
+                    marker_points = 0.60
+                    if category_match: marker_points += 0.20
+                    if severity_match: marker_points += 0.10
+                    if remedial_match: marker_points += 0.10
+                    earned_points += marker_points
+
+                    status = "correct" if (category_match and severity_match and remedial_match) else ("partial" if category_match else "misclassified")
+                    desc = f"Target Identified (IoU {round(best_iou*100)}%). "
+                    if not category_match:
+                        desc += f"Category mismatch (classified as {marker.get('category')}, expected {best_gt.get('category')}). "
+                    if not severity_match:
+                        desc += f"Severity misjudged (rated {marker.get('severity')}, expected {best_gt.get('severity')}). "
+                    if not remedial_match:
+                        desc += f"Alternative remediation recommended (prescribed: {marker.get('remedial_action')}). "
+                    desc += f"Recommended intervention: {best_gt.get('remedial_action', 'repoint_lime')}. {best_gt.get('explanation', '')}"
+
                     feedback.append({
                         "title": best_gt["title"],
                         "category": best_gt["category"],
+                        "severity": best_gt.get("severity", "moderate"),
+                        "remedial_action": best_gt.get("remedial_action", "repoint_lime"),
+                        "status": status,
+                        "explanation": desc
+                    })
+                elif closest_dist <= 0.18 and category_match:
+                    partial_defect_ids.add(best_gt["id"])
+                    marker_points = 0.40
+                    if severity_match: marker_points += 0.10
+                    if remedial_match: marker_points += 0.10
+                    earned_points += marker_points
+
+                    feedback.append({
+                        "title": best_gt["title"],
+                        "category": best_gt["category"],
+                        "severity": best_gt.get("severity", "moderate"),
+                        "remedial_action": best_gt.get("remedial_action", "repoint_lime"),
                         "status": "partial",
-                        "explanation": f"Near-Target Identification: Center accurate. {best_gt['explanation']}"
+                        "explanation": f"Near-Target Identification: Center accurate. Remedial standard: {best_gt.get('remedial_action', 'repoint_lime')}. {best_gt.get('explanation', '')}"
                     })
                 else:
                     false_positives += 1
@@ -786,12 +881,14 @@ def create_app(config_class=Config):
                     feedback.append({
                         "title": gt["title"],
                         "category": gt["category"],
+                        "severity": gt.get("severity", "moderate"),
+                        "remedial_action": gt.get("remedial_action", "repoint_lime"),
                         "status": "missed",
-                        "explanation": f"Missed structural fault: {gt['explanation']}"
+                        "explanation": f"Missed structural pathology ({gt.get('severity', 'moderate')}). Prescription: {gt.get('remedial_action', 'repoint_lime')}. {gt.get('explanation', '')}"
                     })
 
         if total_defects > 0:
-            raw_score = ((full_hits * 1.0 + partial_hits * 0.70) / total_defects) * 100
+            raw_score = (earned_points / total_defects) * 100
             score = max(0.0, round(raw_score - (false_positives * 10), 1))
         else:
             score = 100.0 if false_positives == 0 else 0.0
@@ -802,6 +899,7 @@ def create_app(config_class=Config):
             wall_id=wall.id,
             student_session_id=session_id,
             cohort_code=cohort_code,
+            assignment_code=assignment_code,
             student_name=student_name,
             submitted_markers=submitted_markers,
             true_positives=full_hits + partial_hits,
@@ -855,6 +953,56 @@ def create_app(config_class=Config):
     def view_certificate(cert_code):
         cert = Certificate.query.filter_by(certificate_code=cert_code).first_or_404()
         return render_template("certificate.html", cert=cert)
+
+    @app.route("/admin/export/attempts.csv")
+    def export_attempts_csv():
+        import csv
+        import io
+        from flask import Response
+
+        selected_cohort = request.args.get("cohort", "").strip().upper()
+        selected_assignment = request.args.get("assignment", "").strip().upper()
+
+        query = AssessmentAttempt.query
+        if selected_cohort:
+            query = query.filter_by(cohort_code=selected_cohort)
+        if selected_assignment:
+            query = query.filter(
+                (AssessmentAttempt.cohort_code == selected_assignment) |
+                (AssessmentAttempt.assignment_code == selected_assignment) |
+                (AssessmentAttempt.student_session_id.like(f"%{selected_assignment}%"))
+            )
+
+        attempts = query.order_by(AssessmentAttempt.created_at.desc()).all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Attempt ID", "Date/Time UTC", "Student Name", "Assignment PIN",
+            "Cohort Code", "Wall ID", "Score %", "Status",
+            "True Hits", "False Alarms", "False Negatives"
+        ])
+        for a in attempts:
+            writer.writerow([
+                a.id,
+                a.created_at.strftime("%Y-%m-%d %H:%M:%S") if getattr(a, 'created_at', None) else "",
+                a.student_name,
+                a.assignment_code or "",
+                a.cohort_code or "GENERAL",
+                a.wall_id,
+                a.score_percentage,
+                "PASSED" if a.passed else "REVISE",
+                a.true_positives,
+                a.false_positives,
+                a.false_negatives
+            ])
+
+        filename = f"inspector_attempts_{selected_cohort or selected_assignment or 'ALL'}.csv"
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
 
     return app
 
