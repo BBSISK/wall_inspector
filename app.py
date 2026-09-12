@@ -122,6 +122,9 @@ def create_app(config_class=Config):
     upload_folder = os.path.join(app.root_path, "static", "img", "walls")
     os.makedirs(upload_folder, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = upload_folder
+    audio_folder = os.path.join(app.root_path, "static", "audio")
+    os.makedirs(audio_folder, exist_ok=True)
+    app.config["AUDIO_FOLDER"] = audio_folder
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
     db.init_app(app)
@@ -160,6 +163,20 @@ def create_app(config_class=Config):
             if "mode" not in assign_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE assignments ADD COLUMN mode VARCHAR(20) DEFAULT 'exam';"))
+                    conn.commit()
+
+            sub_cols = [c["name"] for c in inspector.get_columns("student_submissions")]
+            if "instructor_badge" not in sub_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE student_submissions ADD COLUMN instructor_badge VARCHAR(100);"))
+                    conn.commit()
+            if "instructor_voice_url" not in sub_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE student_submissions ADD COLUMN instructor_voice_url VARCHAR(500);"))
+                    conn.commit()
+            if "tilt_angle" not in sub_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE student_submissions ADD COLUMN tilt_angle FLOAT;"))
                     conn.commit()
         except Exception as e:
             print(f"Migration note: {e}")
@@ -1427,6 +1444,12 @@ def create_app(config_class=Config):
                 filename = f"{sub_slug}{ext}"
                 file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
+            raw_tilt = request.form.get("tilt_angle")
+            try:
+                tilt_angle = float(raw_tilt) if raw_tilt not in (None, "") else None
+            except Exception:
+                tilt_angle = None
+
             submission = StudentSubmission(
                 student_name=student_name,
                 student_identifier=student_identifier,
@@ -1436,9 +1459,69 @@ def create_app(config_class=Config):
                 image_filename=filename,
                 image_url_direct=image_url_direct,
                 rubric_scores=rubric_scores,
-                self_critique=self_critique
+                self_critique=self_critique,
+                tilt_angle=tilt_angle
             )
             db.session.add(submission)
+            db.session.commit()
+            return jsonify({"success": True, "submission": submission.to_dict()})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/student/submission/<sub_id>/review", methods=["POST"])
+    def api_review_student_submission(sub_id):
+        try:
+            submission = StudentSubmission.query.get(sub_id)
+            if not submission:
+                return jsonify({"success": False, "error": "Submission not found"}), 404
+
+            feedback = ""
+            badge = ""
+            voice_url = ""
+
+            if request.is_json:
+                data = request.get_json() or {}
+                feedback = data.get("instructor_feedback", "").strip()
+                badge = data.get("instructor_badge", "").strip()
+                voice_url = data.get("instructor_voice_url", "").strip()
+            else:
+                feedback = request.form.get("instructor_feedback", "").strip()
+                badge = request.form.get("instructor_badge", "").strip()
+                voice_url = request.form.get("instructor_voice_url", "").strip()
+
+                voice_file = request.files.get("voice_audio")
+                if voice_file and voice_file.filename:
+                    voice_filename = f"voice-{sub_id}-{uuid.uuid4().hex[:6]}.webm"
+                    c_url = os.getenv("CLOUDINARY_URL", "").strip()
+                    if c_url:
+                        try:
+                            cloud_res = cloudinary.uploader.upload(
+                                voice_file,
+                                folder="wall_inspector/voice_critiques",
+                                public_id=os.path.splitext(voice_filename)[0],
+                                resource_type="auto"
+                            )
+                            voice_url = cloud_res.get("secure_url")
+                        except Exception as ce:
+                            print(f"Cloudinary audio fallback: {ce}")
+                            voice_file.seek(0)
+                            audio_path = os.path.join(app.root_path, "static", "audio")
+                            os.makedirs(audio_path, exist_ok=True)
+                            voice_file.save(os.path.join(audio_path, voice_filename))
+                            voice_url = f"/static/audio/{voice_filename}"
+                    else:
+                        audio_path = os.path.join(app.root_path, "static", "audio")
+                        os.makedirs(audio_path, exist_ok=True)
+                        voice_file.save(os.path.join(audio_path, voice_filename))
+                        voice_url = f"/static/audio/{voice_filename}"
+
+            submission.instructor_feedback = feedback
+            if badge:
+                submission.instructor_badge = badge
+            if voice_url:
+                submission.instructor_voice_url = voice_url
+
             db.session.commit()
             return jsonify({"success": True, "submission": submission.to_dict()})
         except Exception as e:

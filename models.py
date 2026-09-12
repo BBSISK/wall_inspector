@@ -151,6 +151,9 @@ class StudentSubmission(db.Model):
     rubric_scores = db.Column(db.JSON, default=dict)
     self_critique = db.Column(db.Text, nullable=True)
     instructor_feedback = db.Column(db.Text, nullable=True)
+    instructor_badge = db.Column(db.String(100), nullable=True)
+    instructor_voice_url = db.Column(db.String(500), nullable=True)
+    tilt_angle = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -166,5 +169,8 @@ class StudentSubmission(db.Model):
             "rubric_scores": self.rubric_scores or {},
             "self_critique": self.self_critique or "",
             "instructor_feedback": self.instructor_feedback or "",
+            "instructor_badge": self.instructor_badge or "",
+            "instructor_voice_url": self.instructor_voice_url or "",
+            "tilt_angle": self.tilt_angle,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else ""
         }

@@ -14,6 +14,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/student-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/student-512.png">
   <link rel="manifest" href="/manifest-student.json">
+  <script src="/static/js/mobile_pwa_tools.js"></script>
   <title>Student Field Portfolio & Self-Critique - Global Wall Inspector</title>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -330,6 +331,20 @@
     </div>
   </div>
 
+  <!-- Rural Offline Sync Banner -->
+  <div id="offline-banner" style="display: none; width: 100%; max-width: 480px; background: linear-gradient(90deg, #065f46, #059669); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 0.85rem; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 1.3rem;">📡</span>
+      <div>
+        <strong style="font-size: 0.84rem; color: #ffffff; display: block;">Rural Field Mode Active</strong>
+        <small style="font-size: 0.72rem; color: #a7f3d0;"><span id="offline-count">0</span> practical workpiece(s) queued offline</small>
+      </div>
+    </div>
+    <button type="button" id="btn-manual-sync" onclick="triggerManualSync()" style="background: #ffffff; color: #065f46; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+      Sync Now
+    </button>
+  </div>
+
   <!-- PWA Install Banner -->
   <div id="pwa-install-banner" style="display: none; width: 100%; max-width: 480px; background: linear-gradient(90deg, #0369a1, #0284c7); border-radius: 10px; padding: 10px 14px; margin-bottom: 0.85rem; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);">
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -370,9 +385,13 @@
       <input type="hidden" name="student_name" id="form-student-name">
       <input type="hidden" name="student_identifier" id="form-student-id">
       <input type="hidden" name="cohort_code" id="form-cohort-code" value="GENERAL">
+      <input type="hidden" name="tilt_angle" id="form-tilt-angle">
 
       <!-- Camera Viewfinder -->
       <div class="viewfinder-card" id="viewfinder" onclick="triggerCamera()">
+        <!-- Plumb-Bob AR HUD Overlay -->
+        <div id="hud-overlay" style="display: none; position: absolute; inset: 0; z-index: 5; pointer-events: none;"></div>
+
         <div class="viewfinder-prompt" id="prompt-box">
           <div style="font-size: 2.8rem;">📷</div>
           <strong style="font-size: 1rem; color: #38bdf8;">Photograph Your Workpiece</strong>
@@ -381,6 +400,17 @@
         <img id="preview-img" class="viewfinder-img" alt="Workpiece Preview">
         <button type="button" class="btn-retake" id="btn-retake" onclick="triggerCamera(event)">↺ Retake</button>
         <input type="file" id="work_image" name="work_image" accept="image/*" capture="environment" style="display: none;" onchange="previewPhoto(event)" required>
+      </div>
+
+      <!-- Mason's Plumb HUD Toolbar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; margin-bottom: 6px;">
+        <button type="button" id="btn-toggle-hud" onclick="toggleHUD(event)" style="background: #1e293b; color: #38bdf8; border: 1px solid #0284c7; padding: 6px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+          <span>📐 Plumb & Batter HUD</span>
+        </button>
+        <div id="hud-readout" style="font-size: 0.8rem; font-family: monospace; color: #94a3b8;">Plumb: Idle</div>
+        <button type="button" id="btn-stamp-tilt" onclick="stampTilt(event)" style="display: none; background: #0284c7; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+          📍 Stamp Tilt
+        </button>
       </div>
 
       <!-- Exercise Metadata & Self-Critique -->
@@ -597,13 +627,98 @@
       });
     }
 
-    // Submit handler
+    // Plumb HUD & Offline Store Initialization
+    const plumbHUD = new MasonPlumbHUD('hud-overlay', 'hud-readout', 'form-tilt-angle');
+    const offlineStore = new GWIOfflineStore();
+
+    async function checkOfflineQueue() {
+      const count = await offlineStore.getPendingCount();
+      const banner = document.getElementById('offline-banner');
+      const countEl = document.getElementById('offline-count');
+      if (banner && countEl) {
+        if (count > 0 || !navigator.onLine) {
+          banner.style.display = 'flex';
+          countEl.innerText = count;
+        } else {
+          banner.style.display = 'none';
+        }
+      }
+    }
+    checkOfflineQueue();
+    window.addEventListener('online', checkOfflineQueue);
+    window.addEventListener('offline', checkOfflineQueue);
+
+    async function triggerManualSync() {
+      const syncBtn = document.getElementById('btn-manual-sync');
+      if (syncBtn) syncBtn.innerText = "Syncing...";
+      const res = await offlineStore.syncPendingUploads((synced) => {
+        alert(`✅ Successfully synced ${synced} queued practical workpiece(s) to your personal portfolio!`);
+        loadPortfolioFeed();
+      });
+      await checkOfflineQueue();
+      if (syncBtn) syncBtn.innerText = "Sync Now";
+    }
+
+    async function toggleHUD(e) {
+      e.stopPropagation();
+      const active = await plumbHUD.toggle();
+      const btn = document.getElementById('btn-toggle-hud');
+      const stampBtn = document.getElementById('btn-stamp-tilt');
+      if (active) {
+        btn.style.background = '#0284c7';
+        btn.style.color = '#ffffff';
+        stampBtn.style.display = 'inline-block';
+      } else {
+        btn.style.background = '#1e293b';
+        btn.style.color = '#38bdf8';
+        stampBtn.style.display = 'none';
+      }
+    }
+
+    function stampTilt(e) {
+      e.stopPropagation();
+      const angle = plumbHUD.stampCurrentTilt();
+      const readout = document.getElementById('hud-readout');
+      if (readout) {
+        readout.innerHTML = `<span style="color:#38bdf8; font-weight:800;">📍 Stamped: ${angle}°</span>`;
+      }
+      alert(`📍 Stamped Plumb Angle: ${angle}° into workpiece submission.`);
+    }
+
+    // Submit handler with Rural Offline Sync
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       btnUpload.disabled = true;
-      btnUpload.innerHTML = `<span>⏳ Uploading to Personal Cloud Folder...</span>`;
+
+      const fileInput = document.getElementById("work_image");
+      if (!fileInput.files || !fileInput.files[0]) {
+        alert("Please photograph your masonry workpiece first.");
+        btnUpload.disabled = false;
+        return;
+      }
 
       const formData = new FormData(form);
+
+      // Check if user is offline in rural workshop / quarry
+      if (!navigator.onLine) {
+        const formObj = {};
+        formData.forEach((val, key) => {
+          if (key !== 'work_image') formObj[key] = val;
+        });
+        await offlineStore.savePendingUpload('student', formObj, fileInput.files[0]);
+        alert("📡 Saved in Rural Offline Storage!\n\nYour coursework photo and self-critique rubric have been safely queued. They will automatically upload as soon as cellular or Wi-Fi signal is restored.");
+        await checkOfflineQueue();
+        form.reset();
+        previewImg.style.display = "none";
+        promptBox.style.display = "flex";
+        btnRetake.style.display = "none";
+        viewfinder.classList.remove("has-photo");
+        btnUpload.disabled = false;
+        loadIdentity();
+        return;
+      }
+
+      btnUpload.innerHTML = `<span>⏳ Uploading to Personal Cloud Folder...</span>`;
 
       try {
         const res = await fetch("/mobile/student/upload", {
@@ -613,7 +728,7 @@
         const data = await res.json();
 
         if (res.ok && data.success) {
-          alert("Workpiece uploaded to your personal portfolio folder successfully!");
+          alert("✓ Workpiece uploaded to your personal portfolio folder successfully!");
           form.reset();
           previewImg.style.display = "none";
           promptBox.style.display = "flex";
@@ -629,9 +744,27 @@
           btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
         }
       } catch (err) {
-        alert("Upload error: " + err.message);
-        btnUpload.disabled = false;
-        btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
+        // Offer offline fallback if connection dropped
+        const queueIt = confirm("⚠️ Network dropout detected.\n\nWould you like to save this practical coursework in your rural offline queue so it auto-uploads when signal returns?");
+        if (queueIt) {
+          const formObj = {};
+          formData.forEach((val, key) => {
+            if (key !== 'work_image') formObj[key] = val;
+          });
+          await offlineStore.savePendingUpload('student', formObj, fileInput.files[0]);
+          await checkOfflineQueue();
+          alert("✓ Queued in rural offline storage!");
+          form.reset();
+          previewImg.style.display = "none";
+          promptBox.style.display = "flex";
+          btnRetake.style.display = "none";
+          viewfinder.classList.remove("has-photo");
+          btnUpload.disabled = false;
+          loadIdentity();
+        } else {
+          btnUpload.disabled = false;
+          btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
+        }
       }
     });
 
@@ -672,7 +805,8 @@
                 </div>
                 <h4 class="portfolio-title">${item.title}</h4>
 
-                <div style="display: flex; gap: 0.5rem; font-size: 0.72rem; flex-wrap: wrap;">
+                <!-- 4-star rubric scores -->
+                <div style="display: flex; gap: 0.4rem; font-size: 0.72rem; flex-wrap: wrap;">
                   <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">
                     Joint: <strong>${rub.joint_finish || '-'}/5 ★</strong>
                   </span>
@@ -685,15 +819,41 @@
                   <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">
                     Arris: <strong>${rub.arris_cleanliness || '-'}/5 ★</strong>
                   </span>
+                  ${item.tilt_angle !== null && item.tilt_angle !== undefined ? `
+                    <span style="background: #1e293b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; border: 1px solid #0284c7;">
+                      📐 Plumb: <strong>${item.tilt_angle}°</strong>
+                    </span>
+                  ` : ''}
                 </div>
 
+                <!-- Self Critique reflection -->
                 <div class="critique-quote">
                   "${item.self_critique || 'Self-evaluation completed.'}"
                 </div>
 
+                <!-- Instructor Master Mason Badge -->
+                ${item.instructor_badge ? `
+                  <div style="margin-top: 0.6rem; display: flex; align-items: center;">
+                    <span style="background: linear-gradient(90deg, #1e3a8a, #1d4ed8); color: #bfdbfe; border: 1px solid #3b82f6; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(59,130,246,0.3);">
+                      🏆 <span>${item.instructor_badge}</span>
+                    </span>
+                  </div>
+                ` : ''}
+
+                <!-- Instructor Voice Critique Memo -->
+                ${item.instructor_voice_url ? `
+                  <div style="background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; padding: 8px 10px; margin-top: 0.5rem;">
+                    <div style="font-size: 0.74rem; color: #38bdf8; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                      <span>🎙️ Instructor Voice Note</span>
+                    </div>
+                    <audio controls style="width: 100%; height: 32px;" src="${item.instructor_voice_url}"></audio>
+                  </div>
+                ` : ''}
+
+                <!-- Instructor Written Feedback -->
                 ${item.instructor_feedback ? `
-                  <div style="background: #064e3b; border-left: 3px solid #10b981; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.8rem; color: #a7f3d0; margin-top: 0.25rem;">
-                    <strong>Instructor Feedback:</strong> ${item.instructor_feedback}
+                  <div style="background: #064e3b; border-left: 3px solid #10b981; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.8rem; color: #a7f3d0; margin-top: 0.5rem;">
+                    <strong>Instructor Critique:</strong> ${item.instructor_feedback}
                   </div>
                 ` : ''}
               </div>
