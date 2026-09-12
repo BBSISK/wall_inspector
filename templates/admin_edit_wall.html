@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Wall - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+    .container { max-width: 650px; margin: 0 auto; background: #1e293b; padding: 2rem; border-radius: 8px; border: 1px solid #334155; }
+    h2 { margin-top: 0; }
+    label { display: block; font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; margin-bottom: 0.25rem; font-weight: 600; }
+    input, select, textarea { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; }
+    .current-img-preview { width: 100%; height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #334155; margin-top: 0.5rem; background: #0b1329; }
+    .btn { display: inline-block; background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 6px; cursor: pointer; margin-top: 1.5rem; width: 100%; font-weight: 600; }
+    .btn:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem;">&larr; Return to Catalog</a>
+    <h2>Edit Wall Details & Photo</h2>
+    
+    <div style="margin-bottom: 1rem;">
+      <label>Current Photo Preview</label>
+      <img src="{{ wall.image_url }}" alt="{{ wall.title }}" class="current-img-preview">
+    </div>
+
+    <form action="/admin/walls/{{ wall.id }}/edit" method="POST" enctype="multipart/form-data">
+      <label>Upload Replacement Photo (Optional)</label>
+      <input type="file" name="wall_image" accept="image/*">
+      <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">Leave empty if you only want to update titles/descriptions.</small>
+
+      <label>Wall Title</label>
+      <input type="text" name="title" value="{{ wall.title }}" required>
+
+      <label>Description & Architectural Context</label>
+      <textarea name="description" rows="3">{{ wall.description or '' }}</textarea>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+          <label>Wall Type</label>
+          <select name="wall_type">
+            <option value="dry_stone" {% if wall.wall_type == 'dry_stone' %}selected{% endif %}>Dry Stone</option>
+            <option value="brick_cavity" {% if wall.wall_type == 'brick_cavity' %}selected{% endif %}>Brick Cavity</option>
+            <option value="lime_mortar" {% if wall.wall_type == 'lime_mortar' %}selected{% endif %}>Historic Lime Mortar</option>
+            <option value="ashlar" {% if wall.wall_type == 'ashlar' %}selected{% endif %}>Dressed Ashlar</option>
+            <option value="retaining_wall" {% if wall.wall_type == 'retaining_wall' %}selected{% endif %}>Retaining Wall</option>
+          </select>
+        </div>
+        <div>
+          <label>Difficulty</label>
+          <select name="difficulty">
+            <option value="beginner" {% if wall.difficulty == 'beginner' %}selected{% endif %}>Beginner</option>
+            <option value="intermediate" {% if wall.difficulty == 'intermediate' %}selected{% endif %}>Intermediate</option>
+            <option value="advanced" {% if wall.difficulty == 'advanced' %}selected{% endif %}>Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+          <label>Country</label>
+          <input type="text" name="country" value="{{ wall.country }}" required>
+        </div>
+        <div>
+          <label>Region / County</label>
+          <input type="text" name="region" value="{{ wall.region or '' }}">
+        </div>
+      </div>
+
+      <button type="submit" class="btn">Save & Update Wall &rarr;</button>
+    </form>
+  </div>
+</body>
+</html>
