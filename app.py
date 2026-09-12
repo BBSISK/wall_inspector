@@ -558,23 +558,42 @@ def create_app(config_class=Config):
     @app.route("/dashboard")
     def dashboard():
         selected_cohort = request.args.get("cohort", "").strip().upper()
+        selected_assignment = request.args.get("assignment", "").strip().upper()
+
         query = AssessmentAttempt.query
         if selected_cohort:
             query = query.filter_by(cohort_code=selected_cohort)
+        if selected_assignment:
+            # Match attempts marked with the assignment code in feedback or cohort
+            query = query.filter(
+                (AssessmentAttempt.cohort_code == selected_assignment) |
+                (AssessmentAttempt.student_session_id.like(f"%{selected_assignment}%"))
+            )
 
         attempts_raw = query.all()
         attempts_raw.sort(key=lambda x: getattr(x, 'created_at', None) or datetime.min, reverse=True)
-        attempts = attempts_raw[:40]
+        attempts = attempts_raw[:50]
 
         all_attempts = AssessmentAttempt.query.all()
         cohorts = sorted(list(set(a.cohort_code or "GENERAL" for a in all_attempts)))
+        assignments = Assignment.query.order_by(Assignment.created_at.desc()).all()
 
         total_attempts = len(attempts_raw)
         total_passed = sum(1 for a in attempts_raw if getattr(a, 'passed', False))
         pass_rate = round((total_passed / total_attempts * 100), 1) if total_attempts > 0 else 0
         avg_score = round(sum(a.score_percentage for a in attempts_raw) / total_attempts, 1) if total_attempts > 0 else 0.0
 
-        certificates = Certificate.query.all()
+        # Analytics: Top Missed Faults
+        missed_counts = {}
+        for a in attempts_raw:
+            if a.feedback_notes and isinstance(a.feedback_notes, dict):
+                for item in a.feedback_notes.get("items", []):
+                    if item.get("status") in ["missed", "misclassified"]:
+                        fault_label = item.get("title", item.get("category", "Unspecified"))
+                        missed_counts[fault_label] = missed_counts.get(fault_label, 0) + 1
+
+        top_missed = sorted(missed_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        certificates = Certificate.query.order_by(Certificate.issued_at.desc()).all()
 
         return render_template(
             "dashboard.html",
@@ -584,7 +603,10 @@ def create_app(config_class=Config):
             pass_rate=pass_rate,
             avg_score=avg_score,
             cohorts=cohorts,
-            selected_cohort=selected_cohort
+            assignments=assignments,
+            selected_cohort=selected_cohort,
+            selected_assignment=selected_assignment,
+            top_missed=top_missed
         )
 
     @app.route("/admin/walls/new", methods=["GET", "POST"])
