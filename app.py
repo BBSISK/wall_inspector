@@ -74,6 +74,13 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        # Self-healing migration for SQLite
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
+                conn.commit()
+        except Exception:
+            pass
 
         # Seed baseline Industrial Brick Wall if missing
         brick = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
