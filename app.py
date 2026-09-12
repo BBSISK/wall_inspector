@@ -47,6 +47,36 @@ TAXONOMY_BY_WALL_TYPE = {
         {"id": "hydrostatic_bulge", "label": "Hydrostatic Outward Bulge"},
         {"id": "weep_blockage", "label": "Blocked / Missing Weep Hole Drainage"},
         {"id": "shear_slip", "label": "Base Shear Foundation Displacement"}
+    ],
+    "cob_earth": [
+        {"id": "basal_erosion", "label": "Basal Splash / Ground Moisture Undercut"},
+        {"id": "shrinkage_fissure", "label": "Vertical Desiccation / Shrinkage Fracture"},
+        {"id": "compressive_slump", "label": "Plastic Compression Bulge"}
+    ],
+    "flint_knapped": [
+        {"id": "flint_unseating", "label": "Knapped Flint Dislodgement / Popping"},
+        {"id": "matrix_washout", "label": "Lime Matrix Weathering"},
+        {"id": "gallet_loss", "label": "Flint Gallet Dressing Loss"}
+    ],
+    "terracotta_faience": [
+        {"id": "glaze_crazing", "label": "Surface Glaze Spall / Crazing"},
+        {"id": "iron_bracket_heave", "label": "Sub-surface Tie / Cramp Jacking"},
+        {"id": "web_shear", "label": "Hollow Terracotta Core Fracture"}
+    ],
+    "concrete_block": [
+        {"id": "block_bed_crack", "label": "Longitudinal Bed Shear Fracture"},
+        {"id": "sulfate_crumble", "label": "Sulfate Attack Binder Degradation"},
+        {"id": "face_shell_spall", "label": "Cavity Web Shear Failure"}
+    ],
+    "boulder_fieldstone": [
+        {"id": "roll_out", "label": "Basal Boulder Foundation Roll-Out"},
+        {"id": "core_void", "label": "Chinking Pin Stone Loss & Voids"},
+        {"id": "frost_heave", "label": "Perma-Freeze Lateral Displacement"}
+    ],
+    "granite_quoin": [
+        {"id": "arment_crushing", "label": "Quoin Angle Compressive Crushing"},
+        {"id": "lead_plug_heave", "label": "Lead Dowel / Weather Expansion Split"},
+        {"id": "relief_shear", "label": "Ashlar Return Joint Displacement"}
     ]
 }
 
@@ -102,7 +132,7 @@ def create_app(config_class=Config):
         except Exception as e:
             print(f"Migration note: {e}")
 
-        # Seed Demo Certificate if missing
+        # Seed Demo Certificate
         cert_code = "GWI-DEMO2026"
         demo_cert = Certificate.query.filter_by(certificate_code=cert_code).first()
         if not demo_cert:
@@ -200,12 +230,89 @@ def create_app(config_class=Config):
                         "explanation": "Excess pore water pressure behind the masonry facing forcing stones out-of-plumb."
                     }
                 ]
+            },
+            {
+                "slug": "historic-cob-earth-structure",
+                "title": "Vernacular Cob & Rammed Earth Wall",
+                "description": "Mass-earth subsoil and straw wall exhibiting basal rain-splash erosion and vertical desiccation cracks.",
+                "country": "Ireland",
+                "region": "Wexford",
+                "wall_type": "cob_earth",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": None,
+                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Cob+Earth+Structure",
+                "defects": []
+            },
+            {
+                "slug": "knapped-flint-lime-facade",
+                "title": "Knapped Flint & Flushwork Wall",
+                "description": "Decorative and protective knapped field-flint facing showing chalk-matrix erosion and stone pop-outs.",
+                "country": "United Kingdom",
+                "region": "Norfolk",
+                "wall_type": "flint_knapped",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": None,
+                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Knapped+Flint+Wall",
+                "defects": []
+            },
+            {
+                "slug": "glazed-architectural-terracotta",
+                "title": "Edwardian Architectural Terracotta & Faience",
+                "description": "Hollow glazed terracotta units experiencing hidden iron anchor corrosion and spider-web surface crazing.",
+                "country": "United Kingdom",
+                "region": "Birmingham",
+                "wall_type": "terracotta_faience",
+                "structural_function": "curtain",
+                "difficulty": "advanced",
+                "image_filename": None,
+                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Terracotta+Faience",
+                "defects": []
+            },
+            {
+                "slug": "hollow-concrete-blockwork-pier",
+                "title": "Modular Concrete Block Boundary Wall",
+                "description": "Core-filled concrete masonry blocks showing bed-joint shear fractures and moisture efflorescence.",
+                "country": "Ireland",
+                "region": "Cork",
+                "wall_type": "concrete_block",
+                "structural_function": "boundary",
+                "difficulty": "beginner",
+                "image_filename": None,
+                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Concrete+Blockwork",
+                "defects": []
+            },
+            {
+                "slug": "cyclopean-boulder-fieldstone-wall",
+                "title": "Cyclopean Glacial Boulder Field Wall",
+                "description": "Massive unshaped erratic granite boulders showing basal sliding and lost pin chinking.",
+                "country": "Ireland",
+                "region": "Donegal",
+                "wall_type": "boulder_fieldstone",
+                "structural_function": "retaining",
+                "difficulty": "intermediate",
+                "image_filename": None,
+                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Boulder+Fieldstone",
+                "defects": []
+            },
+            {
+                "slug": "granite-quoin-dressed-corner",
+                "title": "Dressed Granite Quoin & Arris Corner",
+                "description": "Heavy squared granite quoin blocks displaying arris edge spalling and dowel joint heaving.",
+                "country": "Ireland",
+                "region": "Dublin",
+                "wall_type": "granite_quoin",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": None,
+                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Granite+Quoins",
+                "defects": []
             }
         ]
 
-        # Guard: Only seed if database is entirely empty
-        if Wall.query.count() == 0:
-            for seed in seed_catalog:
+        for seed in seed_catalog:
+            if not Wall.query.filter_by(slug=seed["slug"]).first():
                 w = Wall(
                     slug=seed["slug"],
                     title=seed["title"],
@@ -222,7 +329,7 @@ def create_app(config_class=Config):
                 db.session.add(w)
                 db.session.commit()
 
-                for d in seed["defects"]:
+                for d in seed.get("defects", []):
                     gt = Defect(
                         wall_id=w.id,
                         target_type=d["target_type"],
@@ -240,8 +347,79 @@ def create_app(config_class=Config):
 
     @app.route("/")
     def index():
+        query = Wall.query.filter_by(is_published=True)
+
+        selected_type = request.args.get("wall_type", "").strip()
+        selected_difficulty = request.args.get("difficulty", "").strip()
+        selected_location = request.args.get("country", "").strip()
+
+        if selected_type:
+            query = query.filter(Wall.wall_type == selected_type)
+        if selected_difficulty:
+            query = query.filter(Wall.difficulty == selected_difficulty)
+        if selected_location:
+            query = query.filter(Wall.country == selected_location)
+
+        walls = query.all()
+
+        all_walls = Wall.query.filter_by(is_published=True).all()
+        wall_types = sorted(list(set(w.wall_type for w in all_walls if w.wall_type)))
+        difficulties = ["beginner", "intermediate", "advanced"]
+        locations = sorted(list(set(w.country for w in all_walls if w.country)))
+
+        return render_template(
+            "index.html",
+            walls=[w.to_dict() for w in walls],
+            wall_types=wall_types,
+            difficulties=difficulties,
+            locations=locations,
+            selected_type=selected_type,
+            selected_difficulty=selected_difficulty,
+            selected_location=selected_location
+        )
+
+    # --- Student Assignment Portal ---
+    @app.route("/portal", methods=["GET", "POST"])
+    def student_portal():
+        if request.method == "POST":
+            code = request.form.get("assignment_code", "").strip().upper()
+            student_name = request.form.get("student_name", "Inspector Candidate").strip()
+            assignment = Assignment.query.filter_by(code=code, is_active=True).first()
+            if not assignment:
+                return render_template("student_portal.html", error="Invalid or inactive assignment code.")
+            return redirect(url_for("run_assignment", code=code, student_name=student_name))
+        return render_template("student_portal.html")
+
+    @app.route("/portal/run/<code>")
+    def run_assignment(code):
+        assignment = Assignment.query.filter_by(code=code, is_active=True).first_or_404()
+        wall = assignment.wall
+        student_name = request.args.get("student_name", "Inspector Candidate")
+        categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
+        return render_template(
+            "inspect.html",
+            wall=wall.to_dict(),
+            categories=categories,
+            assignment_code=code,
+            student_name=student_name
+        )
+
+    # --- Instructor Assignment Creator ---
+    @app.route("/admin/assignments", methods=["GET", "POST"])
+    def admin_assignments():
+        if request.method == "POST":
+            title = request.form.get("title", "Masonry Assessment").strip()
+            code = request.form.get("code", "").strip().upper() or uuid.uuid4().hex[:6].upper()
+            wall_id = request.form.get("wall_id")
+
+            assignment = Assignment(code=code, title=title, wall_id=wall_id, is_active=True)
+            db.session.add(assignment)
+            db.session.commit()
+            return redirect(url_for("admin_assignments"))
+
+        assignments = Assignment.query.order_by(Assignment.created_at.desc()).all()
         walls = Wall.query.filter_by(is_published=True).all()
-        return render_template("index.html", walls=[w.to_dict() for w in walls])
+        return render_template("admin_assignments.html", assignments=assignments, walls=walls)
 
     @app.route("/admin/walls/<wall_id>/edit", methods=["GET", "POST"])
     def admin_edit_wall(wall_id):
@@ -435,49 +613,6 @@ def create_app(config_class=Config):
         db.session.delete(defect)
         db.session.commit()
         return jsonify({"status": "deleted", "id": defect_id})
-
-    # --- Student Assignment Portal ---
-    @app.route("/portal", methods=["GET", "POST"])
-    def student_portal():
-        if request.method == "POST":
-            code = request.form.get("assignment_code", "").strip().upper()
-            student_name = request.form.get("student_name", "Inspector Candidate").strip()
-            assignment = Assignment.query.filter_by(code=code, is_active=True).first()
-            if not assignment:
-                return render_template("student_portal.html", error="Invalid or inactive assignment code.")
-            return redirect(url_for("run_assignment", code=code, student_name=student_name))
-        return render_template("student_portal.html")
-
-    @app.route("/portal/run/<code>")
-    def run_assignment(code):
-        assignment = Assignment.query.filter_by(code=code, is_active=True).first_or_404()
-        wall = assignment.wall
-        student_name = request.args.get("student_name", "Inspector Candidate")
-        categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
-        return render_template(
-            "inspect.html",
-            wall=wall.to_dict(),
-            categories=categories,
-            assignment_code=code,
-            student_name=student_name
-        )
-
-    # --- Instructor Assignment Creator ---
-    @app.route("/admin/assignments", methods=["GET", "POST"])
-    def admin_assignments():
-        if request.method == "POST":
-            title = request.form.get("title", "Masonry Assessment").strip()
-            code = request.form.get("code", "").strip().upper() or uuid.uuid4().hex[:6].upper()
-            wall_id = request.form.get("wall_id")
-            
-            assignment = Assignment(code=code, title=title, wall_id=wall_id, is_active=True)
-            db.session.add(assignment)
-            db.session.commit()
-            return redirect(url_for("admin_assignments"))
-
-        assignments = Assignment.query.order_by(Assignment.created_at.desc()).all()
-        walls = Wall.query.filter_by(is_published=True).all()
-        return render_template("admin_assignments.html", assignments=assignments, walls=walls)
 
     @app.route("/inspect/<wall_slug>")
     def inspect_wall(wall_slug):
