@@ -71,7 +71,7 @@
         </tbody>
       </table>
     {% else %}
-      <p style="color: #94a3b8; margin-bottom: 2.5rem;">No certificates awarded yet. Candidates must complete at least 2 inspections with $\ge 70\%$ average.</p>
+      <p style="color: #94a3b8; margin-bottom: 2.5rem;">No certificates awarded yet. Candidates must complete at least 2 inspections with &ge; 70% average.</p>
     {% endif %}
 
     <h2>Recent Assessment Submissions</h2>
@@ -82,7 +82,7 @@
           <th>Score</th>
           <th>Status</th>
           <th>Hits / Misses / False</th>
-          <th>Timestamp</th>
+          <th>Date</th>
         </tr>
       </thead>
       <tbody>
@@ -96,7 +96,13 @@
               </span>
             </td>
             <td>{{ a.true_positives }} / {{ a.false_negatives }} / {{ a.false_positives }}</td>
-            <td style="color: #94a3b8; font-size: 0.8rem;">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="color: #94a3b8; font-size: 0.8rem;">
+              {% if a.created_at %}
+                {{ a.created_at.strftime('%Y-%m-%d %H:%M') if a.created_at.strftime is defined else a.created_at }}
+              {% else %}
+                Recent
+              {% endif %}
+            </td>
           </tr>
         {% else %}
           <tr><td colspan="5" style="text-align: center; color: #94a3b8;">No assessment submissions logged yet.</td></tr>

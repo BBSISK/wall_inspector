@@ -178,11 +178,14 @@ def create_app(config_class=Config):
     # --- Student Dashboard & Leaderboard ---
     @app.route("/dashboard")
     def dashboard():
-        attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.created_at.desc()).limit(25).all()
-        certificates = Certificate.query.order_by(Certificate.issued_at.desc()).all()
-
-        total_attempts = AssessmentAttempt.query.count()
-        total_passed = AssessmentAttempt.query.filter_by(passed=True).count()
+        attempts_raw = AssessmentAttempt.query.all()
+        attempts_raw.sort(key=lambda x: getattr(x, 'created_at', None) or getattr(x, 'timestamp', datetime.min), reverse=True)
+        attempts = attempts_raw[:25]
+        
+        certificates = Certificate.query.all()
+        
+        total_attempts = len(attempts_raw)
+        total_passed = sum(1 for a in attempts_raw if getattr(a, 'passed', False))
         pass_rate = round((total_passed / total_attempts * 100), 1) if total_attempts > 0 else 0
 
         return render_template(
