@@ -20,131 +20,6 @@ def calculate_iou(box_a, box_b):
     return intersection_area / union_area if union_area > 0 else 0.0
 
 
-WALL_CATALOG = [
-    {
-        "slug": "sample-drystone-collapse",
-        "title": "Traditional Irish Dry Stone Field Boundary",
-        "description": "Double-faced dry stone wall with coping loss and hearting stone washout.",
-        "country": "Ireland",
-        "region": "Galway / Connemara",
-        "wall_type": "dry_stone",
-        "structural_function": "boundary",
-        "difficulty": "beginner",
-        "image_filename": "drystone_01.jpg",
-    },
-    {
-        "slug": "rustic-retaining-dyke",
-        "title": "Rustic Field Stone Retaining Dyke",
-        "description": "Agricultural stone revetment showing root wedge displacement and out-of-plumb face.",
-        "country": "United Kingdom",
-        "region": "Cumbria",
-        "wall_type": "dry_stone",
-        "structural_function": "retaining",
-        "difficulty": "intermediate",
-        "image_filename": "drystone_02.jpg",
-    },
-    {
-        "slug": "industrial-brick-efflorescence",
-        "title": "Industrial Red Brick Cavity Wall",
-        "description": "Severe crystalline salt leaching (efflorescence) and eroded bed joint mortar.",
-        "country": "United Kingdom",
-        "region": "Manchester",
-        "wall_type": "brick_cavity",
-        "structural_function": "load_bearing",
-        "difficulty": "beginner",
-        "image_filename": "brick_efflorescence_01.jpg",
-    },
-    {
-        "slug": "historic-lime-rubble",
-        "title": "Historic Lime-Mortared Rubble Wall",
-        "description": "Rubble masonry with deep weathered lime mortar washout and loose bonding stones.",
-        "country": "Ireland",
-        "region": "Meath",
-        "wall_type": "lime_mortar",
-        "structural_function": "boundary",
-        "difficulty": "intermediate",
-        "image_filename": "stone_rubble_01.jpg",
-    },
-    {
-        "slug": "aran-karst-boundary",
-        "title": "Limestone Karst Dry Boundary",
-        "description": "Single-stone lace karst wall vulnerable to lateral wind load and coping displacement.",
-        "country": "Ireland",
-        "region": "Inis Mór, Aran Islands",
-        "wall_type": "dry_stone",
-        "structural_function": "boundary",
-        "difficulty": "intermediate",
-        "image_filename": "drystone_aran_01.jpg",
-    },
-    {
-        "slug": "granite-dyke-subsidence",
-        "title": "Granite Field Dyke with Subsidence",
-        "description": "Heavy boulder base showing differential ground settlement and core collapse.",
-        "country": "United Kingdom",
-        "region": "Scottish Highlands",
-        "wall_type": "dry_stone",
-        "structural_function": "boundary",
-        "difficulty": "advanced",
-        "image_filename": "stone_bulge_01.jpg",
-    },
-    {
-        "slug": "ashlar-spalling-parapet",
-        "title": "Dressed Ashlar Masonry Parapet",
-        "description": "Finely dressed ashlar stonework showing surface spalling and frost-thaw delamination.",
-        "country": "France",
-        "region": "Normandy",
-        "wall_type": "ashlar",
-        "structural_function": "parapet",
-        "difficulty": "advanced",
-        "image_filename": "ashlar_cracking_01.jpg",
-    },
-    {
-        "slug": "factory-brick-decay",
-        "title": "Aged Factory Boundary with Spalling",
-        "description": "Frost-heaved brickwork with blown faces and degraded cementitious repointing.",
-        "country": "Germany",
-        "region": "Ruhr",
-        "wall_type": "brick_cavity",
-        "structural_function": "boundary",
-        "difficulty": "intermediate",
-        "image_filename": "old_brick_decay_01.jpg",
-    },
-    {
-        "slug": "terrace-retaining-wall",
-        "title": "Terraced Dry Stone Retaining Boundary",
-        "description": "Hillside gravity retaining wall subjected to hydrostatic pressure and lateral bulge.",
-        "country": "Italy",
-        "region": "Cinque Terre",
-        "wall_type": "dry_stone",
-        "structural_function": "retaining",
-        "difficulty": "advanced",
-        "image_filename": "retaining_drystone_01.jpg",
-    },
-    {
-        "slug": "coursed-limestone-farm",
-        "title": "Coursed Limestone Farm Wall",
-        "description": "Substantial farm boundary showing invasive ivy root penetration and joint expansion.",
-        "country": "Ireland",
-        "region": "Kilkenny",
-        "wall_type": "lime_mortar",
-        "structural_function": "boundary",
-        "difficulty": "beginner",
-        "image_filename": "lime_coursed_01.jpg",
-    },
-    {
-        "slug": "perimeter-brick-expansion",
-        "title": "Perimeter Brick Wall with Joint Separation",
-        "description": "Modern brick perimeter lacking expansion joints, showing vertical thermal fractures.",
-        "country": "United Kingdom",
-        "region": "York",
-        "wall_type": "brick_cavity",
-        "structural_function": "boundary",
-        "difficulty": "intermediate",
-        "image_filename": "modern_brick_damage_01.jpg",
-    },
-]
-
-
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -154,26 +29,39 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-        for w_data in WALL_CATALOG:
-            existing = Wall.query.filter_by(slug=w_data["slug"]).first()
-            if not existing:
-                wall = Wall(
-                    slug=w_data["slug"],
-                    title=w_data["title"],
-                    description=w_data["description"],
-                    country=w_data["country"],
-                    region=w_data["region"],
-                    wall_type=w_data["wall_type"],
-                    structural_function=w_data["structural_function"],
-                    difficulty=w_data["difficulty"],
-                    image_filename=w_data["image_filename"],
-                    is_published=True,
-                )
-                db.session.add(wall)
-            else:
-                existing.image_filename = w_data["image_filename"]
-                existing.title = w_data["title"]
-        db.session.commit()
+        # Seed the authentic red brick cavity wall
+        brick_wall = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
+        if not brick_wall:
+            brick_wall = Wall(
+                slug="industrial-brick-efflorescence",
+                title="Industrial Red Brick Cavity Wall",
+                description="Red brick masonry with severe crystalline efflorescence and degraded bed joint pointing.",
+                country="United Kingdom",
+                region="Manchester",
+                wall_type="brick_cavity",
+                structural_function="load_bearing",
+                difficulty="beginner",
+                image_filename="brick_efflorescence_01.jpg",
+                is_published=True
+            )
+            db.session.add(brick_wall)
+            db.session.commit()
+
+            # Pre-seed ground truth defect: Efflorescence Zone
+            gt_defect = Defect(
+                wall_id=brick_wall.id,
+                target_type="bounding_box",
+                x_min=0.18,
+                y_min=0.22,
+                x_max=0.82,
+                y_max=0.78,
+                category="efflorescence",
+                severity="moderate",
+                title="Crystalline Salt Efflorescence",
+                explanation="White crystalline salt leaching caused by water migration through porous brickwork, depositing salts as surface moisture evaporates."
+            )
+            db.session.add(gt_defect)
+            db.session.commit()
 
     @app.route("/")
     def index():
@@ -182,7 +70,7 @@ def create_app(config_class=Config):
 
     @app.route("/health")
     def health():
-        return jsonify({"status": "ok", "app": "wall_inspector", "walls_count": len(WALL_CATALOG)})
+        return jsonify({"status": "ok", "app": "wall_inspector"})
 
     @app.route("/admin/walls/<wall_id>/tagger")
     def admin_tagger(wall_id):
@@ -197,9 +85,7 @@ def create_app(config_class=Config):
     @app.route("/admin/walls/<wall_id>/defects", methods=["POST"])
     def add_admin_defect(wall_id):
         wall = Wall.query.get_or_404(wall_id)
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid payload"}), 400
+        data = request.get_json() or {}
 
         defect = Defect(
             wall_id=wall.id,
@@ -208,10 +94,10 @@ def create_app(config_class=Config):
             y_min=float(data["y_min"]),
             x_max=float(data["x_max"]),
             y_max=float(data["y_max"]),
-            category=data.get("category", "unspecified"),
+            category=data.get("category", "efflorescence"),
             severity=data.get("severity", "moderate"),
             title=data.get("title", "Untitled Defect"),
-            explanation=data.get("explanation", ""),
+            explanation=data.get("explanation", "")
         )
         db.session.add(defect)
         db.session.commit()
@@ -236,39 +122,63 @@ def create_app(config_class=Config):
 
         submitted_markers = data.get("markers", [])
         student_name = data.get("student_name", "Anonymous Inspector")
-        session_id = data.get("session_id", "guest-session")
+        session_id = data.get("session_id", "session-1")
 
         ground_truth = Defect.query.filter_by(wall_id=wall.id).all()
         ground_truth_dicts = [d.to_dict() for d in ground_truth]
 
-        matched_defects = set()
+        matched_defect_ids = set()
         feedback = []
         false_positives = 0
 
+        # Evaluate each student marker
         for marker in submitted_markers:
             hit = False
             for gt in ground_truth_dicts:
                 iou = calculate_iou(marker, gt)
-                if iou >= 0.25:
+                # Matches if spatial IoU >= 0.20 and student selected matching category
+                if iou >= 0.20 and marker.get("category") == gt["category"]:
                     hit = True
-                    matched_defects.add(gt["id"])
+                    matched_defect_ids.add(gt["id"])
                     feedback.append({
                         "title": gt["title"],
                         "category": gt["category"],
                         "status": "correct",
-                        "explanation": gt["explanation"],
+                        "explanation": f"Correct diagnostic: {gt['explanation']}"
                     })
                     break
+                elif iou >= 0.20:
+                    # Spatial match, but incorrect defect category selected
+                    hit = True
+                    feedback.append({
+                        "title": gt["title"],
+                        "category": gt["category"],
+                        "status": "misclassified",
+                        "explanation": f"Location identified, but defect was '{gt['category'].replace('_', ' ')}', not '{marker.get('category')}'. {gt['explanation']}"
+                    })
+                    break
+
             if not hit:
                 false_positives += 1
 
-        true_positives = len(matched_defects)
+        true_positives = len(matched_defect_ids)
         total_defects = len(ground_truth_dicts)
         false_negatives = max(0, total_defects - true_positives)
 
+        # Unfound ground truth defects
+        for gt in ground_truth_dicts:
+            if gt["id"] not in matched_defect_ids and not any(f["title"] == gt["title"] for f in feedback):
+                feedback.append({
+                    "title": gt["title"],
+                    "category": gt["category"],
+                    "status": "missed",
+                    "explanation": f"Overlooked defect: {gt['explanation']}"
+                })
+
+        # Scoring: correct identifications penalised by false alarms
         if total_defects > 0:
             raw_score = (true_positives / total_defects) * 100
-            score = max(0.0, round(raw_score - (false_positives * 10), 1))
+            score = max(0.0, round(raw_score - (false_positives * 15), 1))
         else:
             score = 100.0 if false_positives == 0 else 0.0
 
@@ -284,7 +194,7 @@ def create_app(config_class=Config):
             false_negatives=false_negatives,
             score_percentage=score,
             passed=passed,
-            feedback_notes={"items": feedback},
+            feedback_notes={"items": feedback}
         )
         db.session.add(attempt)
         db.session.commit()
@@ -296,7 +206,7 @@ def create_app(config_class=Config):
             "false_positives": false_positives,
             "false_negatives": false_negatives,
             "ground_truth": ground_truth_dicts,
-            "feedback": feedback,
+            "feedback": feedback
         })
 
     return app
