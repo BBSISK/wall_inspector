@@ -136,3 +136,35 @@ class Certificate(db.Model):
     average_score = db.Column(db.Float, default=0.0)
     total_walls_evaluated = db.Column(db.Integer, default=0)
     issued_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+class StudentSubmission(db.Model):
+    __tablename__ = "student_submissions"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    student_name = db.Column(db.String(100), nullable=False)
+    student_identifier = db.Column(db.String(100), nullable=False, index=True)
+    cohort_code = db.Column(db.String(50), default="GENERAL")
+    title = db.Column(db.String(150), nullable=False)
+    wall_type = db.Column(db.String(50), default="dry_stone")
+    image_filename = db.Column(db.String(255), nullable=True)
+    image_url_direct = db.Column(db.String(500), nullable=True)
+    rubric_scores = db.Column(db.JSON, default=dict)
+    self_critique = db.Column(db.Text, nullable=True)
+    instructor_feedback = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        url = self.image_url_direct or (f"/static/img/walls/{self.image_filename}" if self.image_filename else "")
+        return {
+            "id": self.id,
+            "student_name": self.student_name,
+            "student_identifier": self.student_identifier,
+            "cohort_code": self.cohort_code,
+            "title": self.title,
+            "wall_type": self.wall_type,
+            "image_url": url,
+            "rubric_scores": self.rubric_scores or {},
+            "self_critique": self.self_critique or "",
+            "instructor_feedback": self.instructor_feedback or "",
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else ""
+        }

@@ -3,13 +3,13 @@ import math
 import uuid
 import random
 from datetime import datetime, timezone
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect
 import cloudinary
 import cloudinary.uploader
 from config import Config
-from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment
+from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission
 
 cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
 if cloudinary_url:
@@ -650,11 +650,13 @@ def create_app(config_class=Config):
 
         top_missed = sorted(missed_counts.items(), key=lambda x: x[1], reverse=True)[:5]
         certificates = Certificate.query.order_by(Certificate.issued_at.desc()).all()
+        student_submissions = StudentSubmission.query.order_by(StudentSubmission.created_at.desc()).limit(30).all()
 
         return render_template(
             "dashboard.html",
             attempts=attempts,
             certificates=certificates,
+            student_submissions=student_submissions,
             total_attempts=total_attempts,
             pass_rate=pass_rate,
             avg_score=avg_score,
@@ -1232,6 +1234,151 @@ def create_app(config_class=Config):
             mimetype="text/csv",
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
+
+    # Progressive Web App (PWA) Manifest & Service Worker
+    @app.route("/manifest.json")
+    def serve_manifest():
+        return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
+
+    @app.route("/sw.js")
+    def serve_sw():
+        return send_from_directory("static", "sw.js", mimetype="application/javascript")
+
+    # Mobile Field Capture (Admin)
+    @app.route("/mobile/admin")
+    def mobile_admin_capture():
+        return render_template("mobile_admin_capture.html", wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()))
+
+    @app.route("/mobile/admin/upload", methods=["POST"])
+    def mobile_admin_upload():
+        try:
+            file = request.files.get("wall_image")
+            if not file or not file.filename:
+                return jsonify({"success": False, "error": "No image file received from camera"}), 400
+
+            title = request.form.get("title", "Field Wall Specimen").strip()
+            slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
+            image_url_direct = None
+            filename = None
+
+            c_url = os.getenv("CLOUDINARY_URL", "").strip()
+            if c_url:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="wall_inspector",
+                        public_id=slug,
+                        overwrite=True,
+                        resource_type="image"
+                    )
+                    image_url_direct = upload_result.get("secure_url")
+                except Exception as cloud_err:
+                    print(f"Cloudinary mobile upload fallback to local: {cloud_err}")
+                    file.seek(0)
+                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                    filename = f"{slug}{ext}"
+                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            else:
+                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                filename = f"{slug}{ext}"
+                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+            wall = Wall(
+                slug=slug,
+                title=title,
+                description=request.form.get("description", ""),
+                country=request.form.get("country", "Unknown"),
+                region=request.form.get("region", ""),
+                wall_type=request.form.get("wall_type", "dry_stone"),
+                structural_function=request.form.get("structural_function", "boundary"),
+                difficulty=request.form.get("difficulty", "beginner"),
+                image_filename=filename,
+                image_url_direct=image_url_direct,
+                is_published=True
+            )
+            db.session.add(wall)
+            db.session.commit()
+            return jsonify({"success": True, "wall": wall.to_dict()})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    # Mobile Practical Portfolio & Self-Critique (Student)
+    @app.route("/mobile/student")
+    def mobile_student_portfolio():
+        return render_template("mobile_student_portfolio.html", wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()))
+
+    @app.route("/mobile/student/upload", methods=["POST"])
+    def mobile_student_upload():
+        try:
+            file = request.files.get("work_image")
+            if not file or not file.filename:
+                return jsonify({"success": False, "error": "No workpiece photo received"}), 400
+
+            student_name = request.form.get("student_name", "Student Mason").strip()
+            student_identifier = request.form.get("student_identifier", "STU-2026").strip().upper()
+            cohort_code = request.form.get("cohort_code", "GENERAL").strip().upper()
+            title = request.form.get("title", "Practical Masonry Workpiece").strip()
+            wall_type = request.form.get("wall_type", "dry_stone")
+            self_critique = request.form.get("self_critique", "")
+
+            import json
+            raw_rubric = request.form.get("rubric_scores", "{}")
+            try:
+                rubric_scores = json.loads(raw_rubric)
+            except Exception:
+                rubric_scores = {}
+
+            sub_slug = f"student-{student_identifier.lower()}-{uuid.uuid4().hex[:6]}"
+            image_url_direct = None
+            filename = None
+
+            c_url = os.getenv("CLOUDINARY_URL", "").strip()
+            if c_url:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder=f"wall_inspector/students/{student_identifier}",
+                        public_id=sub_slug,
+                        overwrite=True,
+                        resource_type="image"
+                    )
+                    image_url_direct = upload_result.get("secure_url")
+                except Exception as cloud_err:
+                    print(f"Cloudinary student upload fallback: {cloud_err}")
+                    file.seek(0)
+                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                    filename = f"{sub_slug}{ext}"
+                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            else:
+                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                filename = f"{sub_slug}{ext}"
+                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+            submission = StudentSubmission(
+                student_name=student_name,
+                student_identifier=student_identifier,
+                cohort_code=cohort_code,
+                title=title,
+                wall_type=wall_type,
+                image_filename=filename,
+                image_url_direct=image_url_direct,
+                rubric_scores=rubric_scores,
+                self_critique=self_critique
+            )
+            db.session.add(submission)
+            db.session.commit()
+            return jsonify({"success": True, "submission": submission.to_dict()})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/student/portfolio/<student_id>")
+    def api_student_portfolio(student_id):
+        submissions = StudentSubmission.query.filter_by(
+            student_identifier=student_id.strip().upper()
+        ).order_by(StudentSubmission.created_at.desc()).all()
+        return jsonify({"submissions": [s.to_dict() for s in submissions]})
 
     return app
 

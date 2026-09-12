@@ -36,10 +36,34 @@
       <button type="submit" class="btn">Launch Assessment &rarr;</button>
     </form>
     
-    <div style="text-align: center; margin-top: 1.5rem; display: flex; justify-content: center; gap: 1.25rem;">
+    <!-- Student Portfolio Mobile PWA Card -->
+    <div style="margin-top: 1.5rem; background: #0f172a; border: 1px dashed #0284c7; border-radius: 8px; padding: 1rem; display: flex; align-items: center; gap: 1rem;">
+      <img id="portal-qr-img" src="" alt="Student App QR" style="width: 72px; height: 72px; background: white; padding: 3px; border-radius: 6px; flex-shrink: 0;">
+      <div>
+        <strong style="color: #38bdf8; font-size: 0.85rem; display: block;">📲 Practical Portfolio Mobile App</strong>
+        <p style="margin: 0.2rem 0 0; font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">
+          Scan with your phone camera to photograph coursework, conduct 4-star self-critiques, and upload to your personal cloud portfolio.
+        </p>
+        <a href="/mobile/student" style="color: #38bdf8; font-size: 0.75rem; font-weight: bold; text-decoration: none; display: inline-block; margin-top: 0.25rem;">
+          Launch Student Mobile App &rarr;
+        </a>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 1.25rem; display: flex; justify-content: center; gap: 1.25rem;">
       <a href="/quiz" style="color: #f59e0b; text-decoration: none; font-size: 0.85rem; font-weight: bold;">⚡ Practice Reflex Quiz &rarr;</a>
       <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.85rem;">&larr; Return to Catalog</a>
     </div>
   </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const studentUrl = `${window.location.origin}/mobile/student`;
+      const qrEl = document.getElementById("portal-qr-img");
+      if (qrEl) {
+        qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(studentUrl)}`;
+      }
+    });
+  </script>
 </body>
 </html>

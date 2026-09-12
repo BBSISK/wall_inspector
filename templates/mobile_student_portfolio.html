@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Student Portfolio">
+  <link rel="manifest" href="/manifest.json">
+  <title>Student Field Portfolio & Self-Critique - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b1329;
+      color: #f8fafc;
+      margin: 0;
+      padding: 0.75rem 0.75rem 4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .mobile-header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.25rem 0.75rem;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 0.75rem;
+    }
+    .mobile-header h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #0284c7;
+    }
+    .badge-student {
+      background: #0369a1;
+      color: #e0f2fe;
+      border: 1px solid #0284c7;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .btn-exit {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    /* Student Identity Bar */
+    .identity-bar {
+      width: 100%;
+      max-width: 480px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+    }
+    .identity-bar strong { color: #38bdf8; }
+    .btn-change-id {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* Nav Tabs */
+    .nav-tabs {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .tab-btn {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.65rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    .tab-btn.active {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
+
+    .tab-content {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Camera Viewfinder */
+    .viewfinder-card {
+      background: #0f172a;
+      border: 2px dashed #0284c7;
+      border-radius: 12px;
+      height: 240px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .viewfinder-card.has-photo { border: 2px solid #10b981; }
+    .viewfinder-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .viewfinder-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: #94a3b8;
+      text-align: center;
+      padding: 1rem;
+    }
+    .btn-retake {
+      display: none;
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Cards */
+    .card-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .field-group label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      color: #94a3b8;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 0.7rem;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #38bdf8; outline: none; }
+
+    /* Star Rating Grid */
+    .rubric-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      border-top: 1px solid #334155;
+      padding-top: 0.75rem;
+    }
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+    .rubric-title { color: #cbd5e1; font-weight: 600; }
+    .star-select {
+      display: flex;
+      gap: 4px;
+    }
+    .star-btn {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: #475569;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+    .star-btn.active { color: #fbbf24; }
+
+    .btn-submit {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 0.95rem;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-submit:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
+
+    /* Portfolio Feed Tab */
+    .portfolio-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .portfolio-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .portfolio-thumb {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: #000;
+      cursor: pointer;
+    }
+    .portfolio-body {
+      padding: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .portfolio-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+    .portfolio-title {
+      margin: 0;
+      font-size: 1rem;
+      color: #f8fafc;
+    }
+    .critique-quote {
+      background: #0f172a;
+      border-left: 3px solid #38bdf8;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      font-style: italic;
+      margin: 0.25rem 0 0;
+    }
+
+    /* Identity Modal */
+    #id-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .id-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.75rem 1.25rem;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-header">
+    <div>
+      <h1>🎓 Practical Portfolio</h1>
+      <small style="color: #94a3b8;">Photograph, critique & document your stonework</small>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span class="badge-student">STUDENT PWA</span>
+      <a href="/" class="btn-exit">&times; Exit</a>
+    </div>
+  </div>
+
+  <!-- Persistent Identity Indicator -->
+  <div class="identity-bar">
+    <div>
+      <span>Inspector: </span>
+      <strong id="display-student-name">Kelly O'Connor</strong>
+      <span style="color: #64748b;"> &bull; ID: <code id="display-student-id">STU-2026</code></span>
+    </div>
+    <button type="button" class="btn-change-id" onclick="openIdentityModal()">Change</button>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="nav-tabs">
+    <button type="button" class="tab-btn active" id="tab-btn-new" onclick="switchTab('new')">
+      📸 New Practical
+    </button>
+    <button type="button" class="tab-btn" id="tab-btn-feed" onclick="switchTab('feed')">
+      📁 My Portfolio (<span id="feed-count">0</span>)
+    </button>
+  </div>
+
+  <!-- TAB 1: New Submission -->
+  <div id="tab-new" class="tab-content">
+    <form id="submission-form" method="POST" action="/mobile/student/upload" enctype="multipart/form-data">
+      <input type="hidden" name="student_name" id="form-student-name">
+      <input type="hidden" name="student_identifier" id="form-student-id">
+      <input type="hidden" name="cohort_code" id="form-cohort-code" value="GENERAL">
+
+      <!-- Camera Viewfinder -->
+      <div class="viewfinder-card" id="viewfinder" onclick="triggerCamera()">
+        <div class="viewfinder-prompt" id="prompt-box">
+          <div style="font-size: 2.8rem;">📷</div>
+          <strong style="font-size: 1rem; color: #38bdf8;">Photograph Your Workpiece</strong>
+          <span style="font-size: 0.78rem;">Take a direct orthogonal shot of your jointing or wall mockup</span>
+        </div>
+        <img id="preview-img" class="viewfinder-img" alt="Workpiece Preview">
+        <button type="button" class="btn-retake" id="btn-retake" onclick="triggerCamera(event)">↺ Retake</button>
+        <input type="file" id="work_image" name="work_image" accept="image/*" capture="environment" style="display: none;" onchange="previewPhoto(event)" required>
+      </div>
+
+      <!-- Exercise Metadata & Self-Critique -->
+      <div class="card-box" style="margin-top: 1rem;">
+        <div class="field-group">
+          <label>Practical Exercise Title</label>
+          <input type="text" name="title" id="title" placeholder="e.g. 1:2.5 Lime Pointing - Course 3 Flush Finish" required>
+        </div>
+
+        <div class="field-group">
+          <label>Masonry Archetype Practiced</label>
+          <select name="wall_type" id="wall_type" required>
+            {% for t in wall_types %}
+              <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- 4-Point Self-Critique Rubric -->
+        <label style="margin-top: 0.5rem; font-size: 0.75rem; text-transform: uppercase; color: #fbbf24; font-weight: 800;">
+          ⭐ Clinical Self-Critique Rubric
+        </label>
+        
+        <div class="rubric-grid">
+          <div class="rubric-item">
+            <span class="rubric-title">1. Joint Depth & Flushness</span>
+            <div class="star-select" data-category="joint_finish">
+              <button type="button" class="star-btn" onclick="rateStar('joint_finish', 1)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('joint_finish', 2)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('joint_finish', 3)">★</button>
+              <button type="button" class="star-btn active" onclick="rateStar('joint_finish', 4)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('joint_finish', 5)">★</button>
+            </div>
+          </div>
+
+          <div class="rubric-item">
+            <span class="rubric-title">2. Bed Alignment & Plumb</span>
+            <div class="star-select" data-category="bond_alignment">
+              <button type="button" class="star-btn" onclick="rateStar('bond_alignment', 1)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('bond_alignment', 2)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('bond_alignment', 3)">★</button>
+              <button type="button" class="star-btn active" onclick="rateStar('bond_alignment', 4)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('bond_alignment', 5)">★</button>
+            </div>
+          </div>
+
+          <div class="rubric-item">
+            <span class="rubric-title">3. Mortar Binder & Plasticity</span>
+            <div class="star-select" data-category="mortar_mix">
+              <button type="button" class="star-btn" onclick="rateStar('mortar_mix', 1)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('mortar_mix', 2)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('mortar_mix', 3)">★</button>
+              <button type="button" class="star-btn active" onclick="rateStar('mortar_mix', 4)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('mortar_mix', 5)">★</button>
+            </div>
+          </div>
+
+          <div class="rubric-item">
+            <span class="rubric-title">4. Arris Cleanliness & Smear Control</span>
+            <div class="star-select" data-category="arris_cleanliness">
+              <button type="button" class="star-btn" onclick="rateStar('arris_cleanliness', 1)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('arris_cleanliness', 2)">★</button>
+              <button type="button" class="star-btn active" onclick="rateStar('arris_cleanliness', 3)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('arris_cleanliness', 4)">★</button>
+              <button type="button" class="star-btn" onclick="rateStar('arris_cleanliness', 5)">★</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="rubric_scores" id="rubric-scores-json" value='{"joint_finish":4,"bond_alignment":4,"mortar_mix":4,"arris_cleanliness":3}'>
+
+        <div class="field-group" style="margin-top: 0.5rem;">
+          <label>Self-Critique & Lessons Learned</label>
+          <textarea name="self_critique" rows="3" placeholder="Critique your tooling technique: Did you avoid feather edging? Were joint arrises protected during bristle consolidation?" required></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-upload" style="margin-top: 1rem; width: 100%;">
+        <span>📤 Upload to My Personal Portfolio</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- TAB 2: Portfolio Feed -->
+  <div id="tab-feed" class="tab-content" style="display: none;">
+    <div class="portfolio-feed" id="portfolio-list">
+      <!-- Populated via Ajax -->
+    </div>
+  </div>
+
+  <!-- Identity Setup Modal -->
+  <div id="id-modal">
+    <div class="id-card">
+      <h3 style="margin: 0; color: #38bdf8;">Student Identification</h3>
+      <p style="margin: 0; font-size: 0.8rem; color: #94a3b8;">
+        Enter your student credentials to isolate and sync your practical stonework portfolio.
+      </p>
+
+      <div class="field-group">
+        <label>Full Student Name</label>
+        <input type="text" id="input-student-name" placeholder="e.g. Kelly O'Connor" required>
+      </div>
+
+      <div class="field-group">
+        <label>Student ID / Personal Code</label>
+        <input type="text" id="input-student-id" placeholder="e.g. STU-104" style="text-transform: uppercase;" required>
+      </div>
+
+      <div class="field-group">
+        <label>Cohort / Classroom PIN</label>
+        <input type="text" id="input-cohort-code" placeholder="e.g. MASONRY-2026" style="text-transform: uppercase;" value="MASONRY-2026">
+      </div>
+
+      <button type="button" class="btn-submit" onclick="saveIdentity()">Save Identity &rarr;</button>
+    </div>
+  </div>
+
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW fail', err));
+    }
+
+    const cameraInput = document.getElementById("work_image");
+    const previewImg = document.getElementById("preview-img");
+    const promptBox = document.getElementById("prompt-box");
+    const btnRetake = document.getElementById("btn-retake");
+    const viewfinder = document.getElementById("viewfinder");
+    const form = document.getElementById("submission-form");
+    const btnUpload = document.getElementById("btn-upload");
+
+    let currentRubric = { joint_finish: 4, bond_alignment: 4, mortar_mix: 4, arris_cleanliness: 3 };
+
+    // Student identity in localStorage
+    function loadIdentity() {
+      const name = localStorage.getItem("GWI_STUDENT_NAME") || "Kelly O'Connor";
+      const id = localStorage.getItem("GWI_STUDENT_ID") || "STU-2026";
+      const cohort = localStorage.getItem("GWI_STUDENT_COHORT") || "MASONRY-2026";
+
+      document.getElementById("display-student-name").innerText = name;
+      document.getElementById("display-student-id").innerText = id;
+      document.getElementById("form-student-name").value = name;
+      document.getElementById("form-student-id").value = id;
+      document.getElementById("form-cohort-code").value = cohort;
+
+      document.getElementById("input-student-name").value = name;
+      document.getElementById("input-student-id").value = id;
+      document.getElementById("input-cohort-code").value = cohort;
+    }
+
+    function openIdentityModal() {
+      document.getElementById("id-modal").style.display = "flex";
+    }
+
+    function saveIdentity() {
+      const name = document.getElementById("input-student-name").value.trim() || "Kelly O'Connor";
+      const id = document.getElementById("input-student-id").value.trim().toUpperCase() || "STU-2026";
+      const cohort = document.getElementById("input-cohort-code").value.trim().toUpperCase() || "GENERAL";
+
+      localStorage.setItem("GWI_STUDENT_NAME", name);
+      localStorage.setItem("GWI_STUDENT_ID", id);
+      localStorage.setItem("GWI_STUDENT_COHORT", cohort);
+
+      loadIdentity();
+      document.getElementById("id-modal").style.display = "none";
+      loadPortfolioFeed();
+    }
+
+    function switchTab(tab) {
+      document.getElementById("tab-btn-new").classList.toggle("active", tab === "new");
+      document.getElementById("tab-btn-feed").classList.toggle("active", tab === "feed");
+      document.getElementById("tab-new").style.display = (tab === "new") ? "flex" : "none";
+      document.getElementById("tab-feed").style.display = (tab === "feed") ? "flex" : "none";
+
+      if (tab === "feed") {
+        loadPortfolioFeed();
+      }
+    }
+
+    function triggerCamera(e) {
+      if (e) e.stopPropagation();
+      cameraInput.click();
+    }
+
+    function previewPhoto(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          previewImg.style.display = "block";
+          promptBox.style.display = "none";
+          btnRetake.style.display = "block";
+          viewfinder.classList.add("has-photo");
+        };
+        reader.readAsDataURL(file);
+
+        const titleInput = document.getElementById("title");
+        if (!titleInput.value) {
+          const typeSelect = document.getElementById("wall_type");
+          const typeLabel = typeSelect.options[typeSelect.selectedIndex].text;
+          titleInput.value = `${typeLabel} Practical Coursework`;
+        }
+      }
+    }
+
+    function rateStar(cat, stars) {
+      currentRubric[cat] = stars;
+      document.getElementById("rubric-scores-json").value = JSON.stringify(currentRubric);
+
+      const container = document.querySelector(`.star-select[data-category="${cat}"]`);
+      const buttons = container.querySelectorAll(".star-btn");
+      buttons.forEach((b, idx) => {
+        b.classList.toggle("active", idx < stars);
+      });
+    }
+
+    // Submit handler
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btnUpload.disabled = true;
+      btnUpload.innerHTML = `<span>⏳ Uploading to Personal Cloud Folder...</span>`;
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch("/mobile/student/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          alert("Workpiece uploaded to your personal portfolio folder successfully!");
+          form.reset();
+          previewImg.style.display = "none";
+          promptBox.style.display = "flex";
+          btnRetake.style.display = "none";
+          viewfinder.classList.remove("has-photo");
+          btnUpload.disabled = false;
+          btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
+          loadIdentity();
+          switchTab("feed");
+        } else {
+          alert("Upload error: " + (data.error || "Failed"));
+          btnUpload.disabled = false;
+          btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
+        }
+      } catch (err) {
+        alert("Upload error: " + err.message);
+        btnUpload.disabled = false;
+        btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
+      }
+    });
+
+    // Load historical feed
+    async function loadPortfolioFeed() {
+      const studentId = localStorage.getItem("GWI_STUDENT_ID") || "STU-2026";
+      const listEl = document.getElementById("portfolio-list");
+      listEl.innerHTML = `<p style="text-align: center; color: #94a3b8;">Loading portfolio submissions...</p>`;
+
+      try {
+        const res = await fetch(`/api/student/portfolio/${studentId}`);
+        const data = await res.json();
+        const items = data.submissions || [];
+
+        document.getElementById("feed-count").innerText = items.length;
+
+        if (items.length === 0) {
+          listEl.innerHTML = `
+            <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8; background: #1e293b; border-radius: 10px; border: 1px solid #334155;">
+              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📁</div>
+              <h3 style="margin: 0 0 0.4rem; color: #f8fafc;">No Practical Submissions Yet</h3>
+              <p style="margin: 0; font-size: 0.85rem;">Photograph and critique your first stonework exercise to build your accredited portfolio.</p>
+              <button type="button" class="btn-submit" style="margin-top: 1rem; width: 100%;" onclick="switchTab('new')">Snap First Practical &rarr;</button>
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = items.map(item => {
+          const rub = item.rubric_scores || {};
+          return `
+            <div class="portfolio-card">
+              <img src="${item.image_url}" alt="${item.title}" class="portfolio-thumb" onerror="this.src='https://placehold.co/600x400/0f172a/38bdf8?text=Workpiece+Photo'">
+              <div class="portfolio-body">
+                <div class="portfolio-meta">
+                  <span style="text-transform: capitalize; color: #38bdf8; font-weight: 700;">${(item.wall_type || 'Dry Stone').replace('_', ' ')}</span>
+                  <span>${item.created_at}</span>
+                </div>
+                <h4 class="portfolio-title">${item.title}</h4>
+
+                <div style="display: flex; gap: 0.5rem; font-size: 0.72rem; flex-wrap: wrap;">
+                  <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">
+                    Joint: <strong>${rub.joint_finish || '-'}/5 ★</strong>
+                  </span>
+                  <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">
+                    Plumb: <strong>${rub.bond_alignment || '-'}/5 ★</strong>
+                  </span>
+                  <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">
+                    Mortar: <strong>${rub.mortar_mix || '-'}/5 ★</strong>
+                  </span>
+                  <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">
+                    Arris: <strong>${rub.arris_cleanliness || '-'}/5 ★</strong>
+                  </span>
+                </div>
+
+                <div class="critique-quote">
+                  "${item.self_critique || 'Self-evaluation completed.'}"
+                </div>
+
+                ${item.instructor_feedback ? `
+                  <div style="background: #064e3b; border-left: 3px solid #10b981; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.8rem; color: #a7f3d0; margin-top: 0.25rem;">
+                    <strong>Instructor Feedback:</strong> ${item.instructor_feedback}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+      } catch (err) {
+        listEl.innerHTML = `<p style="color: #ef4444; text-align: center;">Failed to load portfolio: ${err.message}</p>`;
+      }
+    }
+
+    // Initialize
+    loadIdentity();
+    loadPortfolioFeed();
+  </script>
+</body>
+</html>

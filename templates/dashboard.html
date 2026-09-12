@@ -115,5 +115,74 @@
       {% endfor %}
     </div>
   </div>
+
+  <!-- Student Practical Stonework Portfolio Submissions -->
+  <div style="max-width: 1100px; margin: 2rem auto 3rem; background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.15rem; color: #f8fafc;">Student Field Practical Submissions (Mobile PWA)</h3>
+        <p style="margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.85rem;">Coursework photos, self-critique rubrics, and reflections uploaded from student smartphones.</p>
+      </div>
+      <a href="/mobile/student" target="_blank" style="color: #38bdf8; text-decoration: none; font-size: 0.82rem; font-weight: 600;">Open Student Mobile App &rarr;</a>
+    </div>
+
+    {% if student_submissions %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="background: #0f172a; text-align: left; color: #94a3b8; text-transform: uppercase; font-size: 0.72rem;">
+              <th style="padding: 0.75rem 1rem;">Photo</th>
+              <th style="padding: 0.75rem 1rem;">Student / ID</th>
+              <th style="padding: 0.75rem 1rem;">Exercise / Archetype</th>
+              <th style="padding: 0.75rem 1rem;">Self-Critique Rubric</th>
+              <th style="padding: 0.75rem 1rem;">Student Reflection</th>
+              <th style="padding: 0.75rem 1rem;">Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in student_submissions %}
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 0.75rem 1rem;">
+                  <a href="{{ s.to_dict()['image_url'] }}" target="_blank">
+                    <img src="{{ s.to_dict()['image_url'] }}" alt="{{ s.title }}" style="width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid #334155; display: block;" onerror="this.src='https://placehold.co/100x100/0f172a/38bdf8?text=Photo'">
+                  </a>
+                </td>
+                <td style="padding: 0.75rem 1rem;">
+                  <strong style="color: #f8fafc; display: block;">{{ s.student_name }}</strong>
+                  <code style="color: #38bdf8; font-size: 0.75rem;">{{ s.student_identifier }}</code>
+                </td>
+                <td style="padding: 0.75rem 1rem;">
+                  <strong style="color: #cbd5e1;">{{ s.title }}</strong>
+                  <div style="font-size: 0.75rem; color: #94a3b8; text-transform: capitalize;">{{ s.wall_type.replace('_', ' ') }}</div>
+                </td>
+                <td style="padding: 0.75rem 1rem;">
+                  {% set r = s.rubric_scores or {} %}
+                  <div style="display: flex; flex-direction: column; gap: 2px; font-size: 0.72rem; color: #cbd5e1;">
+                    <span>Joint: <strong style="color: #fbbf24;">{{ r.get('joint_finish', '-') }}/5 ★</strong></span>
+                    <span>Plumb: <strong style="color: #fbbf24;">{{ r.get('bond_alignment', '-') }}/5 ★</strong></span>
+                    <span>Mortar: <strong style="color: #fbbf24;">{{ r.get('mortar_mix', '-') }}/5 ★</strong></span>
+                    <span>Arris: <strong style="color: #fbbf24;">{{ r.get('arris_cleanliness', '-') }}/5 ★</strong></span>
+                  </div>
+                </td>
+                <td style="padding: 0.75rem 1rem; max-width: 280px;">
+                  <p style="margin: 0; font-size: 0.8rem; color: #cbd5e1; font-style: italic; line-height: 1.3;">
+                    "{{ s.self_critique or 'No critique notes submitted.' }}"
+                  </p>
+                </td>
+                <td style="padding: 0.75rem 1rem; font-size: 0.75rem; color: #94a3b8;">
+                  {{ s.created_at.strftime('%Y-%m-%d %H:%M') if s.created_at else '' }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 2rem 1rem; color: #94a3b8;">
+        <p style="margin: 0 0 0.5rem; font-size: 0.95rem;">No practical coursework submissions uploaded yet.</p>
+        <small>Students can photograph and self-critique their work using the Student Mobile PWA.</small>
+      </div>
+    {% endif %}
+  </div>
 </body>
 </html>

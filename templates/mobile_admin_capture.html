@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Wall Capture">
+  <link rel="manifest" href="/manifest.json">
+  <title>Admin Mobile Field Capture - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b1329;
+      color: #f8fafc;
+      margin: 0;
+      padding: 0.75rem 0.75rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .mobile-header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.25rem 1rem;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 1rem;
+    }
+    .mobile-header h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #38bdf8;
+    }
+    .badge-admin {
+      background: #1e3a8a;
+      color: #93c5fd;
+      border: 1px solid #3b82f6;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .btn-exit {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    /* Camera Viewfinder Box */
+    .viewfinder-card {
+      background: #0f172a;
+      border: 2px dashed #38bdf8;
+      border-radius: 12px;
+      height: 250px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .viewfinder-card.has-photo {
+      border: 2px solid #10b981;
+    }
+    .viewfinder-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .viewfinder-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      color: #94a3b8;
+      text-align: center;
+      padding: 1rem;
+    }
+    .viewfinder-icon {
+      font-size: 2.8rem;
+    }
+    .btn-retake {
+      display: none;
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Fields */
+    .field-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .field-group label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      color: #94a3b8;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #38bdf8;
+      outline: none;
+    }
+
+    .btn-geo {
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      align-self: flex-start;
+      margin-top: 2px;
+    }
+
+    .btn-submit {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .btn-submit:disabled {
+      background: #475569;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Modal / Success overlay */
+    #success-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .success-card {
+      background: #1e293b;
+      border: 2px solid #10b981;
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    }
+    .btn-action-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    .btn-modal {
+      padding: 0.8rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      cursor: pointer;
+      display: block;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-header">
+    <div>
+      <h1>📸 Field Wall Capture</h1>
+      <small style="color: #94a3b8;">On-site smartphone camera ingestion</small>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span class="badge-admin">ADMIN PWA</span>
+      <a href="/" class="btn-exit">&times; Exit</a>
+    </div>
+  </div>
+
+  <form id="capture-form" class="form-container" method="POST" action="/mobile/admin/upload" enctype="multipart/form-data">
+    <!-- Camera Viewfinder -->
+    <div class="viewfinder-card" id="viewfinder" onclick="triggerCamera()">
+      <div class="viewfinder-prompt" id="prompt-box">
+        <div class="viewfinder-icon">📷</div>
+        <strong style="font-size: 1rem; color: #38bdf8;">Tap to Capture Wall Photo</strong>
+        <span style="font-size: 0.78rem;">Activates device rear camera or photo library</span>
+      </div>
+      <img id="preview-img" class="viewfinder-img" alt="Captured Wall Preview">
+      <button type="button" class="btn-retake" id="btn-retake" onclick="triggerCamera(event)">↺ Retake</button>
+      <input type="file" id="wall_image" name="wall_image" accept="image/*" capture="environment" style="display: none;" onchange="previewPhoto(event)" required>
+    </div>
+
+    <!-- Metadata Card -->
+    <div class="field-card">
+      <div class="field-group">
+        <label>Wall Subject Title</label>
+        <input type="text" name="title" id="title" placeholder="e.g. Connemara Granite Quoin Boundary" required>
+      </div>
+
+      <div class="field-group">
+        <label>Masonry Archetype</label>
+        <select name="wall_type" id="wall_type" required>
+          {% for t in wall_types %}
+            <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="field-group">
+          <label>Difficulty Tier</label>
+          <select name="difficulty">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Structure Function</label>
+          <select name="structural_function">
+            <option value="boundary">Boundary</option>
+            <option value="retaining">Retaining</option>
+            <option value="facade">Facade</option>
+            <option value="pier">Pier / Column</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="field-group">
+          <label>Country</label>
+          <input type="text" name="country" id="country" placeholder="e.g. Ireland" value="Ireland" required>
+        </div>
+        <div class="field-group">
+          <label>Region / County</label>
+          <input type="text" name="region" id="region" placeholder="e.g. Galway">
+        </div>
+      </div>
+
+      <button type="button" class="btn-geo" onclick="locateMe()">📍 Use Current GPS Location</button>
+
+      <div class="field-group">
+        <label>Field Pathology Notes</label>
+        <textarea name="description" rows="3" placeholder="Describe mortar washout, bulging, arris crushing, or exposure..."></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="btn-submit">
+      <span>🚀 Upload & Publish Wall</span>
+    </button>
+  </form>
+
+  <!-- Success Modal -->
+  <div id="success-modal">
+    <div class="success-card">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+      <h2 style="margin: 0 0 0.5rem; font-size: 1.4rem; color: #34d399;">Wall Uploaded to Catalog!</h2>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin: 0;" id="success-wall-title">Wall has been registered and synced with Cloudinary.</p>
+
+      <div class="btn-action-block">
+        <a id="link-tagger" href="#" class="btn-modal" style="background: #2563eb; color: white;">🏷️ Tag Defects Now</a>
+        <a id="link-inspect" href="#" class="btn-modal" style="background: #059669; color: white;">🔍 View in Inspector</a>
+        <button type="button" class="btn-modal" style="background: #334155; color: #93c5fd;" onclick="snapAnother()">📸 Snap Another Wall</button>
+        <a href="/" class="btn-modal" style="background: #0f172a; color: #94a3b8; border: 1px solid #334155;">&larr; Exit to Catalog</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW fail', err));
+    }
+
+    const cameraInput = document.getElementById("wall_image");
+    const previewImg = document.getElementById("preview-img");
+    const promptBox = document.getElementById("prompt-box");
+    const btnRetake = document.getElementById("btn-retake");
+    const viewfinder = document.getElementById("viewfinder");
+    const form = document.getElementById("capture-form");
+    const btnSubmit = document.getElementById("btn-submit");
+
+    function triggerCamera(e) {
+      if (e) e.stopPropagation();
+      cameraInput.click();
+    }
+
+    function previewPhoto(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          previewImg.style.display = "block";
+          promptBox.style.display = "none";
+          btnRetake.style.display = "block";
+          viewfinder.classList.add("has-photo");
+        };
+        reader.readAsDataURL(file);
+
+        // Auto populate title suggestion if empty
+        const titleInput = document.getElementById("title");
+        if (!titleInput.value) {
+          const typeSelect = document.getElementById("wall_type");
+          const typeLabel = typeSelect.options[typeSelect.selectedIndex].text;
+          const timestamp = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          titleInput.value = `Field Specimen: ${typeLabel} (${timestamp})`;
+        }
+      }
+    }
+
+    function locateMe() {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your mobile browser.");
+        return;
+      }
+      const geoBtn = event.target;
+      geoBtn.innerText = "📍 Acquiring GPS coordinates...";
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude.toFixed(4);
+          const lon = pos.coords.longitude.toFixed(4);
+          document.getElementById("region").value = `GPS ${lat}, ${lon}`;
+          geoBtn.innerText = "✓ Coordinates Captured";
+        },
+        err => {
+          alert("Could not retrieve GPS coordinates. Please enter region manually.");
+          geoBtn.innerText = "📍 Use Current GPS Location";
+        }
+      );
+    }
+
+    // Ajax Submission with Loading State
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<span>⏳ Uploading to Cloud CDN...</span>`;
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch("/mobile/admin/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          document.getElementById("success-wall-title").innerText = `"${data.wall.title}" has been saved to persistent storage.`;
+          document.getElementById("link-tagger").href = `/admin/walls/${data.wall.id}/tagger`;
+          document.getElementById("link-inspect").href = `/inspect/${data.wall.slug}`;
+          document.getElementById("success-modal").style.display = "flex";
+        } else {
+          alert("Upload failed: " + (data.error || "Server error"));
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = `<span>🚀 Upload & Publish Wall</span>`;
+        }
+      } catch (err) {
+        alert("Network error occurred during mobile upload: " + err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<span>🚀 Upload & Publish Wall</span>`;
+      }
+    });
+
+    function snapAnother() {
+      document.getElementById("success-modal").style.display = "none";
+      form.reset();
+      previewImg.style.display = "none";
+      promptBox.style.display = "flex";
+      btnRetake.style.display = "none";
+      viewfinder.classList.remove("has-photo");
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = `<span>🚀 Upload & Publish Wall</span>`;
+    }
+  </script>
+</body>
+</html>
