@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inspector Performance Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; text-align: center; }
+    .stat-val { font-size: 2.2rem; font-weight: bold; color: #38bdf8; margin: 0.5rem 0 0; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; margin-bottom: 2.5rem; }
+    th, td { padding: 0.85rem 1.25rem; text-align: left; font-size: 0.9rem; }
+    th { background: #0b1329; color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    tr:not(:last-child) td { border-bottom: 1px solid #334155; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; }
+    .badge-pass { background: #065f46; color: #6ee7b7; }
+    .badge-fail { background: #7f1d1d; color: #fca5a5; }
+    .nav-btn { background: #2563eb; color: white; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 style="margin: 0 0 0.5rem;">Inspector Training Dashboard</h1>
+        <p style="margin: 0; color: #94a3b8;">Class performance metrics, evaluation histories, and verified credentials.</p>
+      </div>
+      <a href="/" class="nav-btn">&larr; Return to Wall Catalog</a>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span style="color: #94a3b8; font-size: 0.85rem;">TOTAL ATTEMPTS</span>
+        <div class="stat-val">{{ total_attempts }}</div>
+      </div>
+      <div class="stat-card">
+        <span style="color: #94a3b8; font-size: 0.85rem;">OVERALL PASS RATE</span>
+        <div class="stat-val">{{ pass_rate }}%</div>
+      </div>
+      <div class="stat-card">
+        <span style="color: #94a3b8; font-size: 0.85rem;">ISSUED CREDENTIALS</span>
+        <div class="stat-val">{{ certificates|length }}</div>
+      </div>
+    </div>
+
+    <h2>Verified Inspector Credentials</h2>
+    {% if certificates %}
+      <table>
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Award Tier</th>
+            <th>Benchmark Avg</th>
+            <th>Walls Evaluated</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cert in certificates %}
+            <tr>
+              <td><strong>{{ cert.student_name }}</strong></td>
+              <td><span style="color: #34d399; font-weight: 600;">{{ cert.tier }}</span></td>
+              <td>{{ cert.average_score }}%</td>
+              <td>{{ cert.total_walls_evaluated }}</td>
+              <td><a href="/certificate/{{ cert.certificate_code }}" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Open Certificate &rarr;</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color: #94a3b8; margin-bottom: 2.5rem;">No certificates awarded yet. Candidates must complete at least 2 inspections with $\ge 70\%$ average.</p>
+    {% endif %}
+
+    <h2>Recent Assessment Submissions</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Hits / Misses / False</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in attempts %}
+          <tr>
+            <td>{{ a.student_name }}</td>
+            <td><strong>{{ a.score_percentage }}%</strong></td>
+            <td>
+              <span class="badge {{ 'badge-pass' if a.passed else 'badge-fail' }}">
+                {{ 'PASSED' if a.passed else 'FAILED' }}
+              </span>
+            </td>
+            <td>{{ a.true_positives }} / {{ a.false_negatives }} / {{ a.false_positives }}</td>
+            <td style="color: #94a3b8; font-size: 0.8rem;">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" style="text-align: center; color: #94a3b8;">No assessment submissions logged yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
