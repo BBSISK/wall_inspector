@@ -3,13 +3,12 @@ import uuid
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from werkzeug.utils import secure_filename
+from sqlalchemy import text, inspect
 import cloudinary
 import cloudinary.uploader
 from config import Config
-from sqlalchemy import text, inspect
 from models import db, Wall, Defect, AssessmentAttempt, Certificate
 
-# Configure Cloudinary automatically if environment variable is set
 cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
 if cloudinary_url:
     if cloudinary_url.startswith("CLOUDINARY_URL="):
@@ -73,7 +72,7 @@ def create_app(config_class=Config):
 
     db.init_app(app)
 
-        with app.app_context():
+    with app.app_context():
         db.create_all()
         try:
             inspector = inspect(db.engine)
@@ -83,9 +82,8 @@ def create_app(config_class=Config):
                     conn.execute(text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
                     conn.commit()
         except Exception as e:
-            print(f"Migration notice: {e}")
+            print(f"Migration note: {e}")
 
-        # Seed baseline Industrial Brick Wall if missing
         brick = Wall.query.filter_by(slug="industrial-brick-efflorescence").first()
         if not brick:
             brick = Wall(
@@ -171,7 +169,7 @@ def create_app(config_class=Config):
 
             title = request.form.get("title", "Untitled Wall").strip()
             slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
-            
+
             image_url_direct = None
             filename = None
 
