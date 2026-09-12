@@ -1240,6 +1240,58 @@ def create_app(config_class=Config):
     def serve_manifest():
         return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
 
+    @app.route("/manifest-admin.json")
+    def serve_manifest_admin():
+        manifest = {
+            "name": "Wall Capture Admin - Global Wall Inspector",
+            "short_name": "WallCapture",
+            "description": "On-site masonry wall photo capture and catalog publishing.",
+            "start_url": "/mobile/admin",
+            "display": "standalone",
+            "background_color": "#0b1329",
+            "theme_color": "#0f172a",
+            "orientation": "portrait-primary",
+            "icons": [
+                {
+                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=192&q=80",
+                    "sizes": "192x192",
+                    "type": "image/jpeg"
+                },
+                {
+                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=512&q=80",
+                    "sizes": "512x512",
+                    "type": "image/jpeg"
+                }
+            ]
+        }
+        return jsonify(manifest), 200, {"Content-Type": "application/manifest+json"}
+
+    @app.route("/manifest-student.json")
+    def serve_manifest_student():
+        manifest = {
+            "name": "Student Stonework Portfolio - Global Wall Inspector",
+            "short_name": "StonePortfolio",
+            "description": "Student masonry coursework photography and self-critique portfolio.",
+            "start_url": "/mobile/student",
+            "display": "standalone",
+            "background_color": "#0b1329",
+            "theme_color": "#0f172a",
+            "orientation": "portrait-primary",
+            "icons": [
+                {
+                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=192&q=80",
+                    "sizes": "192x192",
+                    "type": "image/jpeg"
+                },
+                {
+                    "src": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=512&q=80",
+                    "sizes": "512x512",
+                    "type": "image/jpeg"
+                }
+            ]
+        }
+        return jsonify(manifest), 200, {"Content-Type": "application/manifest+json"}
+
     @app.route("/sw.js")
     def serve_sw():
         return send_from_directory("static", "sw.js", mimetype="application/javascript")
