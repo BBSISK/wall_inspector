@@ -438,6 +438,8 @@ def create_app(config_class=Config):
                     return jsonify({"success": False, "error": error}), 401
                 return render_template("admin_login.html", error=error, next_url=next_url), 401
 
+        return render_template("admin_login.html", error=error, next_url=next_url)
+
     @app.route("/admin/logout")
     def admin_logout():
         session.pop("is_admin", None)
