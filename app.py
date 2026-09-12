@@ -3,7 +3,8 @@ import math
 import uuid
 import random
 from datetime import datetime, timezone
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+from functools import wraps
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, session
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect
 import cloudinary
@@ -399,6 +400,49 @@ def create_app(config_class=Config):
                     db.session.add(gt)
                 db.session.commit()
 
+    def admin_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not session.get("is_admin"):
+                if request.path.startswith("/api/") or (request.method in ["POST", "DELETE"] and not request.path.startswith("/admin/login")):
+                    return jsonify({"error": "Admin authentication required"}), 401
+                next_path = request.full_path if request.query_string else request.path
+                return redirect(url_for("admin_login", next=next_path))
+            return f(*args, **kwargs)
+        return decorated_function
+
+    @app.context_processor
+    def inject_admin_status():
+        return {"is_admin": session.get("is_admin", False)}
+
+    @app.route("/admin/login", methods=["GET", "POST"])
+    def admin_login():
+        error = None
+        next_url = request.args.get("next") or request.form.get("next") or "/dashboard"
+        if request.method == "POST":
+            data = request.get_json(silent=True) or {}
+            password = (request.form.get("admin_password") or request.form.get("password") or data.get("password") or "").strip()
+            pin = (request.form.get("admin_pin") or request.form.get("pin") or data.get("pin") or "").strip()
+
+            expected_password = app.config.get("ADMIN_PASSWORD", "stonecraft2026")
+            expected_pin = str(app.config.get("ADMIN_PIN", "2026"))
+
+            if (password and password == expected_password) or (pin and pin == expected_pin):
+                session["is_admin"] = True
+                if request.is_json:
+                    return jsonify({"success": True, "redirect": next_url})
+                return redirect(next_url)
+            else:
+                error = "Invalid instructor credentials. Please verify your password or 4-digit PIN."
+                if request.is_json:
+                    return jsonify({"success": False, "error": error}), 401
+                return render_template("admin_login.html", error=error, next_url=next_url), 401
+
+    @app.route("/admin/logout")
+    def admin_logout():
+        session.pop("is_admin", None)
+        return redirect(url_for("index"))
+
     @app.route("/")
     def index():
         query = Wall.query.filter_by(is_published=True)
@@ -489,6 +533,7 @@ def create_app(config_class=Config):
 
     # --- Instructor Assignment Creator with Filters & Bulk Assign ---
     @app.route("/admin/assignments", methods=["GET", "POST"])
+    @admin_required
     def admin_assignments():
         if request.method == "POST":
             title = request.form.get("title", "Masonry Assessment").strip()
@@ -563,6 +608,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/admin/walls/<wall_id>/edit", methods=["GET", "POST"])
+    @admin_required
     def admin_edit_wall(wall_id):
         wall = Wall.query.get_or_404(wall_id)
         if request.method == "GET":
@@ -612,6 +658,7 @@ def create_app(config_class=Config):
             return f"Error updating wall: {str(e)}", 500
 
     @app.route("/admin/walls/<wall_id>/delete", methods=["POST"])
+    @admin_required
     def admin_delete_wall(wall_id):
         wall = Wall.query.get_or_404(wall_id)
         if wall.image_filename:
@@ -629,6 +676,7 @@ def create_app(config_class=Config):
         return redirect(url_for("index"))
 
     @app.route("/dashboard")
+    @admin_required
     def dashboard():
         selected_cohort = request.args.get("cohort", "").strip().upper()
         selected_assignment = request.args.get("assignment", "").strip().upper()
@@ -685,6 +733,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/admin/walls/new", methods=["GET", "POST"])
+    @admin_required
     def admin_create_wall():
         if request.method == "GET":
             return render_template("admin_create_wall.html")
@@ -742,6 +791,7 @@ def create_app(config_class=Config):
             return f"Error creating wall: {str(e)}", 500
 
     @app.route("/admin/walls/<wall_id>/tagger")
+    @admin_required
     def admin_tagger(wall_id):
         wall = Wall.query.get_or_404(wall_id)
         categories = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
@@ -758,6 +808,7 @@ def create_app(config_class=Config):
         return jsonify([d.to_dict() for d in defects])
 
     @app.route("/admin/walls/<wall_id>/defects", methods=["POST"])
+    @admin_required
     def add_admin_defect(wall_id):
         wall = Wall.query.get_or_404(wall_id)
         data = request.get_json() or {}
@@ -779,6 +830,7 @@ def create_app(config_class=Config):
         return jsonify(defect.to_dict()), 201
 
     @app.route("/admin/defects/<defect_id>", methods=["DELETE"])
+    @admin_required
     def delete_admin_defect(defect_id):
         defect = Defect.query.get_or_404(defect_id)
         db.session.delete(defect)
@@ -1203,6 +1255,7 @@ def create_app(config_class=Config):
 
 
     @app.route("/admin/export/attempts.csv")
+    @admin_required
     def export_attempts_csv():
         import csv
         import io
@@ -1335,10 +1388,12 @@ def create_app(config_class=Config):
 
     # Mobile Field Capture (Admin)
     @app.route("/mobile/admin")
+    @admin_required
     def mobile_admin_capture():
         return render_template("mobile_admin_capture.html", wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()))
 
     @app.route("/mobile/admin/upload", methods=["POST"])
+    @admin_required
     def mobile_admin_upload():
         try:
             file = request.files.get("wall_image")
@@ -1470,6 +1525,7 @@ def create_app(config_class=Config):
             return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/api/student/submission/<sub_id>/review", methods=["POST"])
+    @admin_required
     def api_review_student_submission(sub_id):
         try:
             submission = StudentSubmission.query.get(sub_id)

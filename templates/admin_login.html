@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instructor & Admin Authentication - Global Wall Inspector</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .login-card {
+      background: #1e293b;
+      border-radius: 14px;
+      border: 1px solid #334155;
+      padding: 2.5rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.5);
+    }
+    .header-icon {
+      width: 52px;
+      height: 52px;
+      background: #0284c7;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 1rem;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+    }
+    h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.6rem;
+      text-align: center;
+      color: #f8fafc;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      text-align: center;
+      margin: 0 0 1.5rem;
+      line-height: 1.4;
+    }
+    .auth-tabs {
+      display: flex;
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 1.5rem;
+      border: 1px solid #334155;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 0.5rem;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #94a3b8;
+      border: none;
+      background: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-tab.active {
+      background: #0284c7;
+      color: white;
+    }
+    .error-alert {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 0.4rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: #38bdf8;
+    }
+    .pin-input {
+      font-size: 1.8rem;
+      letter-spacing: 12px;
+      text-align: center;
+      font-family: monospace;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    .btn-submit {
+      width: 100%;
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 0.85rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 1.25rem;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover {
+      background: #0369a1;
+    }
+    .footer-links {
+      margin-top: 1.75rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .footer-links a {
+      color: #64748b;
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="header-icon">🔐</div>
+    <h2>Instructor Portal</h2>
+    <p>Administrative access to student analytics, catalog pathology tagging, and cohort grading.</p>
+
+    {% if error %}
+      <div class="error-alert">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+      </div>
+    {% endif %}
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="tab-pass" onclick="switchAuthMode('pass')">Password</button>
+      <button type="button" class="auth-tab" id="tab-pin" onclick="switchAuthMode('pin')">4-Digit PIN</button>
+    </div>
+
+    <form method="POST" action="/admin/login">
+      <input type="hidden" name="next" value="{{ next_url or '' }}">
+      
+      <!-- Password Mode -->
+      <div id="mode-pass">
+        <label>Instructor Password</label>
+        <input type="password" name="admin_password" id="input-pass" placeholder="Enter instructor password" autofocus>
+      </div>
+
+      <!-- Quick PIN Mode -->
+      <div id="mode-pin" style="display: none;">
+        <label style="text-align: center;">4-Digit Mobile / Quick PIN</label>
+        <input type="password" name="admin_pin" id="input-pin" class="pin-input" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
+      </div>
+
+      <button type="submit" class="btn-submit">Authenticate & Access Portal &rarr;</button>
+    </form>
+
+    <div class="footer-links">
+      <a href="/">&larr; Return to Public Catalog</a>
+      <a href="/portal">Student Inspection Portal &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    function switchAuthMode(mode) {
+      const tabPass = document.getElementById('tab-pass');
+      const tabPin = document.getElementById('tab-pin');
+      const modePass = document.getElementById('mode-pass');
+      const modePin = document.getElementById('mode-pin');
+      const inputPass = document.getElementById('input-pass');
+      const inputPin = document.getElementById('input-pin');
+
+      if (mode === 'pin') {
+        tabPin.classList.add('active');
+        tabPass.classList.remove('active');
+        modePin.style.display = 'block';
+        modePass.style.display = 'none';
+        inputPin.focus();
+      } else {
+        tabPass.classList.add('active');
+        tabPin.classList.remove('active');
+        modePass.style.display = 'block';
+        modePin.style.display = 'none';
+        inputPass.focus();
+      }
+    }
+  </script>
+</body>
+</html>

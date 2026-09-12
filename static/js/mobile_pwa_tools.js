@@ -262,3 +262,4 @@ class GWIOfflineStore {
 
 window.MasonPlumbHUD = MasonPlumbHUD;
 window.GWIOfflineStore = GWIOfflineStore;
+
