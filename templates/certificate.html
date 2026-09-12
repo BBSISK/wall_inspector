@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificate of Competence - {{ cert.student_name }}</title>
+  <style>
+    body { font-family: "Georgia", serif; background: #0f172a; color: #1e293b; margin: 0; padding: 2.5rem; display: flex; justify-content: center; }
+    .cert-frame { background: #fffcf5; width: 850px; padding: 3rem; border: 8px double #065f46; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+    h1 { font-size: 2.4rem; color: #064e3b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.5rem; }
+    h3 { font-style: italic; font-weight: normal; color: #475569; margin-top: 0; }
+    .name { font-size: 2.2rem; font-weight: bold; color: #0f172a; border-bottom: 2px solid #065f46; display: inline-block; padding: 0 2rem 0.5rem; margin: 1.5rem 0; }
+    .tier { font-size: 1.25rem; font-weight: bold; color: #047857; text-transform: uppercase; }
+    .meta-box { margin-top: 2rem; display: flex; justify-content: space-around; border-top: 1px solid #cbd5e1; padding-top: 1.5rem; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.85rem; color: #64748b; }
+    .seal { display: inline-block; width: 70px; height: 70px; border-radius: 50%; border: 2px dashed #065f46; line-height: 70px; font-weight: bold; color: #065f46; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <div class="cert-frame">
+    <h1>Global Wall Inspector</h1>
+    <h3>Certificate of Structural Assessment Competence</h3>
+
+    <p style="margin-top: 2rem; color: #475569;">This credential certifies that</p>
+    <div class="name">{{ cert.student_name }}</div>
+
+    <p>has successfully completed diagnostic defect evaluations on masonry structures, attaining the award of:</p>
+    <div class="tier">{{ cert.tier }}</div>
+
+    <div class="seal">VERIFIED</div>
+
+    <div class="meta-box">
+      <div><strong>Certificate ID:</strong><br>{{ cert.certificate_code }}</div>
+      <div><strong>Average Benchmark:</strong><br>{{ cert.average_score }}%</div>
+      <div><strong>Walls Assessed:</strong><br>{{ cert.total_walls_evaluated }}</div>
+      <div><strong>Issued Date:</strong><br>{{ cert.issued_at.strftime('%B %d, %Y') }}</div>
+    </div>
+  </div>
+</body>
+</html>
