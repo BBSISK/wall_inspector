@@ -250,6 +250,32 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertIn('BS 8221', spec.get('standard', ''))
         self.assertIn('€', spec.get('estimated_rate_euro', ''))
 
+    def test_embodied_carbon_sustainability_audit(self):
+        """Test EN 15978 / PAS 2080 Embodied Carbon & Heritage Sustainability Audit in Survey Report."""
+        res = self.client.get('/survey/report/ultratech-stone-continuous-joints')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'Embodied Carbon & Heritage Sustainability Audit', res.data)
+        self.assertIn(b'EN 15978 / PAS 2080', res.data)
+        self.assertIn(b'kg CO', res.data)
+        self.assertIn(b'Demolition & Rebuild Carbon', res.data)
+        self.assertIn(b'mature trees / yr', res.data)
+
+    def test_advanced_pathology_tools(self):
+        """Test Advanced Diagnostic Tools in inspection console: Cutaway, Thrust Statics, Tell-Tale, and Voice."""
+        res = self.client.get('/inspect/ultratech-stone-continuous-joints')
+        self.assertEqual(res.status_code, 200)
+        # Verify toolbar trigger buttons
+        self.assertIn(b'tool-cutaway', res.data)
+        self.assertIn(b'tool-thrust', res.data)
+        self.assertIn(b'tool-telltale', res.data)
+        self.assertIn(b'btn-voice-dictate', res.data)
+        # Verify modals and panels
+        self.assertIn(b'cutaway-modal', res.data)
+        self.assertIn(b'thrust-modal', res.data)
+        self.assertIn(b'telltale-telemetry-panel', res.data)
+        self.assertIn(b'voice-transcript-box', res.data)
+
 if __name__ == '__main__':
     unittest.main()
+
 

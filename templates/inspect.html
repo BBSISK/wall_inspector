@@ -117,6 +117,9 @@
         <button type="button" class="zoom-btn" id="tool-hammer">Sounding Hammer</button>
         <button type="button" class="zoom-btn" id="tool-thermal">🌡️ Thermal IR</button>
         <button type="button" class="zoom-btn" id="tool-metrology">📏 Metric Caliper</button>
+        <button type="button" class="zoom-btn" id="tool-cutaway" onclick="openCutawayModal()" style="background: linear-gradient(90deg, #4338ca, #6366f1); color: white; border: none; font-weight: 700;">📐 Core Cutaway</button>
+        <button type="button" class="zoom-btn" id="tool-thrust" onclick="openThrustModal()" style="background: linear-gradient(90deg, #0f766e, #0d9488); color: white; border: none; font-weight: 700;">⚖️ Thrust Statics</button>
+        <button type="button" class="zoom-btn" id="tool-telltale" onclick="toggleTellTaleMode()" style="background: linear-gradient(90deg, #b45309, #d97706); color: white; border: none; font-weight: 700;">⏱️ Tell-Tale Telemetry</button>
         <button type="button" class="zoom-btn" id="tool-ai-conservator" onclick="openAIConservatorModal()" style="background: linear-gradient(90deg, #7c3aed, #4f46e5); color: white; border: none; font-weight: 700;">🤖 AI Conservator</button>
         <button type="button" class="zoom-btn" id="tool-remediation" onclick="openRemediationModal()" style="background: linear-gradient(90deg, #0284c7, #10b981); color: white; border: none; font-weight: 700;">🎚️ Remediation Slider</button>
         <button type="button" class="zoom-btn" id="tool-timeline" onclick="openDeteriorationModal()" style="background: linear-gradient(90deg, #d97706, #dc2626); color: white; border: none; font-weight: 700;">⏳ Lifecycle (€) Forecaster</button>
@@ -128,6 +131,7 @@
         <img id="wall-img" src="{{ wall.image_url }}" alt="Inspection Subject" crossorigin="anonymous">
         <canvas id="thermal-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; pointer-events: none; mix-blend-mode: screen; opacity: 0.85; z-index: 2;"></canvas>
         <svg id="metrology-grid-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; display: none;"></svg>
+        <div id="telltale-gauge-overlay" style="position: absolute; display: none; pointer-events: auto; z-index: 10; cursor: move;"></div>
         <svg id="canvas-overlay"></svg>
       </div>
 
@@ -274,6 +278,18 @@
         <div style="margin-top: 0.5rem;">
           <label>Measured Crack Width (Optional, mm)</label>
           <input type="text" id="marker-width" placeholder="e.g. 1.5mm (BRE Cat 2)">
+        </div>
+
+        <div style="margin-top: 0.6rem;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" class="btn" id="btn-voice-dictate" onclick="toggleVoiceDictation()" style="flex: 1; background: #0f766e; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 0.45rem; font-size: 0.8rem; font-weight: 700;">
+              <span id="voice-icon">🎙️</span> <span id="voice-label">Hands-Free Dictate</span>
+            </button>
+            <button type="button" onclick="simulateVoiceSample()" title="Simulate Sample Spoken Observation" style="background: #334155; color: #93c5fd; border: 1px solid #475569; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.75rem; cursor: pointer; font-weight: 600;">Sample 🗣️</button>
+          </div>
+          <div id="voice-transcript-box" style="display: none; background: #0b1329; border: 1px dashed #0d9488; border-radius: 6px; padding: 6px 10px; font-size: 0.74rem; color: #5eead4; margin-top: 5px; line-height: 1.35;">
+            Listening... Speak observations (e.g. <em>"Found 4mm stepped crack, critical severity, prescribe helical stitching"</em>).
+          </div>
         </div>
         
         <button type="button" class="btn" id="add-marker-btn" style="background: #2563eb; margin-top: 0.75rem;">Pin Clinical Marker</button>
@@ -561,6 +577,259 @@
       <div id="ai-response-area" style="background: #0b1329; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
         <div style="text-align: center; color: #64748b; font-size: 0.85rem;">
           Select a mode and click "Consult AI Conservator Engine" to receive intelligent Socratic guidance or clinical restoration specifications.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Avongard Tell-Tale Telemetry Dashboard -->
+  <div id="telltale-telemetry-panel" style="display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border: 1.5px solid #d97706; border-radius: 12px; width: 340px; padding: 1.1rem; box-shadow: 0 15px 35px rgba(0,0,0,0.7); z-index: 90; color: #f8fafc;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px; margin-bottom: 8px;">
+      <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+        <span>⏱️ Avongard Tell-Tale Telemetry</span>
+      </strong>
+      <button type="button" onclick="closeTellTalePanel()" style="background: none; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <div style="font-size: 0.74rem; color: #94a3b8; margin-bottom: 8px; line-height: 1.35;">
+      Pin gauge across crack on wall. Simulates 12-month displacement vectors.
+    </div>
+
+    <!-- Mode Toggle -->
+    <div style="display: flex; gap: 4px; margin-bottom: 8px; background: #1e293b; padding: 3px; border-radius: 6px;">
+      <button type="button" id="tt-mode-cyclic" onclick="setTellTaleMode('cyclic')" style="flex: 1; border: none; border-radius: 4px; padding: 5px 3px; font-size: 0.7rem; font-weight: 700; cursor: pointer; background: #d97706; color: white;">
+        Cyclic (Thermal)
+      </button>
+      <button type="button" id="tt-mode-prog" onclick="setTellTaleMode('progressive')" style="flex: 1; border: none; border-radius: 4px; padding: 5px 3px; font-size: 0.7rem; font-weight: 700; cursor: pointer; background: transparent; color: #94a3b8;">
+        Progressive (Subsidence)
+      </button>
+    </div>
+
+    <!-- Month Slider -->
+    <div style="margin-bottom: 8px;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #cbd5e1; margin-bottom: 2px;">
+        <span>Timeline:</span>
+        <strong id="tt-month-label" style="color: #38bdf8;">Month 6 (Mid-Year)</strong>
+      </div>
+      <input type="range" id="tt-month-slider" min="0" max="12" value="6" oninput="updateTellTaleReadout()" style="width: 100%;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: #64748b;">
+        <span>M0 (Datum)</span>
+        <span>M3</span>
+        <span>M6</span>
+        <span>M9</span>
+        <span>M12</span>
+      </div>
+    </div>
+
+    <!-- Live Vector Readout & Mini Gauge Graphic -->
+    <div style="display: grid; grid-template-columns: 100px 1fr; gap: 8px; align-items: center; background: #0b1329; border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+      <!-- Mini Avongard Gauge Render -->
+      <div style="position: relative; width: 100px; height: 75px; background: rgba(255,255,255,0.06); border: 1px solid #64748b; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <svg width="90" height="65" viewBox="0 0 90 65" id="tt-mini-svg">
+          <defs>
+            <pattern id="tt-grid-pat" width="6" height="6" patternUnits="userSpaceOnUse">
+              <path d="M 6 0 L 0 0 0 6" fill="none" stroke="#64748b" stroke-width="0.5" stroke-opacity="0.4"/>
+            </pattern>
+          </defs>
+          <rect width="90" height="65" fill="url(#tt-grid-pat)"/>
+          <line x1="45" y1="0" x2="45" y2="65" stroke="#94a3b8" stroke-width="1"/>
+          <line x1="0" y1="32.5" x2="90" y2="32.5" stroke="#94a3b8" stroke-width="1"/>
+          <line id="tt-ind-v" x1="45" y1="0" x2="45" y2="65" stroke="#ef4444" stroke-width="1.5"/>
+          <line id="tt-ind-h" x1="0" y1="32.5" x2="90" y2="32.5" stroke="#ef4444" stroke-width="1.5"/>
+          <circle id="tt-ind-c" cx="45" cy="32.5" r="3" fill="#ef4444"/>
+        </svg>
+      </div>
+
+      <div style="font-family: monospace; font-size: 0.74rem;">
+        <div style="color: #94a3b8;">ΔX (Shear): <strong id="tt-dx" style="color: #38bdf8;">+0.0 mm</strong></div>
+        <div style="color: #94a3b8;">ΔY (Settlement): <strong id="tt-dy" style="color: #f87171;">+0.0 mm</strong></div>
+        <div style="color: #94a3b8;">Vector Mag: <strong id="tt-net" style="color: #34d399;">0.0 mm</strong></div>
+      </div>
+    </div>
+
+    <!-- Telemetry SVG Chart -->
+    <div style="background: #0b1329; border: 1px solid #334155; border-radius: 6px; padding: 6px; margin-bottom: 6px;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: #94a3b8; margin-bottom: 4px;">
+        <span>Displacement Trajectory</span>
+        <span id="tt-trajectory-label" style="color: #fbbf24; font-weight: 700;">Cyclical Elastic</span>
+      </div>
+      <svg id="tt-chart-svg" width="316" height="50" style="display: block;"></svg>
+    </div>
+
+    <!-- Diagnostic Conclusion -->
+    <div id="tt-diagnosis-box" style="font-size: 0.72rem; line-height: 1.35; padding: 6px; border-radius: 6px; background: rgba(30, 41, 59, 0.8); border-left: 3px solid #38bdf8;">
+      Telemetry active. Drag month slider to evaluate displacement trajectory.
+    </div>
+  </div>
+
+  <!-- Feature 1: Architectural Masonry Core Anatomizer & Cutaway Modal -->
+  <div id="cutaway-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); z-index: 135; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #1e293b; border: 1.5px solid #818cf8; border-radius: 14px; max-width: 860px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.8rem; display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.85);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #334155; padding-bottom: 0.75rem;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.3rem; color: #a5b4fc; display: flex; align-items: center; gap: 10px;">
+            <span>📐 Architectural Masonry Core Anatomizer & Cutaway</span>
+          </h3>
+          <p style="margin: 0.3rem 0 0; font-size: 0.85rem; color: #94a3b8;">
+            Internal wythe depth slicing revealing core rubble packing, through-stones, cavity ties, and moisture lines.
+          </p>
+        </div>
+        <button onclick="closeCutawayModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.8rem; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Cutaway Controls Bar -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.75rem 1rem; align-items: center;">
+        <div>
+          <label style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; display: block; margin-bottom: 3px;">
+            Cross-Section Depth Plane: <strong id="cutaway-depth-val" style="color: #818cf8;">50% (Core Hearting)</strong>
+          </label>
+          <input type="range" id="cutaway-depth-slider" min="0" max="100" value="50" oninput="updateCutawayView()" style="width: 100%;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: #64748b;">
+            <span>0% Face Skin</span>
+            <span>50% Transverse Core</span>
+            <span>100% Back Wythe</span>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; display: block; margin-bottom: 3px;">
+            Active Archetype Anatomy
+          </label>
+          <select id="cutaway-archetype-select" onchange="updateCutawayView()" style="width: 100%; background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.82rem;">
+            <option value="brick_cavity">Brick Cavity (Twin Wythe + Tie Cavity)</option>
+            <option value="dry_stone">Dry Stone (Double-Faced + Rubble Hearting)</option>
+            <option value="lime_mortar">Historic Lime Mortar (Ashlar + Grout Matrix)</option>
+            <option value="stone_rubble">Stone Rubble (Battered Wythe + Cavern Core)</option>
+            <option value="retaining_wall">Retaining Wall (Gravity Batter + Weep Drainage)</option>
+            <option value="cob_earth">Cob & Earth (Monolith + Basal Plinth)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Pathology Highlight</label>
+          <button type="button" id="btn-toggle-cutaway-defect" onclick="toggleCutawayDefect()" style="background: #ef4444; color: white; border: none; border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+            ⚠️ Reveal Internal Void
+          </button>
+        </div>
+      </div>
+
+      <!-- Cutaway Interactive SVG Canvas -->
+      <div style="background: #070d1e; border: 1.5px solid #334155; border-radius: 10px; padding: 1rem; display: flex; justify-content: center; align-items: center; min-height: 300px; overflow: hidden; position: relative;">
+        <svg id="cutaway-svg" width="760" height="280" viewBox="0 0 760 280" style="max-width: 100%; height: auto; display: block;"></svg>
+      </div>
+
+      <!-- Cutaway Engineering Metrics & Pathology Summary -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+        <div style="background: #0f172a; border-left: 3px solid #818cf8; border-radius: 6px; padding: 0.75rem;">
+          <strong style="color: #a5b4fc; font-size: 0.72rem; text-transform: uppercase; display: block; margin-bottom: 2px;">Transverse Tie Binding</strong>
+          <p id="cutaway-metric-tie" style="margin: 0; font-size: 0.8rem; color: #cbd5e1; line-height: 1.35;">
+            Through-stones must bridge ≥75% of total wall thickness at 1.0m horizontal intervals (BS 5628 / EN 1996-1-1).
+          </p>
+        </div>
+
+        <div style="background: #0f172a; border-left: 3px solid #fbbf24; border-radius: 6px; padding: 0.75rem;">
+          <strong style="color: #fde68a; font-size: 0.72rem; text-transform: uppercase; display: block; margin-bottom: 2px;">Subsurface Failure Mechanism</strong>
+          <p id="cutaway-metric-failure" style="margin: 0; font-size: 0.8rem; color: #cbd5e1; line-height: 1.35;">
+            Internal voiding leads to unconstrained outward wythe bulging under gravity service load.
+          </p>
+        </div>
+
+        <div style="background: #0f172a; border-left: 3px solid #34d399; border-radius: 6px; padding: 0.75rem;">
+          <strong style="color: #a7f3d0; font-size: 0.72rem; text-transform: uppercase; display: block; margin-bottom: 2px;">Surgical Remedial Prescription</strong>
+          <p id="cutaway-metric-prescription" style="margin: 0; font-size: 0.8rem; color: #cbd5e1; line-height: 1.35;">
+            Non-destructive core grout injection with hydraulic lime NHL 2 slurry at 1.5 bar max pressure.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 2: Graphic Statics Middle-Third Thrust Line Simulator Modal -->
+  <div id="thrust-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); z-index: 135; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #1e293b; border: 1.5px solid #14b8a6; border-radius: 14px; max-width: 880px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.8rem; display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.85);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #334155; padding-bottom: 0.75rem;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.3rem; color: #5eead4; display: flex; align-items: center; gap: 10px;">
+            <span>⚖️ Middle-Third Thrust Line & Gravity Wall Stability Engine</span>
+          </h3>
+          <p style="margin: 0.3rem 0 0; font-size: 0.85rem; color: #94a3b8;">
+            Graphic Statics simulation calculating gravitational equilibrium, overturning moments, and Mery's middle-third kern (BS 8002 / Eurocode 7).
+          </p>
+        </div>
+        <button onclick="closeThrustModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.8rem; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Thrust Statics Live Canvas & Interactive Controls Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 310px; gap: 1rem; align-items: stretch;">
+        <!-- Canvas Rendering Box -->
+        <div style="background: #070d1e; border: 1.5px solid #334155; border-radius: 10px; padding: 0.75rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">
+            <span>Cross-Section Graphic Statics</span>
+            <span id="thrust-kern-badge" style="background: #065f46; color: #6ee7b7; font-weight: 800; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem;">
+              STABLE (MIDDLE THIRD)
+            </span>
+          </div>
+          <canvas id="thrust-canvas" width="500" height="280" style="width: 100%; height: auto; display: block; border-radius: 6px;"></canvas>
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #cbd5e1; margin-top: 6px; padding: 4px 8px; background: #0f172a; border-radius: 4px;">
+            <span>Toe Base Width: <strong>1.40 m</strong></span>
+            <span>Kern Safe Zone: <strong>[0.47m - 0.93m]</strong></span>
+            <span>Thrust Intercept: <strong id="thrust-intercept-val" style="color: #34d399;">0.65 m</strong></span>
+          </div>
+        </div>
+
+        <!-- Slider Controls Sidebar -->
+        <div style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; font-weight: 700; margin-bottom: 2px;">
+              <span>Wall Batter (Slope):</span>
+              <strong id="thrust-batter-val" style="color: #5eead4;">1:8 Inward Batter</strong>
+            </div>
+            <input type="range" id="thrust-batter-slider" min="4" max="16" value="8" oninput="calculateThrustStatics()" style="width: 100%;">
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; font-weight: 700; margin-bottom: 2px;">
+              <span>Retained Surcharge:</span>
+              <strong id="thrust-surcharge-val" style="color: #fbbf24;">1.0 m Surcharge</strong>
+            </div>
+            <input type="range" id="thrust-surcharge-slider" min="0" max="30" value="10" oninput="calculateThrustStatics()" style="width: 100%;">
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; font-weight: 700; margin-bottom: 2px;">
+              <span>Water Table / Weep Condition:</span>
+              <strong id="thrust-water-val" style="color: #38bdf8;">25% Saturation</strong>
+            </div>
+            <input type="range" id="thrust-water-slider" min="0" max="100" value="25" oninput="calculateThrustStatics()" style="width: 100%;">
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; font-weight: 700; margin-bottom: 2px;">
+              <span>Masonry Density:</span>
+              <strong id="thrust-density-val" style="color: #cbd5e1;">24 kN/m³ (Granite)</strong>
+            </div>
+            <input type="range" id="thrust-density-slider" min="18" max="27" value="24" oninput="calculateThrustStatics()" style="width: 100%;">
+          </div>
+
+          <!-- Factor of Safety Metrics Box -->
+          <div style="background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-family: monospace; font-size: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span style="color: #94a3b8;">FoS Overturning:</span>
+              <strong id="thrust-fos-overturn" style="color: #34d399;">2.45 (Safe ≥ 2.0)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span style="color: #94a3b8;">FoS Base Sliding:</span>
+              <strong id="thrust-fos-sliding" style="color: #34d399;">1.82 (Safe ≥ 1.5)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Base Eccentricity:</span>
+              <strong id="thrust-eccentricity" style="color: #38bdf8;">e = 0.05 m</strong>
+            </div>
+          </div>
+
+          <div id="thrust-advice-box" style="font-size: 0.72rem; color: #94a3b8; line-height: 1.35; padding: 6px 8px; background: rgba(15, 23, 42, 0.6); border-left: 3px solid #14b8a6; border-radius: 4px;">
+            Resultant thrust line lies comfortably within middle third kern. Tensile rupture avoided.
+          </div>
         </div>
       </div>
     </div>
@@ -1103,6 +1372,18 @@
     });
 
     svg.addEventListener("mousedown", (e) => {
+      if (isTellTalePlacementActive) {
+        const bounds = svg.getBoundingClientRect();
+        const clickX = (e.clientX - bounds.left) / (bounds.width || 1);
+        const clickY = (e.clientY - bounds.top) / (bounds.height || 1);
+        tellTalePin = { x: Math.max(0.05, Math.min(0.95, clickX)), y: Math.max(0.05, Math.min(0.95, clickY)) };
+        renderTellTaleOverlay();
+        const panel = document.getElementById('telltale-telemetry-panel');
+        if (panel) panel.style.display = 'block';
+        updateTellTaleReadout();
+        return;
+      }
+
       if (activeTool === "pan") {
         isPanning = true;
         panStartX = e.clientX - panX;
@@ -1954,6 +2235,701 @@
       }
     }
 
+    // =========================================================================
+    // FEATURE 1: ARCHITECTURAL MASONRY CORE ANATOMIZER & CUTAWAY
+    // =========================================================================
+    let showCutawayDefect = false;
+
+    function openCutawayModal() {
+      const modal = document.getElementById('cutaway-modal');
+      if (modal) modal.style.display = 'flex';
+      const sel = document.getElementById('cutaway-archetype-select');
+      if (sel) {
+        for (let opt of sel.options) {
+          if (opt.value === WALL_TYPE) {
+            sel.value = WALL_TYPE;
+            break;
+          }
+        }
+      }
+      updateCutawayView();
+    }
+
+    function closeCutawayModal() {
+      const modal = document.getElementById('cutaway-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function toggleCutawayDefect() {
+      showCutawayDefect = !showCutawayDefect;
+      const btn = document.getElementById('btn-toggle-cutaway-defect');
+      if (btn) {
+        btn.innerText = showCutawayDefect ? '✅ Void Highlight Active' : '⚠️ Reveal Internal Void';
+        btn.style.background = showCutawayDefect ? '#059669' : '#ef4444';
+      }
+      updateCutawayView();
+    }
+
+    function updateCutawayView() {
+      const slider = document.getElementById('cutaway-depth-slider');
+      const depth = parseInt(slider ? slider.value : 50);
+      const sel = document.getElementById('cutaway-archetype-select');
+      const atype = sel ? sel.value : (WALL_TYPE || 'brick_cavity');
+
+      const depthLabel = document.getElementById('cutaway-depth-val');
+      if (depthLabel) {
+        if (depth < 30) depthLabel.innerText = `${depth}% (Outer Face Skin)`;
+        else if (depth <= 70) depthLabel.innerText = `${depth}% (Core Hearting & Transverse Ties)`;
+        else depthLabel.innerText = `${depth}% (Rear Wythe / Backfill)`;
+      }
+
+      const svg = document.getElementById('cutaway-svg');
+      if (!svg) return;
+
+      let svgContent = `
+        <defs>
+          <pattern id="brick-pat" width="40" height="20" patternUnits="userSpaceOnUse">
+            <rect width="38" height="18" fill="#b91c1c" rx="1"/>
+            <line x1="0" y1="19" x2="40" y2="19" stroke="#cbd5e1" stroke-width="2"/>
+            <line x1="39" y1="0" x2="39" y2="20" stroke="#cbd5e1" stroke-width="2"/>
+          </pattern>
+          <pattern id="rubble-pat" width="50" height="40" patternUnits="userSpaceOnUse">
+            <polygon points="5,5 25,2 45,15 35,35 12,32" fill="#475569" stroke="#1e293b" stroke-width="1.5"/>
+            <polygon points="28,8 48,12 40,28 22,25" fill="#64748b" stroke="#1e293b" stroke-width="1"/>
+          </pattern>
+          <pattern id="soil-pat" width="20" height="20" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="20" y2="0" stroke="#78350f" stroke-width="1" stroke-opacity="0.5"/>
+          </pattern>
+        </defs>
+      `;
+
+      svgContent += `<rect x="50" y="240" width="660" height="40" fill="#0f172a" stroke="#334155" stroke-width="1"/>`;
+      svgContent += `<text x="60" y="265" fill="#64748b" font-size="11" font-family="monospace">FOUNDATION BEDDING PLANE / SUB-BASE</text>`;
+
+      const sliceX = 180 + (depth / 100) * 400;
+
+      if (atype === 'brick_cavity') {
+        svgContent += `<rect x="180" y="40" width="100" height="200" fill="url(#brick-pat)" stroke="#ef4444" stroke-width="2"/>`;
+        svgContent += `<text x="185" y="32" fill="#ef4444" font-size="11" font-weight="bold">Outer Brick Wythe (102.5mm)</text>`;
+
+        svgContent += `<rect x="280" y="40" width="70" height="200" fill="#0b1329" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="1.5"/>`;
+        svgContent += `<text x="285" y="32" fill="#38bdf8" font-size="11" font-weight="bold">50mm Cavity</text>`;
+
+        const tieColor = showCutawayDefect ? '#ef4444' : '#10b981';
+        svgContent += `<line x1="260" y1="90" x2="370" y2="90" stroke="${tieColor}" stroke-width="4"/>`;
+        svgContent += `<line x1="260" y1="160" x2="370" y2="160" stroke="${tieColor}" stroke-width="4"/>`;
+        svgContent += `<circle cx="315" cy="90" r="5" fill="${showCutawayDefect ? '#dc2626' : '#34d399'}"/>`;
+        svgContent += `<circle cx="315" cy="160" r="5" fill="${showCutawayDefect ? '#dc2626' : '#34d399'}"/>`;
+
+        svgContent += `<rect x="350" y="40" width="130" height="200" fill="#334155" stroke="#94a3b8" stroke-width="2"/>`;
+        svgContent += `<text x="355" y="32" fill="#94a3b8" font-size="11" font-weight="bold">Inner Block Wythe (100mm)</text>`;
+
+        svgContent += `<line x1="170" y1="215" x2="490" y2="215" stroke="#38bdf8" stroke-width="3"/>`;
+        svgContent += `<text x="500" y="218" fill="#38bdf8" font-size="10" font-family="monospace">DPC Line (+150mm Ground)</text>`;
+
+        if (showCutawayDefect) {
+          svgContent += `<rect x="295" y="75" width="40" height="30" fill="rgba(239, 68, 68, 0.4)" rx="4"/>`;
+          svgContent += `<text x="300" y="102" fill="#fca5a5" font-size="9" font-weight="bold">CORRODED TIE</text>`;
+        }
+      } else if (atype === 'dry_stone' || atype === 'stone_rubble') {
+        svgContent += `<polygon points="180,240 210,40 270,40 280,240" fill="#475569" stroke="#94a3b8" stroke-width="2"/>`;
+        svgContent += `<text x="175" y="30" fill="#38bdf8" font-size="11" font-weight="bold">Front Wythe (1:8 Batter)</text>`;
+
+        svgContent += `<rect x="270" y="50" width="140" height="190" fill="url(#rubble-pat)" stroke="#64748b" stroke-width="1.5"/>`;
+        svgContent += `<text x="285" y="40" fill="#fbbf24" font-size="11" font-weight="bold">Core Rubble Packing</text>`;
+
+        svgContent += `<polygon points="400,240 410,40 470,40 500,240" fill="#475569" stroke="#94a3b8" stroke-width="2"/>`;
+        svgContent += `<text x="430" y="30" fill="#38bdf8" font-size="11" font-weight="bold">Rear Wythe</text>`;
+
+        svgContent += `<polygon points="190,40 240,15 440,15 490,40" fill="#64748b" stroke="#e2e8f0" stroke-width="2"/>`;
+        svgContent += `<text x="290" y="25" fill="#f8fafc" font-size="10" font-weight="bold">Coping Capstone</text>`;
+
+        const parpenColor = showCutawayDefect ? '#dc2626' : '#10b981';
+        svgContent += `<rect x="220" y="130" width="240" height="30" fill="${parpenColor}" fill-opacity="0.35" stroke="${parpenColor}" stroke-width="2" rx="3"/>`;
+        svgContent += `<text x="245" y="150" fill="${parpenColor}" font-size="11" font-weight="bold">Transverse Through-Stone (Parpen)</text>`;
+
+        if (showCutawayDefect) {
+          svgContent += `<ellipse cx="340" cy="90" rx="45" ry="25" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-dasharray="3,3"/>`;
+          svgContent += `<text x="310" y="93" fill="#fca5a5" font-size="10" font-weight="bold">HEARTING VOID</text>`;
+        }
+      } else if (atype === 'retaining_wall') {
+        svgContent += `<polygon points="180,240 250,40 330,40 370,240" fill="#475569" stroke="#94a3b8" stroke-width="2"/>`;
+        svgContent += `<text x="180" y="30" fill="#38bdf8" font-size="11" font-weight="bold">Retaining Mass (Batter 1:6)</text>`;
+
+        svgContent += `<polygon points="330,40 420,40 440,240 370,240" fill="#334155" stroke="#38bdf8" stroke-dasharray="3,3"/>`;
+        svgContent += `<text x="345" y="55" fill="#38bdf8" font-size="10" font-weight="bold">Drainage Gravel</text>`;
+
+        svgContent += `<rect x="420" y="40" width="200" height="200" fill="url(#soil-pat)" stroke="#78350f"/>`;
+        svgContent += `<text x="460" y="60" fill="#d97706" font-size="11" font-weight="bold">Retained Backfill Surcharge</text>`;
+
+        svgContent += `<rect x="220" y="210" width="160" height="15" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" rx="3"/>`;
+        svgContent += `<text x="235" y="222" fill="#ffffff" font-size="9" font-weight="bold">75mm Weep Pipe</text>`;
+
+        if (showCutawayDefect) {
+          svgContent += `<polygon points="330,120 440,80 440,240 370,240" fill="rgba(2, 132, 199, 0.45)" stroke="#0284c7" stroke-width="2"/>`;
+          svgContent += `<text x="345" y="150" fill="#38bdf8" font-size="10" font-weight="bold">HYDROSTATIC HEAD</text>`;
+        }
+      } else {
+        svgContent += `<rect x="200" y="40" width="120" height="200" fill="#475569" stroke="#e2e8f0" stroke-width="2"/>`;
+        svgContent += `<text x="210" y="30" fill="#38bdf8" font-size="11" font-weight="bold">Dressed Stone Skin (150mm)</text>`;
+
+        svgContent += `<rect x="320" y="40" width="160" height="200" fill="url(#rubble-pat)" stroke="#94a3b8" stroke-width="2"/>`;
+        svgContent += `<text x="340" y="30" fill="#fbbf24" font-size="11" font-weight="bold">Hydraulic Lime Grout Core</text>`;
+
+        for (let y = 80; y <= 200; y += 40) {
+          svgContent += `<line x1="190" y1="${y}" x2="490" y2="${y}" stroke="#f8fafc" stroke-width="2"/>`;
+        }
+
+        if (showCutawayDefect) {
+          svgContent += `<rect x="340" y="100" width="80" height="50" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-dasharray="4,4"/>`;
+          svgContent += `<text x="345" y="128" fill="#fca5a5" font-size="10" font-weight="bold">GROUT CAVITY VOID</text>`;
+        }
+      }
+
+      svgContent += `
+        <line x1="${sliceX}" y1="10" x2="${sliceX}" y2="250" stroke="#818cf8" stroke-width="2.5" stroke-dasharray="6,4"/>
+        <circle cx="${sliceX}" cy="10" r="5" fill="#818cf8"/>
+        <circle cx="${sliceX}" cy="250" r="5" fill="#818cf8"/>
+        <text x="${sliceX - 45}" y="275" fill="#818cf8" font-size="10" font-family="monospace" font-weight="bold">Slice Depth: ${depth}%</text>
+      `;
+
+      svg.innerHTML = svgContent;
+
+      const tieEl = document.getElementById('cutaway-metric-tie');
+      const failEl = document.getElementById('cutaway-metric-failure');
+      const presEl = document.getElementById('cutaway-metric-prescription');
+
+      if (atype === 'brick_cavity') {
+        if (tieEl) tieEl.innerText = "Stainless cavity ties must be spaced at 900mm horizontal x 450mm vertical stagger (BS EN 845-1).";
+        if (failEl) failEl.innerText = showCutawayDefect ? "Corroded ferrous ties expanding up to 7x volume, jacking bed joints open." : "Cavity clear of mortar droppings; thermal and moisture insulation integrity maintained.";
+        if (presEl) presEl.innerText = "Surgically install austenitic Grade 316 remedial helical ties with resin anchors.";
+      } else if (atype === 'dry_stone') {
+        if (tieEl) tieEl.innerText = "Through-stones (parpens) must be installed at minimum 1 per square meter of wall face.";
+        if (failEl) failEl.innerText = showCutawayDefect ? "Loss of hearting stones triggers inward wythe buckling under service gravity loads." : "Hearting tightly hand-packed; frictional equilibrium intact.";
+        if (presEl) presEl.innerText = "Dismantle defective crest section and rebuild with through-stones bridging full width.";
+      } else if (atype === 'retaining_wall') {
+        if (tieEl) tieEl.innerText = "Gravity retaining walls rely on self-weight and inward batter to resist lateral overturning.";
+        if (failEl) failEl.innerText = showCutawayDefect ? "Trapped groundwater generates 15-25 kPa hydrostatic thrust, pushing toe stones outward." : "Permeable gravel blanket and clear weeps relieve all hydrostatic pore pressure.";
+        if (presEl) presEl.innerText = "Core-drill 75mm weep holes with filter geotextile at 1.5m horizontal spacing.";
+      } else {
+        if (tieEl) tieEl.innerText = "Hydraulic lime mortar binder bonds rubble and dressed ashlar into cohesive mass.";
+        if (failEl) failEl.innerText = showCutawayDefect ? "Mortar washout leaves cavernous voids, threatening sudden settlement collapse." : "Lime matrix intact; vapor permeability facilitates cyclic drying.";
+        if (presEl) presEl.innerText = "Low-pressure void consolidation with NHL 2 lime slurry and repoint joints.";
+      }
+    }
+
+    // =========================================================================
+    // FEATURE 2: MIDDLE-THIRD THRUST LINE & STABILITY SIMULATOR
+    // =========================================================================
+    function openThrustModal() {
+      const modal = document.getElementById('thrust-modal');
+      if (modal) modal.style.display = 'flex';
+      calculateThrustStatics();
+    }
+
+    function closeThrustModal() {
+      const modal = document.getElementById('thrust-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function calculateThrustStatics() {
+      const batterSlider = document.getElementById('thrust-batter-slider');
+      const surchargeSlider = document.getElementById('thrust-surcharge-slider');
+      const waterSlider = document.getElementById('thrust-water-slider');
+      const densitySlider = document.getElementById('thrust-density-slider');
+
+      const batterRatio = parseInt(batterSlider ? batterSlider.value : 8);
+      const surchargeH = (parseInt(surchargeSlider ? surchargeSlider.value : 10)) / 10;
+      const waterPct = (parseInt(waterSlider ? waterSlider.value : 25)) / 100;
+      const gammaMasonry = parseInt(densitySlider ? densitySlider.value : 24);
+
+      const bVal = document.getElementById('thrust-batter-val');
+      if (bVal) bVal.innerText = `1:${batterRatio} Inward Batter`;
+      const sVal = document.getElementById('thrust-surcharge-val');
+      if (sVal) sVal.innerText = `${surchargeH.toFixed(1)} m Surcharge`;
+      const wVal = document.getElementById('thrust-water-val');
+      if (wVal) wVal.innerText = `${Math.round(waterPct * 100)}% Saturation`;
+      const dVal = document.getElementById('thrust-density-val');
+      if (dVal) dVal.innerText = `${gammaMasonry} kN/m³`;
+
+      const H = 3.0;
+      const bTop = 0.5;
+      const deltaB = H / batterRatio;
+      const B = bTop + deltaB + 0.4;
+
+      const kernLeft = B / 3;
+      const kernRight = (2 * B) / 3;
+
+      const W_rect = bTop * H * gammaMasonry;
+      const x_rect = B - bTop / 2;
+      const W_tri = 0.5 * (B - bTop) * H * gammaMasonry;
+      const x_tri = (B - bTop) * (2 / 3);
+
+      const W = W_rect + W_tri;
+      const x_cg = (W_rect * x_rect + W_tri * x_tri) / W;
+
+      const Ka = 0.33;
+      const gammaSoil = 18.0;
+      const Pa = 0.5 * Ka * gammaSoil * Math.pow(H + surchargeH, 2);
+      const y_Pa = (H + surchargeH) / 3;
+
+      const hWater = H * waterPct;
+      const Pw = 0.5 * 9.81 * Math.pow(hWater, 2);
+      const y_Pw = hWater / 3;
+
+      const M_resist = W * x_cg;
+      const M_overturn = Pa * y_Pa + Pw * y_Pw;
+
+      const x_R = (M_resist - M_overturn) / W;
+      const eccentricity = Math.abs(x_R - B / 2);
+
+      const FoS_overturn = M_overturn > 0 ? (M_resist / M_overturn) : 9.99;
+      const mu = 0.55;
+      const FoS_sliding = (W * mu) / (Pa + Pw);
+
+      const fosO = document.getElementById('thrust-fos-overturn');
+      if (fosO) {
+        fosO.innerText = `${FoS_overturn.toFixed(2)} (${FoS_overturn >= 2.0 ? 'Safe ≥ 2.0' : 'UNSAFE < 2.0'})`;
+        fosO.style.color = FoS_overturn >= 2.0 ? '#34d399' : '#ef4444';
+      }
+
+      const fosS = document.getElementById('thrust-fos-sliding');
+      if (fosS) {
+        fosS.innerText = `${FoS_sliding.toFixed(2)} (${FoS_sliding >= 1.5 ? 'Safe ≥ 1.5' : 'UNSAFE < 1.5'})`;
+        fosS.style.color = FoS_sliding >= 1.5 ? '#34d399' : '#ef4444';
+      }
+
+      const eccEl = document.getElementById('thrust-eccentricity');
+      if (eccEl) eccEl.innerText = `e = ${eccentricity.toFixed(2)} m`;
+
+      const xInterceptEl = document.getElementById('thrust-intercept-val');
+      if (xInterceptEl) xInterceptEl.innerText = `${x_R.toFixed(2)} m`;
+
+      const badge = document.getElementById('thrust-kern-badge');
+      const advice = document.getElementById('thrust-advice-box');
+
+      const isInsideKern = (x_R >= kernLeft && x_R <= kernRight);
+      const isOverturning = (x_R <= 0);
+
+      if (isOverturning) {
+        if (badge) {
+          badge.innerText = 'COLLAPSE: RESULTANT OUTSIDE TOE';
+          badge.style.background = '#991b1b';
+          badge.style.color = '#fecaca';
+        }
+        if (advice) advice.innerText = 'CRITICAL OVERTURNING MOMENT! Resultant force has exited foundation toe. Immediate shoring and relief drainage required.';
+      } else if (!isInsideKern) {
+        if (badge) {
+          badge.innerText = 'TENSILE OPENING (OUTSIDE KERN)';
+          badge.style.background = '#92400e';
+          badge.style.color = '#fde68a';
+        }
+        if (advice) advice.innerText = 'Resultant has exited middle third kern! Heel bed joints are in active tension, admitting moisture. Increase inward batter or clear weepholes.';
+      } else {
+        if (badge) {
+          badge.innerText = 'STABLE (INSIDE MIDDLE THIRD)';
+          badge.style.background = '#065f46';
+          badge.style.color = '#6ee7b7';
+        }
+        if (advice) advice.innerText = 'Resultant thrust line lies comfortably within middle third kern. All bedding joints under full compression.';
+      }
+
+      drawThrustCanvas(B, H, bTop, kernLeft, kernRight, x_R, x_cg, Pa + Pw, W, waterPct, isInsideKern);
+    }
+
+    function drawThrustCanvas(B, H, bTop, kernLeft, kernRight, x_R, x_cg, P_lat, W, waterPct, isInsideKern) {
+      const canvas = document.getElementById('thrust-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const originX = 140;
+      const originY = 240;
+      const scale = 80;
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(20, originY);
+      ctx.lineTo(w - 20, originY);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(120, 53, 15, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(originX + B * scale, originY);
+      ctx.lineTo(w - 30, originY);
+      ctx.lineTo(w - 30, originY - H * scale);
+      ctx.lineTo(originX + B * scale, originY - H * scale);
+      ctx.closePath();
+      ctx.fill();
+
+      if (waterPct > 0) {
+        ctx.fillStyle = 'rgba(2, 132, 199, 0.35)';
+        ctx.fillRect(originX + B * scale, originY - H * waterPct * scale, w - 30 - (originX + B * scale), H * waterPct * scale);
+      }
+
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(originX + B * scale, originY);
+      ctx.lineTo(originX + B * scale, originY - H * scale);
+      ctx.lineTo(originX + (B - bTop) * scale, originY - H * scale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(originX + kernLeft * scale, originY);
+      ctx.lineTo(originX + kernRight * scale, originY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#34d399';
+      ctx.font = '10px monospace';
+      ctx.fillText('B/3', originX + kernLeft * scale - 10, originY + 18);
+      ctx.fillText('2B/3', originX + kernRight * scale - 10, originY + 18);
+
+      const resX = originX + x_R * scale;
+      ctx.strokeStyle = isInsideKern ? '#34d399' : '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(originX + x_cg * scale, originY - H * 0.6 * scale);
+      ctx.lineTo(resX, originY);
+      ctx.stroke();
+
+      ctx.fillStyle = isInsideKern ? '#34d399' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(resX, originY, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('Toe', originX - 25, originY + 5);
+      ctx.fillText('Heel', originX + B * scale + 8, originY + 5);
+      ctx.fillStyle = isInsideKern ? '#34d399' : '#ef4444';
+      ctx.fillText(`Resultant R (${x_R.toFixed(2)}m)`, resX - 35, originY - 10);
+    }
+
+    // =========================================================================
+    // FEATURE 3: AVONGARD TELL-TALE CRACK GAUGE & 12-MONTH TELEMETRY
+    // =========================================================================
+    let isTellTalePlacementActive = false;
+    let tellTalePin = null;
+    let tellTaleMode = 'cyclic';
+
+    function toggleTellTaleMode() {
+      isTellTalePlacementActive = !isTellTalePlacementActive;
+      const btn = document.getElementById('tool-telltale');
+      if (btn) {
+        btn.classList.toggle('active', isTellTalePlacementActive);
+        btn.style.boxShadow = isTellTalePlacementActive ? '0 0 12px #f59e0b' : 'none';
+      }
+
+      const panel = document.getElementById('telltale-telemetry-panel');
+      if (isTellTalePlacementActive) {
+        if (!tellTalePin) {
+          tellTalePin = { x: 0.5, y: 0.5 };
+        }
+        renderTellTaleOverlay();
+        if (panel) panel.style.display = 'block';
+        updateTellTaleReadout();
+      } else {
+        if (panel) panel.style.display = 'none';
+      }
+    }
+
+    function closeTellTalePanel() {
+      const panel = document.getElementById('telltale-telemetry-panel');
+      if (panel) panel.style.display = 'none';
+      isTellTalePlacementActive = false;
+      const btn = document.getElementById('tool-telltale');
+      if (btn) {
+        btn.classList.remove('active');
+        btn.style.boxShadow = 'none';
+      }
+      const overlay = document.getElementById('telltale-gauge-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    function setTellTaleMode(m) {
+      tellTaleMode = m;
+      const btnC = document.getElementById('tt-mode-cyclic');
+      const btnP = document.getElementById('tt-mode-prog');
+      if (btnC && btnP) {
+        if (m === 'cyclic') {
+          btnC.style.background = '#d97706';
+          btnC.style.color = 'white';
+          btnP.style.background = 'transparent';
+          btnP.style.color = '#94a3b8';
+        } else {
+          btnP.style.background = '#d97706';
+          btnP.style.color = 'white';
+          btnC.style.background = 'transparent';
+          btnC.style.color = '#94a3b8';
+        }
+      }
+      updateTellTaleReadout();
+    }
+
+    function renderTellTaleOverlay() {
+      const overlay = document.getElementById('telltale-gauge-overlay');
+      if (!overlay || !tellTalePin) return;
+
+      overlay.style.display = 'block';
+      overlay.style.left = `${tellTalePin.x * 100}%`;
+      overlay.style.top = `${tellTalePin.y * 100}%`;
+      overlay.style.transform = 'translate(-50%, -50%)';
+
+      overlay.innerHTML = `
+        <div style="background: rgba(255,255,255,0.85); border: 1.5px solid #0f172a; border-radius: 4px; padding: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: 70px; height: 50px; position: relative;">
+          <div style="font-size: 8px; font-weight: bold; color: #0f172a; text-align: center; font-family: monospace;">AVONGARD</div>
+          <div style="position: absolute; inset: 16px 4px 4px 4px; border: 1px solid #94a3b8; background: white; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 100%; height: 1px; background: #ef4444; position: absolute;"></div>
+            <div style="width: 1px; height: 100%; background: #ef4444; position: absolute;"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateTellTaleReadout() {
+      const slider = document.getElementById('tt-month-slider');
+      const m = parseInt(slider ? slider.value : 6);
+
+      const mLabel = document.getElementById('tt-month-label');
+      if (mLabel) mLabel.innerText = `Month ${m} (${m === 0 ? 'Datum Baseline' : m <= 4 ? 'Spring' : m <= 8 ? 'Summer' : 'Winter Period'})`;
+
+      let dx = 0.0, dy = 0.0;
+      if (tellTaleMode === 'cyclic') {
+        dx = 1.8 * Math.sin((m * Math.PI) / 6);
+        dy = 0.3 * Math.sin((m * Math.PI) / 6);
+      } else {
+        dx = 0.25 * m;
+        dy = 0.40 * m;
+      }
+
+      const net = Math.sqrt(dx * dx + dy * dy);
+
+      const dxEl = document.getElementById('tt-dx');
+      if (dxEl) dxEl.innerText = `${dx >= 0 ? '+' : ''}${dx.toFixed(1)} mm`;
+
+      const dyEl = document.getElementById('tt-dy');
+      if (dyEl) dyEl.innerText = `${dy >= 0 ? '+' : ''}${dy.toFixed(1)} mm`;
+
+      const netEl = document.getElementById('tt-net');
+      if (netEl) netEl.innerText = `${net.toFixed(1)} mm`;
+
+      const indV = document.getElementById('tt-ind-v');
+      const indH = document.getElementById('tt-ind-h');
+      const indC = document.getElementById('tt-ind-c');
+      if (indV && indH && indC) {
+        const cx = 45 + dx * 8;
+        const cy = 32.5 + dy * 8;
+        indV.setAttribute('x1', cx);
+        indV.setAttribute('x2', cx);
+        indH.setAttribute('y1', cy);
+        indH.setAttribute('y2', cy);
+        indC.setAttribute('cx', cx);
+        indC.setAttribute('cy', cy);
+      }
+
+      const chartSvg = document.getElementById('tt-chart-svg');
+      if (chartSvg) {
+        let pts = [];
+        for (let i = 0; i <= 12; i++) {
+          let px = 10 + (i / 12) * 296;
+          let val = (tellTaleMode === 'cyclic') ? 1.8 * Math.sin((i * Math.PI) / 6) : (0.40 * i);
+          let py = 25 - val * 4.5;
+          pts.push(`${px.toFixed(1)},${py.toFixed(1)}`);
+        }
+        const polyPoints = pts.join(' ');
+        const currX = 10 + (m / 12) * 296;
+        const currVal = (tellTaleMode === 'cyclic') ? 1.8 * Math.sin((m * Math.PI) / 6) : (0.40 * m);
+        const currY = 25 - currVal * 4.5;
+
+        chartSvg.innerHTML = `
+          <line x1="10" y1="25" x2="306" y2="25" stroke="#334155" stroke-width="1"/>
+          <polyline points="${polyPoints}" fill="none" stroke="${tellTaleMode === 'cyclic' ? '#38bdf8' : '#ef4444'}" stroke-width="2"/>
+          <circle cx="${currX}" cy="${currY}" r="4" fill="#fbbf24"/>
+        `;
+      }
+
+      const diagBox = document.getElementById('tt-diagnosis-box');
+      const trajLbl = document.getElementById('tt-trajectory-label');
+      if (tellTaleMode === 'cyclic') {
+        if (trajLbl) { trajLbl.innerText = 'Cyclical Elastic'; trajLbl.style.color = '#38bdf8'; }
+        if (diagBox) {
+          diagBox.style.borderLeftColor = '#38bdf8';
+          diagBox.innerHTML = `<strong>Cyclic Seasonal Breathing:</strong> Displacements oscillate sinusoidally and return to datum. Structure is sound. <em>Prescribe flexible hydraulic lime caulking.</em>`;
+        }
+      } else {
+        if (trajLbl) { trajLbl.innerText = 'Progressive Subsidence'; trajLbl.style.color = '#ef4444'; }
+        if (diagBox) {
+          diagBox.style.borderLeftColor = '#ef4444';
+          diagBox.innerHTML = `<strong>Active Progressive Failure:</strong> Monotonic vertical settlement divergence (+4.8mm/yr). <em>Underpin foundation with concrete pads before helical stitching.</em>`;
+        }
+      }
+    }
+
+    // =========================================================================
+    // FEATURE 5: HANDS-FREE FIELD VOICE DICTATION (SPEECH-TO-DEFECT)
+    // =========================================================================
+    let speechRecognition = null;
+    let isListening = false;
+
+    function toggleVoiceDictation() {
+      const box = document.getElementById('voice-transcript-box');
+      const icon = document.getElementById('voice-icon');
+      const label = document.getElementById('voice-label');
+      const btn = document.getElementById('btn-voice-dictate');
+
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        if (box) {
+          box.style.display = 'block';
+          box.innerHTML = '⚠️ Browser Speech Recognition API unavailable in this environment. Click <strong>"Sample 🗣️"</strong> to simulate voice notes.';
+        }
+        return;
+      }
+
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!speechRecognition) {
+        speechRecognition = new SpeechRec();
+        speechRecognition.continuous = false;
+        speechRecognition.interimResults = true;
+        speechRecognition.lang = 'en-GB';
+
+        speechRecognition.onstart = () => {
+          isListening = true;
+          if (icon) icon.innerText = '🔴';
+          if (label) label.innerText = 'Listening...';
+          if (btn) btn.style.background = '#dc2626';
+          if (box) {
+            box.style.display = 'block';
+            box.innerText = 'Listening... Speak defect observations now.';
+          }
+        };
+
+        speechRecognition.onresult = (e) => {
+          let transcript = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            transcript += e.results[i][0].transcript;
+          }
+          if (box) box.innerHTML = `<em>"${transcript}"</em>`;
+          if (e.results[0].isFinal) {
+            parseAndApplyVoiceDictation(transcript);
+          }
+        };
+
+        speechRecognition.onerror = (e) => {
+          if (box) box.innerText = `Voice input: ${e.error}. Use "Sample 🗣️" to test parsing.`;
+          stopVoiceDictation();
+        };
+
+        speechRecognition.onend = () => {
+          stopVoiceDictation();
+        };
+      }
+
+      if (!isListening) {
+        try {
+          speechRecognition.start();
+        } catch (e) {
+          stopVoiceDictation();
+        }
+      } else {
+        speechRecognition.stop();
+        stopVoiceDictation();
+      }
+    }
+
+    function stopVoiceDictation() {
+      isListening = false;
+      const icon = document.getElementById('voice-icon');
+      const label = document.getElementById('voice-label');
+      const btn = document.getElementById('btn-voice-dictate');
+      if (icon) icon.innerText = '🎙️';
+      if (label) label.innerText = 'Hands-Free Dictate';
+      if (btn) btn.style.background = '#0f766e';
+    }
+
+    function simulateVoiceSample() {
+      const samples = [
+        "Noting 3.5 millimeter stepped settlement shear crack, critical severity, prescribe helical stitching",
+        "Salt efflorescence bloom on face, moderate severity, prescribe hydraulic lime repointing",
+        "Outward lateral wythe bulging, critical failure risk, prescribe rebuild section plumb",
+        "Deep bed joint mortar erosion exceeding 15mm, moderate risk, prescribe repoint lime"
+      ];
+      const sample = samples[Math.floor(Math.random() * samples.length)];
+      const box = document.getElementById('voice-transcript-box');
+      if (box) {
+        box.style.display = 'block';
+        box.innerHTML = `<strong>Voice Dictation:</strong> <em>"${sample}"</em>`;
+      }
+      parseAndApplyVoiceDictation(sample);
+    }
+
+    function parseAndApplyVoiceDictation(text) {
+      const lower = text.toLowerCase();
+      let matchedCategory = null;
+      let matchedSeverity = null;
+      let matchedRemedial = null;
+      let matchedWidth = null;
+
+      if (lower.includes('efflorescence') || lower.includes('salt')) matchedCategory = 'efflorescence';
+      else if (lower.includes('spall') || lower.includes('frost')) matchedCategory = 'spalling';
+      else if (lower.includes('stepped') || lower.includes('shear crack')) matchedCategory = 'stepped_crack';
+      else if (lower.includes('expansion') || lower.includes('thermal')) matchedCategory = 'expansion_failure';
+      else if (lower.includes('coping') || lower.includes('capstone')) matchedCategory = 'coping_displacement';
+      else if (lower.includes('bulge') || lower.includes('outward')) matchedCategory = 'lateral_bulge';
+      else if (lower.includes('through') || lower.includes('parpen')) matchedCategory = 'through_stone_failure';
+      else if (lower.includes('washout') || lower.includes('mortar erosion') || lower.includes('erosion')) matchedCategory = 'mortar_erosion';
+      else if (lower.includes('hydrostatic') || lower.includes('weep')) matchedCategory = 'hydrostatic_bulge';
+
+      if (lower.includes('critical') || lower.includes('failure') || lower.includes('urgent')) matchedSeverity = 'critical';
+      else if (lower.includes('moderate') || lower.includes('active')) matchedSeverity = 'moderate';
+      else if (lower.includes('minor') || lower.includes('cosmetic')) matchedSeverity = 'minor';
+
+      if (lower.includes('helical') || lower.includes('stitch') || lower.includes('tie')) matchedRemedial = 'helical_stitch';
+      else if (lower.includes('repoint') || lower.includes('lime')) matchedRemedial = 'repoint_lime';
+      else if (lower.includes('grout') || lower.includes('void')) matchedRemedial = 'grout_injection';
+      else if (lower.includes('rebuild') || lower.includes('dismantle')) matchedRemedial = 'rebuild_section';
+      else if (lower.includes('weep') || lower.includes('drain')) matchedRemedial = 'drainage_relief';
+      else if (lower.includes('underpin') || lower.includes('foundation')) matchedRemedial = 'underpin_base';
+
+      const numMatch = lower.match(/(\d+(\.\d+)?)\s*(mm|millimeter|millimetre)?/);
+      if (numMatch) {
+        matchedWidth = `${numMatch[1]}mm`;
+      }
+
+      if (matchedCategory) {
+        const catSelect = document.getElementById('marker-category');
+        if (catSelect) catSelect.value = matchedCategory;
+      }
+      if (matchedSeverity) {
+        const sevSelect = document.getElementById('marker-severity');
+        if (sevSelect) sevSelect.value = matchedSeverity;
+      }
+      if (matchedRemedial) {
+        const remSelect = document.getElementById('marker-remedial');
+        if (remSelect) remSelect.value = matchedRemedial;
+      }
+      if (matchedWidth) {
+        const widthInput = document.getElementById('marker-width');
+        if (widthInput) widthInput.value = matchedWidth;
+      }
+
+      const toast = document.getElementById('acoustic-toast');
+      if (toast) {
+        toast.innerText = `🎙️ Parsed Voice: ${matchedCategory ? matchedCategory.replace('_', ' ') : 'Defect'} | ${matchedSeverity || 'Moderate'} | ${matchedWidth || 'Standard'}`;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+      }
+    }
+
     // Initialize listeners on DOM load
     document.addEventListener('DOMContentLoaded', () => {
       initSplitSlider();
@@ -1977,6 +2953,20 @@
           if (e.target === aiModal) closeAIConservatorModal();
         });
       }
+
+      const cutModal = document.getElementById('cutaway-modal');
+      if (cutModal) {
+        cutModal.addEventListener('click', (e) => {
+          if (e.target === cutModal) closeCutawayModal();
+        });
+      }
+
+      const thrustModal = document.getElementById('thrust-modal');
+      if (thrustModal) {
+        thrustModal.addEventListener('click', (e) => {
+          if (e.target === thrustModal) closeThrustModal();
+        });
+      }
     });
 
     document.addEventListener('keydown', (e) => {
@@ -1984,6 +2974,9 @@
         closeRemediationModal();
         closeDeteriorationModal();
         closeAIConservatorModal();
+        closeCutawayModal();
+        closeThrustModal();
+        closeTellTalePanel();
       }
     });
   </script>
