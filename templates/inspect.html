@@ -19,10 +19,10 @@
 
     .layout { display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; height: calc(100vh - 5.5rem); position: relative; }
     .viewport-outer { position: relative; background: #0b1329; border-radius: 8px; overflow: hidden; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; user-select: none; }
-    .zoom-toolbar { position: absolute; top: 12px; left: 12px; z-index: 50; display: flex; gap: 6px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); padding: 4px; border-radius: 6px; border: 1px solid #334155; }
-    .zoom-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+    .zoom-toolbar { position: absolute; top: 10px; left: 10px; max-width: calc(100% - 20px); z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); padding: 5px 8px; border-radius: 8px; border: 1px solid #334155; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
+    .zoom-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 5px; padding: 5px 9px; font-weight: 700; cursor: pointer; font-size: 0.8rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease; line-height: 1.2; }
     .zoom-btn:hover { background: #334155; color: white; }
-    .zoom-btn.active { background: #2563eb; color: white; border-color: #3b82f6; }
+    .zoom-btn.active { background: #2563eb !important; color: white !important; border-color: #3b82f6 !important; box-shadow: 0 0 10px rgba(37, 99, 235, 0.7); }
     
     #pan-zoom-container { transform-origin: 0 0; position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
     #wall-img { max-width: 100%; max-height: 100%; display: block; object-fit: contain; pointer-events: none; }
@@ -32,7 +32,7 @@
     #loupe-lens { display: none; position: absolute; width: 170px; height: 170px; border-radius: 50%; border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(0,0,0,0.8); pointer-events: none; overflow: hidden; z-index: 60; background-color: #0b1329; background-repeat: no-repeat; }
 
     /* Optical Crack Comparator Card */
-    #crack-gauge-card { display: none; position: absolute; top: 70px; left: 20px; z-index: 70; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(4px); border: 2px solid #0f172a; border-radius: 6px; padding: 8px 12px; color: #0f172a; width: 230px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); cursor: move; user-select: none; transition: transform 0.2s ease; }
+    #crack-gauge-card { display: none; position: absolute; top: 95px; left: 20px; z-index: 70; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(4px); border: 2px solid #0f172a; border-radius: 6px; padding: 8px 12px; color: #0f172a; width: 230px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); cursor: move; user-select: none; transition: transform 0.2s ease; }
 
     /* Acoustic Feedback Toast */
     #acoustic-toast { display: none; position: absolute; z-index: 85; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; pointer-events: none; transform: translate(-50%, -100%); transition: opacity 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
@@ -99,6 +99,7 @@
 
       <button type="button" class="btn-guide" onclick="openAIConservatorModal()" style="background: #7c3aed; color: white;">🤖 AI Conservator</button>
       <a href="/survey/report/{{ wall.slug }}" target="_blank" class="btn-guide" style="background: #0284c7; color: white; text-decoration: none;">📄 RICS Report</a>
+      <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="btn-guide" style="background: #059669; color: white; text-decoration: none;">⚖️ Compare</a>
       <button type="button" class="btn-guide" id="btn-toggle-guide">📖 Field Guide</button>
       <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem; margin-left: 0.5rem;">&larr; Exit</a>
     </div>
@@ -107,24 +108,43 @@
   <div class="layout">
     <div class="viewport-outer" id="viewport-outer">
       <div class="zoom-toolbar">
-        <button type="button" class="zoom-btn" id="zoom-in">+</button>
-        <button type="button" class="zoom-btn" id="zoom-out">&minus;</button>
-        <button type="button" class="zoom-btn" id="zoom-reset">100%</button>
-        <button type="button" class="zoom-btn" id="tool-pan" onclick="setTool('pan')">Pan Mode</button>
-        <button type="button" class="zoom-btn active" id="tool-draw" onclick="setTool('draw')">Box Defect</button>
-        <button type="button" class="zoom-btn" id="tool-loupe" onclick="setTool('loupe')">Loupe Tool</button>
-        <button type="button" class="zoom-btn" id="tool-gauge" onclick="toggleGaugeCard()">Crack Gauge</button>
-        <button type="button" class="zoom-btn" id="tool-hammer" onclick="setTool('hammer')">Sounding Hammer</button>
-        <button type="button" class="zoom-btn" id="tool-thermal" onclick="toggleThermalIR()">🌡️ Thermal IR</button>
-        <button type="button" class="zoom-btn" id="tool-metrology" onclick="toggleMetrologyTool()">📏 Metric Caliper</button>
-        <button type="button" class="zoom-btn" id="tool-cutaway" onclick="openCutawayModal()" style="background: linear-gradient(90deg, #4338ca, #6366f1); color: white; border: none; font-weight: 700;">📐 Core Cutaway</button>
-        <button type="button" class="zoom-btn" id="tool-thrust" onclick="openThrustModal()" style="background: linear-gradient(90deg, #0f766e, #0d9488); color: white; border: none; font-weight: 700;">⚖️ Thrust Statics</button>
-        <button type="button" class="zoom-btn" id="tool-telltale" onclick="toggleTellTaleMode()" style="background: linear-gradient(90deg, #b45309, #d97706); color: white; border: none; font-weight: 700;">⏱️ Tell-Tale Telemetry</button>
-        <button type="button" class="zoom-btn" id="tool-ai-conservator" onclick="openAIConservatorModal()" style="background: linear-gradient(90deg, #7c3aed, #4f46e5); color: white; border: none; font-weight: 700;">🤖 AI Conservator</button>
-        <button type="button" class="zoom-btn" id="tool-remediation" onclick="openRemediationModal()" style="background: linear-gradient(90deg, #0284c7, #10b981); color: white; border: none; font-weight: 700;">🎚️ Remediation Slider</button>
-        <button type="button" class="zoom-btn" id="tool-timeline" onclick="openDeteriorationModal()" style="background: linear-gradient(90deg, #d97706, #dc2626); color: white; border: none; font-weight: 700;">⏳ Lifecycle (€) Forecaster</button>
-        <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="zoom-btn" style="background: #059669; color: white; text-decoration: none; border: none; font-weight: 700; display: inline-flex; align-items: center;">⚖️ Compare Specimen</a>
-        <a href="/survey/report/{{ wall.slug }}" target="_blank" class="zoom-btn" style="background: #0284c7; color: white; text-decoration: none; border: none; font-weight: 700; display: inline-flex; align-items: center;">📄 RICS Report</a>
+        <!-- Viewport & Zoom Navigation -->
+        <div style="display: inline-flex; gap: 3px; align-items: center;">
+          <button type="button" class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+          <button type="button" class="zoom-btn" id="zoom-out" title="Zoom Out">&minus;</button>
+          <button type="button" class="zoom-btn" id="zoom-reset" title="Reset View Scale (100%)">100%</button>
+          <button type="button" class="zoom-btn" id="tool-pan" title="Pan Canvas Mode">✋ Pan</button>
+        </div>
+
+        <div style="width: 1px; height: 18px; background: #334155; margin: 0 1px;"></div>
+
+        <!-- Primary Inspection Modes -->
+        <div style="display: inline-flex; gap: 4px; align-items: center;">
+          <button type="button" class="zoom-btn active" id="tool-draw" title="Draw Defect Bounding Box">🔲 Box Defect</button>
+          <button type="button" class="zoom-btn" id="tool-loupe" title="2.5x Magnifying Loupe Lens">🔍 Loupe</button>
+          <button type="button" class="zoom-btn" id="tool-hammer" title="Acoustic Cavity Strike Hammer">🔨 Hammer</button>
+          <button type="button" class="zoom-btn" id="tool-metrology" title="Millimeter Caliper & Grid Scale">📏 Caliper</button>
+        </div>
+
+        <div style="width: 1px; height: 18px; background: #334155; margin: 0 1px;"></div>
+
+        <!-- Diagnostic Overlays -->
+        <div style="display: inline-flex; gap: 4px; align-items: center;">
+          <button type="button" class="zoom-btn" id="tool-gauge" title="Optical Crack Comparator Card">📋 Crack Gauge</button>
+          <button type="button" class="zoom-btn" id="tool-thermal" title="Thermographic Moisture & Void Map">🌡️ Thermal IR</button>
+        </div>
+
+        <div style="width: 1px; height: 18px; background: #334155; margin: 0 1px;"></div>
+
+        <!-- Advanced Pathology Diagnostic Modals -->
+        <div style="display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+          <button type="button" class="zoom-btn" id="tool-cutaway" onclick="openCutawayModal()" style="background: linear-gradient(90deg, #4338ca, #6366f1); color: white; border: none; font-weight: 700;">📐 Cutaway</button>
+          <button type="button" class="zoom-btn" id="tool-thrust" onclick="openThrustModal()" style="background: linear-gradient(90deg, #0f766e, #0d9488); color: white; border: none; font-weight: 700;">⚖️ Thrust</button>
+          <button type="button" class="zoom-btn" id="tool-telltale" onclick="toggleTellTaleMode()" style="background: linear-gradient(90deg, #b45309, #d97706); color: white; border: none; font-weight: 700;">⏱️ Tell-Tale</button>
+          <button type="button" class="zoom-btn" id="tool-remediation" onclick="openRemediationModal()" style="background: linear-gradient(90deg, #0284c7, #10b981); color: white; border: none; font-weight: 700;">🎚️ Remediation</button>
+          <button type="button" class="zoom-btn" id="tool-timeline" onclick="openDeteriorationModal()" style="background: linear-gradient(90deg, #d97706, #dc2626); color: white; border: none; font-weight: 700;">⏳ Lifecycle (€)</button>
+          <button type="button" class="zoom-btn" id="tool-ai-conservator" onclick="openAIConservatorModal()" style="background: linear-gradient(90deg, #7c3aed, #4f46e5); color: white; border: none; font-weight: 700;">🤖 AI Conservator</button>
+        </div>
       </div>
 
       <div id="pan-zoom-container">
@@ -1055,11 +1075,12 @@
     }
     window.setTool = setTool;
 
+    let isGaugeActive = false;
     function toggleGaugeCard() {
       if (!gaugeCard) return;
-      const isVisible = gaugeCard.style.display === "block";
-      gaugeCard.style.display = isVisible ? "none" : "block";
-      if (btnGauge) btnGauge.classList.toggle("active", !isVisible);
+      isGaugeActive = !isGaugeActive;
+      gaugeCard.style.display = isGaugeActive ? "block" : "none";
+      if (btnGauge) btnGauge.classList.toggle("active", isGaugeActive);
     }
     window.toggleGaugeCard = toggleGaugeCard;
 
@@ -1080,13 +1101,13 @@
     }
     window.toggleMetrologyTool = toggleMetrologyTool;
 
-    if (btnPan) btnPan.addEventListener("click", () => setTool("pan"));
-    if (btnDraw) btnDraw.addEventListener("click", () => setTool("draw"));
-    if (btnLoupe) btnLoupe.addEventListener("click", () => setTool("loupe"));
-    if (btnHammer) btnHammer.addEventListener("click", () => setTool("hammer"));
-    if (btnGauge) btnGauge.addEventListener("click", toggleGaugeCard);
-    if (btnThermal) btnThermal.addEventListener("click", toggleThermalIR);
-    if (btnMetrology) btnMetrology.addEventListener("click", toggleMetrologyTool);
+    if (btnPan) btnPan.onclick = () => setTool("pan");
+    if (btnDraw) btnDraw.onclick = () => setTool("draw");
+    if (btnLoupe) btnLoupe.onclick = () => setTool("loupe");
+    if (btnHammer) btnHammer.onclick = () => setTool("hammer");
+    if (btnGauge) btnGauge.onclick = toggleGaugeCard;
+    if (btnThermal) btnThermal.onclick = toggleThermalIR;
+    if (btnMetrology) btnMetrology.onclick = toggleMetrologyTool;
 
     function setMetrologyGrid(spacingMm) {
       currentGridMm = spacingMm;
