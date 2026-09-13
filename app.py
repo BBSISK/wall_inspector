@@ -1712,7 +1712,8 @@ def create_app(config_class=Config):
     # ==========================================
     @app.route("/map")
     def map_atlas():
-        return render_template("map.html")
+        carto_api_key = os.environ.get("CARTO_API_KEY", "").strip()
+        return render_template("map.html", carto_api_key=carto_api_key)
 
     @app.route("/api/map/walls")
     def api_map_walls():
