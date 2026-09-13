@@ -110,13 +110,13 @@
         <button type="button" class="zoom-btn" id="zoom-in">+</button>
         <button type="button" class="zoom-btn" id="zoom-out">&minus;</button>
         <button type="button" class="zoom-btn" id="zoom-reset">100%</button>
-        <button type="button" class="zoom-btn" id="tool-pan">Pan Mode</button>
-        <button type="button" class="zoom-btn active" id="tool-draw">Box Defect</button>
-        <button type="button" class="zoom-btn" id="tool-loupe">Loupe Tool</button>
-        <button type="button" class="zoom-btn" id="tool-gauge">Crack Gauge</button>
-        <button type="button" class="zoom-btn" id="tool-hammer">Sounding Hammer</button>
-        <button type="button" class="zoom-btn" id="tool-thermal">🌡️ Thermal IR</button>
-        <button type="button" class="zoom-btn" id="tool-metrology">📏 Metric Caliper</button>
+        <button type="button" class="zoom-btn" id="tool-pan" onclick="setTool('pan')">Pan Mode</button>
+        <button type="button" class="zoom-btn active" id="tool-draw" onclick="setTool('draw')">Box Defect</button>
+        <button type="button" class="zoom-btn" id="tool-loupe" onclick="setTool('loupe')">Loupe Tool</button>
+        <button type="button" class="zoom-btn" id="tool-gauge" onclick="toggleGaugeCard()">Crack Gauge</button>
+        <button type="button" class="zoom-btn" id="tool-hammer" onclick="setTool('hammer')">Sounding Hammer</button>
+        <button type="button" class="zoom-btn" id="tool-thermal" onclick="toggleThermalIR()">🌡️ Thermal IR</button>
+        <button type="button" class="zoom-btn" id="tool-metrology" onclick="toggleMetrologyTool()">📏 Metric Caliper</button>
         <button type="button" class="zoom-btn" id="tool-cutaway" onclick="openCutawayModal()" style="background: linear-gradient(90deg, #4338ca, #6366f1); color: white; border: none; font-weight: 700;">📐 Core Cutaway</button>
         <button type="button" class="zoom-btn" id="tool-thrust" onclick="openThrustModal()" style="background: linear-gradient(90deg, #0f766e, #0d9488); color: white; border: none; font-weight: 700;">⚖️ Thrust Statics</button>
         <button type="button" class="zoom-btn" id="tool-telltale" onclick="toggleTellTaleMode()" style="background: linear-gradient(90deg, #b45309, #d97706); color: white; border: none; font-weight: 700;">⏱️ Tell-Tale Telemetry</button>
@@ -844,6 +844,7 @@
     const ASSIGNMENT_MODE = "{{ assignment_mode or 'exam' }}";
     const WALL_TYPE = "{{ wall.wall_type }}";
 
+    // Primary DOM Elements & Toolbar Buttons
     const img = document.getElementById("wall-img");
     const svg = document.getElementById("canvas-overlay");
     const container = document.getElementById("pan-zoom-container");
@@ -858,18 +859,54 @@
     const thermalPalette = document.getElementById("thermal-palette");
     const thermalOpacity = document.getElementById("thermal-opacity");
     const btnThermal = document.getElementById("tool-thermal");
+    const btnPan = document.getElementById("tool-pan");
+    const btnDraw = document.getElementById("tool-draw");
+    const btnLoupe = document.getElementById("tool-loupe");
+    const btnGauge = document.getElementById("tool-gauge");
+    const btnHammer = document.getElementById("tool-hammer");
+    const btnMetrology = document.getElementById("tool-metrology");
+    const metrologyHud = document.getElementById("metrology-hud");
+    const metrologyGridSvg = document.getElementById("metrology-grid-svg");
+
+    // Primary Inspection State
     let isThermalActive = false;
-
     let currentScale = 1.0, panX = 0, panY = 0;
-    let activeTool = "draw"; // 'draw' | 'pan' | 'loupe' | 'hammer'
+    let activeTool = "draw"; // 'draw' | 'pan' | 'loupe' | 'hammer' | 'metrology'
     let isPanning = false, panStartX = 0, panStartY = 0;
-
     let isDrawing = false, startX = 0, startY = 0, currentRect = null;
     let pendingBox = null;
     let markers = [];
     let submittedData = null;
     let showStudent = true, showTruth = true;
     let gaugeRotation = 0;
+    let isDraggingGauge = false, gaugeStartX = 0, gaugeStartY = 0;
+
+    // Advanced Diagnostic Pathology State
+    let showCutawayDefect = false;
+    let isTellTalePlacementActive = false;
+    let tellTalePin = null;
+    let tellTaleMode = 'cyclic';
+    let tellTaleMonth = 12;
+
+    // Metrology Calibration Scale (mm per pixel) based on Masonry Archetype
+    const CALIBRATION_SCALES = {
+      brick_cavity: 0.85,
+      dry_stone: 1.40,
+      lime_mortar: 1.25,
+      ashlar: 0.95,
+      retaining_wall: 2.10,
+      cob_earth: 1.60,
+      flint_knapped: 0.70,
+      terracotta_faience: 0.80,
+      concrete_block: 1.10,
+      boulder_fieldstone: 1.85,
+      granite_quoin: 1.05
+    };
+    const mmPerPixel = CALIBRATION_SCALES[WALL_TYPE] || 1.0;
+    let currentGridMm = 0;
+    let isMeasuringCaliper = false;
+    let caliperStart = null, caliperEnd = null;
+    let caliperElement = null;
 
     // Ground truth defects for sounding hammer acoustic simulation and thermal IR
     let cachedGroundTruth = [];
@@ -988,62 +1025,68 @@
       applyTransform();
     });
 
-    // Tool Toggles
-    const btnPan = document.getElementById("tool-pan");
-    const btnDraw = document.getElementById("tool-draw");
-    const btnLoupe = document.getElementById("tool-loupe");
-    const btnGauge = document.getElementById("tool-gauge");
-    const btnHammer = document.getElementById("tool-hammer");
-    const btnMetrology = document.getElementById("tool-metrology");
-    const metrologyHud = document.getElementById("metrology-hud");
-    const metrologyGridSvg = document.getElementById("metrology-grid-svg");
-
-    // Metrology Calibration Scale (mm per pixel) based on Masonry Archetype
-    const CALIBRATION_SCALES = {
-      brick_cavity: 0.85,
-      dry_stone: 1.40,
-      lime_mortar: 1.25,
-      ashlar: 0.95,
-      retaining_wall: 2.10,
-      cob_earth: 1.60,
-      flint_knapped: 0.70,
-      terracotta_faience: 0.80,
-      concrete_block: 1.10,
-      boulder_fieldstone: 1.85,
-      granite_quoin: 1.05
-    };
-    const mmPerPixel = CALIBRATION_SCALES[WALL_TYPE] || 1.0;
-    let currentGridMm = 0;
-    let isMeasuringCaliper = false;
-    let caliperStart = null, caliperEnd = null;
-    let caliperElement = null;
-
+    // Tool Management
     function setTool(tool) {
       activeTool = tool;
-      btnPan.classList.toggle("active", tool === "pan");
-      btnDraw.classList.toggle("active", tool === "draw");
-      btnLoupe.classList.toggle("active", tool === "loupe");
-      btnHammer.classList.toggle("active", tool === "hammer");
+      if (btnPan) btnPan.classList.toggle("active", tool === "pan");
+      if (btnDraw) btnDraw.classList.toggle("active", tool === "draw");
+      if (btnLoupe) btnLoupe.classList.toggle("active", tool === "loupe");
+      if (btnHammer) btnHammer.classList.toggle("active", tool === "hammer");
       if (btnMetrology) btnMetrology.classList.toggle("active", tool === "metrology");
-      loupe.style.display = (tool === "loupe") ? "block" : "none";
+      if (loupe) loupe.style.display = (tool === "loupe") ? "block" : "none";
       if (metrologyHud) metrologyHud.style.display = (tool === "metrology") ? "block" : "none";
 
-      if (tool === "pan") svg.style.cursor = "grab";
-      else if (tool === "draw") svg.style.cursor = "crosshair";
-      else if (tool === "loupe") svg.style.cursor = "zoom-in";
-      else if (tool === "hammer") svg.style.cursor = "pointer";
-      else if (tool === "metrology") svg.style.cursor = "crosshair";
-    }
+      if (isTellTalePlacementActive && tool !== "telltale") {
+        isTellTalePlacementActive = false;
+        const btnTt = document.getElementById('tool-telltale');
+        if (btnTt) {
+          btnTt.classList.remove('active');
+          btnTt.style.boxShadow = 'none';
+        }
+      }
 
-    btnPan.addEventListener("click", () => setTool("pan"));
-    btnDraw.addEventListener("click", () => setTool("draw"));
-    btnLoupe.addEventListener("click", () => setTool("loupe"));
-    btnHammer.addEventListener("click", () => setTool("hammer"));
-    if (btnMetrology) {
-      btnMetrology.addEventListener("click", () => {
-        setTool(activeTool === "metrology" ? "draw" : "metrology");
-      });
+      if (svg) {
+        if (tool === "pan") svg.style.cursor = "grab";
+        else if (tool === "draw") svg.style.cursor = "crosshair";
+        else if (tool === "loupe") svg.style.cursor = "zoom-in";
+        else if (tool === "hammer") svg.style.cursor = "pointer";
+        else if (tool === "metrology") svg.style.cursor = "crosshair";
+      }
     }
+    window.setTool = setTool;
+
+    function toggleGaugeCard() {
+      if (!gaugeCard) return;
+      const isVisible = gaugeCard.style.display === "block";
+      gaugeCard.style.display = isVisible ? "none" : "block";
+      if (btnGauge) btnGauge.classList.toggle("active", !isVisible);
+    }
+    window.toggleGaugeCard = toggleGaugeCard;
+
+    function toggleThermalIR() {
+      if (!btnThermal || !thermalCanvas) return;
+      isThermalActive = !isThermalActive;
+      btnThermal.classList.toggle("active", isThermalActive);
+      thermalCanvas.style.display = isThermalActive ? "block" : "none";
+      if (thermalHud) thermalHud.style.display = isThermalActive ? "block" : "none";
+      if (isThermalActive) {
+        drawThermalMap();
+      }
+    }
+    window.toggleThermalIR = toggleThermalIR;
+
+    function toggleMetrologyTool() {
+      setTool(activeTool === "metrology" ? "draw" : "metrology");
+    }
+    window.toggleMetrologyTool = toggleMetrologyTool;
+
+    if (btnPan) btnPan.addEventListener("click", () => setTool("pan"));
+    if (btnDraw) btnDraw.addEventListener("click", () => setTool("draw"));
+    if (btnLoupe) btnLoupe.addEventListener("click", () => setTool("loupe"));
+    if (btnHammer) btnHammer.addEventListener("click", () => setTool("hammer"));
+    if (btnGauge) btnGauge.addEventListener("click", toggleGaugeCard);
+    if (btnThermal) btnThermal.addEventListener("click", toggleThermalIR);
+    if (btnMetrology) btnMetrology.addEventListener("click", toggleMetrologyTool);
 
     function setMetrologyGrid(spacingMm) {
       currentGridMm = spacingMm;
@@ -1154,21 +1197,6 @@
       prescEl.innerHTML = `<strong>Engineering Prescription:</strong> ${prescription}`;
     }
 
-    btnGauge.addEventListener("click", () => {
-      const isVisible = gaugeCard.style.display === "block";
-      gaugeCard.style.display = isVisible ? "none" : "block";
-      btnGauge.classList.toggle("active", !isVisible);
-    });
-
-    btnThermal.addEventListener("click", () => {
-      isThermalActive = !isThermalActive;
-      btnThermal.classList.toggle("active", isThermalActive);
-      thermalCanvas.style.display = isThermalActive ? "block" : "none";
-      thermalHud.style.display = isThermalActive ? "block" : "none";
-      if (isThermalActive) {
-        drawThermalMap();
-      }
-    });
 
     thermalPalette.addEventListener("change", () => {
       if (isThermalActive) drawThermalMap();
@@ -1321,7 +1349,6 @@
     });
 
     // Draggable Crack Gauge Card
-    let isDraggingGauge = false, gaugeStartX = 0, gaugeStartY = 0;
     gaugeCard.addEventListener("mousedown", (e) => {
       isDraggingGauge = true;
       const rect = gaugeCard.getBoundingClientRect();
@@ -2238,27 +2265,28 @@
     // =========================================================================
     // FEATURE 1: ARCHITECTURAL MASONRY CORE ANATOMIZER & CUTAWAY
     // =========================================================================
-    let showCutawayDefect = false;
-
     function openCutawayModal() {
       const modal = document.getElementById('cutaway-modal');
       if (modal) modal.style.display = 'flex';
       const sel = document.getElementById('cutaway-archetype-select');
-      if (sel) {
-        for (let opt of sel.options) {
-          if (opt.value === WALL_TYPE) {
-            sel.value = WALL_TYPE;
-            break;
-          }
+      if (sel && typeof WALL_TYPE !== 'undefined' && WALL_TYPE) {
+        if (['brick_cavity', 'dry_stone', 'stone_rubble', 'retaining_wall', 'ashlar'].includes(WALL_TYPE)) {
+          sel.value = WALL_TYPE;
+        } else if (WALL_TYPE.includes('stone') || WALL_TYPE.includes('rubble')) {
+          sel.value = 'stone_rubble';
+        } else {
+          sel.value = 'brick_cavity';
         }
       }
       updateCutawayView();
     }
+    window.openCutawayModal = openCutawayModal;
 
     function closeCutawayModal() {
       const modal = document.getElementById('cutaway-modal');
       if (modal) modal.style.display = 'none';
     }
+    window.closeCutawayModal = closeCutawayModal;
 
     function toggleCutawayDefect() {
       showCutawayDefect = !showCutawayDefect;
@@ -2269,12 +2297,13 @@
       }
       updateCutawayView();
     }
+    window.toggleCutawayDefect = toggleCutawayDefect;
 
     function updateCutawayView() {
       const slider = document.getElementById('cutaway-depth-slider');
       const depth = parseInt(slider ? slider.value : 50);
       const sel = document.getElementById('cutaway-archetype-select');
-      const atype = sel ? sel.value : (WALL_TYPE || 'brick_cavity');
+      const atype = sel ? sel.value : ((typeof WALL_TYPE !== 'undefined' && WALL_TYPE) ? WALL_TYPE : 'brick_cavity');
 
       const depthLabel = document.getElementById('cutaway-depth-val');
       if (depthLabel) {
@@ -2283,8 +2312,8 @@
         else depthLabel.innerText = `${depth}% (Rear Wythe / Backfill)`;
       }
 
-      const svg = document.getElementById('cutaway-svg');
-      if (!svg) return;
+      const cutawaySvg = document.getElementById('cutaway-svg');
+      if (!cutawaySvg) return;
 
       let svgContent = `
         <defs>
@@ -2393,7 +2422,7 @@
         <text x="${sliceX - 45}" y="275" fill="#818cf8" font-size="10" font-family="monospace" font-weight="bold">Slice Depth: ${depth}%</text>
       `;
 
-      svg.innerHTML = svgContent;
+      cutawaySvg.innerHTML = svgContent;
 
       const tieEl = document.getElementById('cutaway-metric-tie');
       const failEl = document.getElementById('cutaway-metric-failure');
@@ -2403,7 +2432,7 @@
         if (tieEl) tieEl.innerText = "Stainless cavity ties must be spaced at 900mm horizontal x 450mm vertical stagger (BS EN 845-1).";
         if (failEl) failEl.innerText = showCutawayDefect ? "Corroded ferrous ties expanding up to 7x volume, jacking bed joints open." : "Cavity clear of mortar droppings; thermal and moisture insulation integrity maintained.";
         if (presEl) presEl.innerText = "Surgically install austenitic Grade 316 remedial helical ties with resin anchors.";
-      } else if (atype === 'dry_stone') {
+      } else if (atype === 'dry_stone' || atype === 'stone_rubble') {
         if (tieEl) tieEl.innerText = "Through-stones (parpens) must be installed at minimum 1 per square meter of wall face.";
         if (failEl) failEl.innerText = showCutawayDefect ? "Loss of hearting stones triggers inward wythe buckling under service gravity loads." : "Hearting tightly hand-packed; frictional equilibrium intact.";
         if (presEl) presEl.innerText = "Dismantle defective crest section and rebuild with through-stones bridging full width.";
@@ -2417,6 +2446,7 @@
         if (presEl) presEl.innerText = "Low-pressure void consolidation with NHL 2 lime slurry and repoint joints.";
       }
     }
+    window.updateCutawayView = updateCutawayView;
 
     // =========================================================================
     // FEATURE 2: MIDDLE-THIRD THRUST LINE & STABILITY SIMULATOR
@@ -2426,11 +2456,13 @@
       if (modal) modal.style.display = 'flex';
       calculateThrustStatics();
     }
+    window.openThrustModal = openThrustModal;
 
     function closeThrustModal() {
       const modal = document.getElementById('thrust-modal');
       if (modal) modal.style.display = 'none';
     }
+    window.closeThrustModal = closeThrustModal;
 
     function calculateThrustStatics() {
       const batterSlider = document.getElementById('thrust-batter-slider');
@@ -2614,13 +2646,6 @@
       ctx.fillText(`Resultant R (${x_R.toFixed(2)}m)`, resX - 35, originY - 10);
     }
 
-    // =========================================================================
-    // FEATURE 3: AVONGARD TELL-TALE CRACK GAUGE & 12-MONTH TELEMETRY
-    // =========================================================================
-    let isTellTalePlacementActive = false;
-    let tellTalePin = null;
-    let tellTaleMode = 'cyclic';
-
     function toggleTellTaleMode() {
       isTellTalePlacementActive = !isTellTalePlacementActive;
       const btn = document.getElementById('tool-telltale');
@@ -2641,6 +2666,7 @@
         if (panel) panel.style.display = 'none';
       }
     }
+    window.toggleTellTaleMode = toggleTellTaleMode;
 
     function closeTellTalePanel() {
       const panel = document.getElementById('telltale-telemetry-panel');
@@ -2654,6 +2680,7 @@
       const overlay = document.getElementById('telltale-gauge-overlay');
       if (overlay) overlay.style.display = 'none';
     }
+    window.closeTellTalePanel = closeTellTalePanel;
 
     function setTellTaleMode(m) {
       tellTaleMode = m;
