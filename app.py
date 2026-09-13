@@ -438,7 +438,8 @@ def create_app(config_class=Config):
                     return jsonify({"success": False, "error": error}), 401
                 return render_template("admin_login.html", error=error, next_url=next_url), 401
 
-        return render_template("admin_login.html", error=error, next_url=next_url)
+        already_auth = session.get("is_admin", False) and not request.args.get("show_form")
+        return render_template("admin_login.html", error=error, next_url=next_url, already_authenticated=already_auth)
 
     @app.route("/admin/logout")
     def admin_logout():

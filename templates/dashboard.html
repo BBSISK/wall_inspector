@@ -30,9 +30,53 @@
       <p style="margin: 0.4rem 0 0; color: #94a3b8;">Cohort analytics, student precision metrics, and credentials.</p>
     </div>
     <div>
+      <button type="button" onclick="toggleFieldCaptureCard()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #38bdf8; font-size: 0.85rem; font-weight: 700; margin-right: 0.5rem; cursor: pointer;">📸 Field Camera QR</button>
       <a href="/admin/export/attempts.csv{% if selected_cohort %}?cohort={{ selected_cohort }}{% endif %}" style="background: #059669; color: white; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">📥 Export CSV</a>
       <a href="/" style="background: #334155; color: #93c5fd; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">&larr; Catalog</a>
       <a href="/admin/logout" style="background: #7f1d1d; color: #fca5a5; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">🔒 Logout</a>
+    </div>
+  </div>
+
+  <!-- Dedicated On-Site Wall Photo Capture QR Card -->
+  <div id="field-capture-banner" style="max-width: 1100px; margin: 0 auto 2rem; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1.5px solid #0284c7; border-radius: 12px; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
+    <div style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
+      <div style="background: white; padding: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0;">
+        <img id="dash-qr-img" src="" alt="Admin Field QR" style="width: 110px; height: 110px; display: block;">
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong style="color: #38bdf8; font-size: 1.1rem;">📱 On-Site Wall Photo Capture (Mobile App)</strong>
+          <span style="background: #065f46; color: #a7f3d0; font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">INSTRUCTOR PWA</span>
+        </div>
+        <p style="margin: 0.35rem 0 0; color: #cbd5e1; font-size: 0.85rem; max-width: 550px; line-height: 1.4;">
+          Scan with your smartphone camera to photograph masonry walls on-site, record GPS, select archetypes, and upload directly to the live catalog.
+        </p>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.6rem; align-items: center;">
+          <a href="/mobile/admin" target="_blank" style="background: #0284c7; color: white; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">Launch in Browser &rarr;</a>
+          <button type="button" onclick="copyDashMobileUrl()" style="background: #334155; color: #cbd5e1; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">📋 Copy Link</button>
+          <span style="font-size: 0.75rem; color: #64748b; font-family: monospace;">/mobile/admin</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+      <button type="button" onclick="openDashEnlargedQr()" style="background: #0f172a; border: 1px solid #38bdf8; color: #38bdf8; padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">🔍 Enlarge QR Code</button>
+    </div>
+  </div>
+
+  <!-- Modal for Enlarged QR Code -->
+  <div id="dash-qr-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #1e293b; border: 1.5px solid #0284c7; border-radius: 14px; padding: 2rem; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.7); position: relative;">
+      <button type="button" onclick="closeDashEnlargedQr()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      <div style="font-size: 2.2rem; margin-bottom: 0.4rem;">📸</div>
+      <h3 style="margin: 0 0 0.4rem; color: #f8fafc; font-size: 1.3rem;">Scan to Photograph Walls</h3>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 1.25rem;">Point your phone camera here to launch the field upload app.</p>
+      <div style="background: white; padding: 12px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 1rem;">
+        <img id="dash-enlarged-qr-img" src="" alt="Enlarged QR" style="width: 240px; height: 240px; display: block;">
+      </div>
+      <div style="display: flex; gap: 0.5rem; justify-content: center;">
+        <a href="/mobile/admin" target="_blank" style="background: #059669; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 700;">Open on this Device &rarr;</a>
+        <button type="button" onclick="copyDashMobileUrl()" style="background: #334155; color: #cbd5e1; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">📋 Copy Link</button>
+      </div>
     </div>
   </div>
 
@@ -404,6 +448,52 @@
         submitBtn.innerText = "Save Critique & Award Badge →";
       }
     }
+
+    // Dashboard Field Camera QR Logic
+    function initDashQr() {
+      const adminUrl = `${window.location.origin}/mobile/admin`;
+      const qrSmall = document.getElementById('dash-qr-img');
+      const qrLarge = document.getElementById('dash-enlarged-qr-img');
+      if (qrSmall) qrSmall.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=${encodeURIComponent(adminUrl)}`;
+      if (qrLarge) qrLarge.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=0&data=${encodeURIComponent(adminUrl)}`;
+    }
+
+    function toggleFieldCaptureCard() {
+      const banner = document.getElementById('field-capture-banner');
+      if (banner) {
+        banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        banner.style.transition = 'box-shadow 0.3s, border-color 0.3s';
+        banner.style.borderColor = '#38bdf8';
+        banner.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.4)';
+        setTimeout(() => {
+          banner.style.borderColor = '#0284c7';
+          banner.style.boxShadow = '0 10px 25px rgba(0,0,0,0.4)';
+        }, 1500);
+      }
+    }
+
+    function openDashEnlargedQr() {
+      document.getElementById('dash-qr-modal').style.display = 'flex';
+    }
+
+    function closeDashEnlargedQr() {
+      document.getElementById('dash-qr-modal').style.display = 'none';
+    }
+
+    function copyDashMobileUrl() {
+      const url = `${window.location.origin}/mobile/admin`;
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`Copied Admin Field Capture link to clipboard:\n${url}`);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initDashQr();
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('qr') === '1') {
+        openDashEnlargedQr();
+      }
+    });
   </script>
 </body>
 </html>

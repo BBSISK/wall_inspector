@@ -61,6 +61,7 @@
       {% if is_admin %}
         <div style="display: flex; gap: 0.5rem; align-items: center; background: rgba(30, 58, 138, 0.35); border: 1px solid #3b82f6; border-radius: 6px; padding: 2px 6px;">
           <span style="font-size: 0.72rem; color: #93c5fd; font-weight: 800; padding: 0 4px;">👨‍🏫 INSTRUCTOR:</span>
+          <button type="button" onclick="openAdminQrModal()" class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: 1px solid #38bdf8; font-weight: 700; padding: 0.4rem 0.75rem; font-size: 0.8rem; cursor: pointer;">📸 Field QR</button>
           <a href="/dashboard" class="btn-action btn-dash" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Dashboard</a>
           <a href="/admin/assignments" class="btn-action" style="background: #475569; color: #f8fafc; padding: 0.4rem 0.75rem; font-size: 0.8rem;">Assignments</a>
           <a href="/admin/walls/new" class="btn-action btn-upload" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">+ Add Wall</a>
@@ -208,7 +209,7 @@
             <p style="font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.25rem;">
               The Wall Capture Field App publishes directly to the live catalog and requires instructor authentication.
             </p>
-            <a href="/admin/login?next=/mobile/admin" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; text-decoration: none; background: #0284c7;">🔐 Authenticate as Instructor &rarr;</a>
+            <a href="/admin/login?next=/?open_qr=admin" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; text-decoration: none; background: #0284c7;">🔐 Authenticate as Instructor &rarr;</a>
           </div>
         {% endif %}
       </div>
@@ -216,7 +217,11 @@
   </div>
 
   <script>
-    function openMobileAppsModal() {
+    function openAdminQrModal() {
+      openMobileAppsModal('admin');
+    }
+
+    function openMobileAppsModal(defaultTab) {
       const origin = window.location.origin;
       const studentUrl = `${origin}/mobile/student`;
       document.getElementById("qr-student-img").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(studentUrl)}`;
@@ -229,8 +234,9 @@
         document.getElementById("link-admin-open").href = adminUrl;
       }
 
-      // Default to Student tab
-      switchMobileModalTab('student');
+      const isAdmin = {{ 'true' if is_admin else 'false' }};
+      const initialTab = defaultTab || (isAdmin ? 'admin' : 'student');
+      switchMobileModalTab(initialTab);
       document.getElementById("mobile-apps-modal").style.display = "flex";
     }
 
@@ -262,6 +268,13 @@
     // Close on outside click
     document.getElementById("mobile-apps-modal").addEventListener("click", (e) => {
       if (e.target.id === "mobile-apps-modal") closeMobileAppsModal();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("open_qr") === "admin") {
+        openAdminQrModal();
+      }
     });
   </script>
 </body>

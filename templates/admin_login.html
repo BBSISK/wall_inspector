@@ -22,21 +22,26 @@
       border-radius: 14px;
       border: 1px solid #334155;
       padding: 2.5rem;
-      max-width: 440px;
+      max-width: 460px;
       width: 100%;
       box-shadow: 0 20px 45px rgba(0,0,0,0.5);
+      position: relative;
     }
     .header-icon {
-      width: 52px;
-      height: 52px;
+      width: 54px;
+      height: 54px;
       background: #0284c7;
-      border-radius: 12px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.8rem;
+      font-size: 1.9rem;
       margin: 0 auto 1rem;
       box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+    }
+    .header-icon.success {
+      background: #059669;
+      box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
     }
     h2 {
       margin: 0 0 0.4rem;
@@ -44,7 +49,7 @@
       text-align: center;
       color: #f8fafc;
     }
-    p {
+    p.card-sub {
       color: #94a3b8;
       font-size: 0.88rem;
       text-align: center;
@@ -130,10 +135,16 @@
       font-size: 0.95rem;
       cursor: pointer;
       margin-top: 1.25rem;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
+      display: block;
+      text-align: center;
+      text-decoration: none;
     }
     .btn-submit:hover {
       background: #0369a1;
+    }
+    .btn-submit:active {
+      transform: scale(0.99);
     }
     .footer-links {
       margin-top: 1.75rem;
@@ -150,48 +161,123 @@
     .footer-links a:hover {
       color: #94a3b8;
     }
+
+    /* Post-Login QR Success View */
+    .qr-container {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .qr-box {
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      display: inline-block;
+    }
+    .qr-box img {
+      width: 200px;
+      height: 200px;
+      display: block;
+    }
+    .action-row {
+      display: flex;
+      gap: 0.6rem;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
   </style>
 </head>
 <body>
   <div class="login-card">
-    <div class="header-icon">🔐</div>
-    <h2>Instructor Portal</h2>
-    <p>Administrative access to student analytics, catalog pathology tagging, and cohort grading.</p>
 
-    {% if error %}
-      <div class="error-alert">
+    <!-- STATE A: Login Credentials Form -->
+    <div id="login-view" style="display: {% if already_authenticated or login_success %}none{% else %}block{% endif %};">
+      <div class="header-icon">🔐</div>
+      <h2>Instructor Portal</h2>
+      <p class="card-sub">Administrative access to student analytics, catalog pathology tagging, and cohort grading.</p>
+
+      <div id="ajax-error-alert" class="error-alert" style="display: {% if error %}flex{% else %}none{% endif %};">
         <span>⚠️</span>
-        <span>{{ error }}</span>
+        <span id="error-message-text">{{ error or '' }}</span>
       </div>
-    {% endif %}
 
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" id="tab-pass" onclick="switchAuthMode('pass')">Password</button>
-      <button type="button" class="auth-tab" id="tab-pin" onclick="switchAuthMode('pin')">4-Digit PIN</button>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-pass" onclick="switchAuthMode('pass')">Password</button>
+        <button type="button" class="auth-tab" id="tab-pin" onclick="switchAuthMode('pin')">4-Digit PIN</button>
+      </div>
+
+      <form id="login-form" method="POST" action="/admin/login">
+        <input type="hidden" name="next" value="{{ next_url or '' }}">
+        
+        <!-- Password Mode -->
+        <div id="mode-pass">
+          <label>Instructor Password</label>
+          <input type="password" name="admin_password" id="input-pass" placeholder="Enter instructor password" autofocus>
+        </div>
+
+        <!-- Quick PIN Mode -->
+        <div id="mode-pin" style="display: none;">
+          <label style="text-align: center;">4-Digit Mobile / Quick PIN</label>
+          <input type="password" name="admin_pin" id="input-pin" class="pin-input" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="btn-submit">Authenticate & Access Portal &rarr;</button>
+      </form>
+
+      <div class="footer-links">
+        <a href="/">&larr; Return to Public Catalog</a>
+        <a href="/portal">Student Inspection Portal &rarr;</a>
+      </div>
     </div>
 
-    <form method="POST" action="/admin/login">
-      <input type="hidden" name="next" value="{{ next_url or '' }}">
-      
-      <!-- Password Mode -->
-      <div id="mode-pass">
-        <label>Instructor Password</label>
-        <input type="password" name="admin_password" id="input-pass" placeholder="Enter instructor password" autofocus>
+    <!-- STATE B: Authentication Success & Immediate QR Access Screen -->
+    <div id="qr-success-view" style="display: {% if already_authenticated or login_success %}block{% else %}none{% endif %};">
+      <div class="header-icon success">📸</div>
+      <h2 style="color: #34d399;">Authentication Granted</h2>
+      <p class="card-sub" style="margin-bottom: 1rem;">
+        Scan below with your phone camera to launch <strong>Wall Capture</strong> and upload photos on-site.
+      </p>
+
+      <div class="qr-container">
+        <div class="qr-box">
+          <img id="admin-qr-img" src="" alt="Admin Field Capture QR">
+        </div>
+        <div style="font-size: 0.75rem; color: #38bdf8; font-family: monospace; word-break: break-all;">
+          PWA Route: <span id="admin-qr-url-text">/mobile/admin</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center; margin-top: 4px;">
+          <a id="btn-launch-mobile" href="/mobile/admin" target="_blank" style="background: #059669; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+            Launch in Browser &rarr;
+          </a>
+          <button type="button" onclick="copyAdminMobileUrl()" style="background: #334155; color: #cbd5e1; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+            📋 Copy Link
+          </button>
+        </div>
       </div>
 
-      <!-- Quick PIN Mode -->
-      <div id="mode-pin" style="display: none;">
-        <label style="text-align: center;">4-Digit Mobile / Quick PIN</label>
-        <input type="password" name="admin_pin" id="input-pin" class="pin-input" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
+      <div class="action-row">
+        <a id="btn-proceed-dash" href="{{ next_url or '/dashboard' }}" class="btn-submit" style="margin-top: 0; background: #0284c7; flex: 1.2;">
+          📊 Proceed to Dashboard &rarr;
+        </a>
+        <a href="/" class="btn-submit" style="margin-top: 0; background: #1e293b; border: 1px solid #334155; color: #94a3b8; flex: 0.8;">
+          🧱 Catalog
+        </a>
       </div>
 
-      <button type="submit" class="btn-submit">Authenticate & Access Portal &rarr;</button>
-    </form>
-
-    <div class="footer-links">
-      <a href="/">&larr; Return to Public Catalog</a>
-      <a href="/portal">Student Inspection Portal &rarr;</a>
+      <div style="margin-top: 1.25rem; text-align: center; display: flex; justify-content: space-between; font-size: 0.78rem;">
+        <a href="/admin/login?show_form=1" onclick="showLoginForm(event)" style="color: #64748b; text-decoration: none;">&larr; Switch Credentials</a>
+        <a href="/admin/logout" style="color: #f87171; text-decoration: none;">🔒 Log Out</a>
+      </div>
     </div>
+
   </div>
 
   <script>
@@ -217,7 +303,93 @@
         inputPass.focus();
       }
     }
+
+    function renderAdminQr() {
+      const origin = window.location.origin;
+      const adminUrl = `${origin}/mobile/admin`;
+      const qrImg = document.getElementById('admin-qr-img');
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(adminUrl)}`;
+      }
+      const urlText = document.getElementById('admin-qr-url-text');
+      if (urlText) urlText.innerText = adminUrl;
+      const launchLink = document.getElementById('btn-launch-mobile');
+      if (launchLink) launchLink.href = adminUrl;
+    }
+
+    function showQrView(redirectUrl) {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('qr-success-view').style.display = 'block';
+      if (redirectUrl) {
+        document.getElementById('btn-proceed-dash').href = redirectUrl;
+      }
+      renderAdminQr();
+    }
+
+    function showLoginForm(e) {
+      if (e) e.preventDefault();
+      document.getElementById('login-view').style.display = 'block';
+      document.getElementById('qr-success-view').style.display = 'none';
+    }
+
+    function copyAdminMobileUrl() {
+      const url = `${window.location.origin}/mobile/admin`;
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`Copied Admin Field Capture URL to clipboard:\n${url}`);
+      });
+    }
+
+    // Interactive AJAX Login Handler: Reveals QR Code instantly on success!
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errBox = document.getElementById('ajax-error-alert');
+      const errMsg = document.getElementById('error-message-text');
+      errBox.style.display = 'none';
+
+      const passVal = document.getElementById('input-pass').value.trim();
+      const pinVal = document.getElementById('input-pin').value.trim();
+      const nextVal = document.querySelector('input[name="next"]').value || '/dashboard';
+      const btnSubmit = document.getElementById('btn-login-submit');
+
+      btnSubmit.innerText = "Verifying credentials...";
+      btnSubmit.disabled = true;
+
+      try {
+        const res = await fetch('/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            password: passVal,
+            pin: pinVal,
+            next: nextVal
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showQrView(data.redirect || nextVal);
+        } else {
+          errMsg.innerText = data.error || "Invalid instructor credentials.";
+          errBox.style.display = 'flex';
+          btnSubmit.innerText = "Authenticate & Access Portal \u2192";
+          btnSubmit.disabled = false;
+        }
+      } catch (err) {
+        // Fallback to standard form submission if fetch is blocked
+        loginForm.submit();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const isAlreadyAuth = {{ 'true' if already_authenticated or login_success else 'false' }};
+      if (isAlreadyAuth) {
+        renderAdminQr();
+      }
+    });
   </script>
 </body>
 </html>
-
