@@ -102,12 +102,15 @@ class TestStudiosAndAuth(unittest.TestCase):
         # 1. Verify worked examples catalog
         res = self.client.get('/examples')
         self.assertEqual(res.status_code, 200)
-        self.assertIn(b'26 Student Assessment Worked Examples Catalog', res.data)
+        self.assertIn(b'32 Student Assessment Worked Examples Catalog', res.data)
         self.assertIn(b'ultratech_stone_joints_01.jpg', res.data)
         self.assertIn(b'ultratech_stone_limerunoff_01.jpg', res.data)
         self.assertIn(b'ultratech_stone_bedding_01.jpg', res.data)
         self.assertIn(b'ultratech_stone_frost_01.jpg', res.data)
         self.assertIn(b'ultratech_cmu_blockwork_01.jpg', res.data)
+        self.assertIn(b'heritage_cement_01.jpg', res.data)
+        self.assertIn(b'heritage_chimney_01.jpg', res.data)
+        self.assertIn(b'heritage_wigging_01.jpg', res.data)
 
         # 2. Verify UltraTech inspection pages
         res_wall = self.client.get('/inspect/ultratech-stone-continuous-joints')
@@ -118,10 +121,10 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertEqual(res_bedding.status_code, 200)
         self.assertIn(b'Face-Bedding', res_bedding.data)
 
-        # 3. Verify total 26 wall instances in DB
+        # 3. Verify total 32 wall instances in DB
         from models import Wall
         with app.app_context():
-            self.assertEqual(Wall.query.count(), 26)
+            self.assertEqual(Wall.query.count(), 32)
 
         # 4. Verify Designing Buildings Wiki stonework inspection endpoints
         res_contour = self.client.get('/inspect/historic-sandstone-contour-scaling')
@@ -131,6 +134,19 @@ class TestStudiosAndAuth(unittest.TestCase):
         res_gypsum = self.client.get('/inspect/sheltered-limestone-gypsum-cavitation')
         self.assertEqual(res_gypsum.status_code, 200)
         self.assertIn(b'Gypsum Crust', res_gypsum.data)
+
+        # 5. Verify Heritage Brickwork Irish brick inspection endpoints
+        res_cement = self.client.get('/inspect/dublin-georgian-cement-damage')
+        self.assertEqual(res_cement.status_code, 200)
+        self.assertIn(b'Portland Cement', res_cement.data)
+
+        res_chimney = self.client.get('/inspect/victorian-dublin-chimney-decay')
+        self.assertEqual(res_chimney.status_code, 200)
+        self.assertIn(b'Chimney Stack', res_chimney.data)
+
+        res_wigging = self.client.get('/inspect/georgian-terrace-irish-wigging')
+        self.assertEqual(res_wigging.status_code, 200)
+        self.assertIn(b'Wigging', res_wigging.data)
 
     def test_admin_auth_protection(self):
         """Ensure admin routes are strictly inaccessible without authentication."""

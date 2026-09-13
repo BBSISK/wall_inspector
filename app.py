@@ -24,7 +24,12 @@ TAXONOMY_BY_WALL_TYPE = {
         {"id": "spalling", "label": "Frost-Thaw Spalling (Blown Brick Faces)"},
         {"id": "mortar_erosion", "label": "Bed Joint Mortar Washout / Erosion"},
         {"id": "stepped_crack", "label": "Stepped Settlement Shear Crack"},
-        {"id": "expansion_failure", "label": "Vertical Thermal Expansion Fracture"}
+        {"id": "expansion_failure", "label": "Vertical Thermal Expansion Fracture"},
+        {"id": "inappropriate_cement_strap", "label": "Inappropriate Portland Cement Pointing & Edge Spall"},
+        {"id": "chimney_decay", "label": "Roofline Chimney Stack Decay & Flue Acid Attack"},
+        {"id": "rising_damp_salt", "label": "Capillary Rising Damp Tide Mark & Subflorescence"},
+        {"id": "irish_wigging_failure", "label": "Irish Wigging & Georgian Tuckpointing Ribbon Loss"},
+        {"id": "gauged_arch_failure", "label": "Gauged Rubbing Brick Jack Arch Sag & Dropped Key"}
     ],
     "dry_stone": [
         {"id": "coping_displacement", "label": "Coping Stone Dislodgement / Loss"},
@@ -108,7 +113,9 @@ REMEDIAL_OPTIONS = [
     {"id": "indent_stone", "label": "Surgical Stone Indenting & Re-facing (NHL 2)"},
     {"id": "poultice_desalt", "label": "Nebulous Water Mist & Lime Poultice Desalination"},
     {"id": "biocide_steam", "label": "Superheated Dry Steam (150°C) & Quaternary Biocide"},
-    {"id": "coating_removal", "label": "Latex Poultice Paint Stripping & Desalination"}
+    {"id": "coating_removal", "label": "Latex Poultice Paint Stripping & Desalination"},
+    {"id": "wigging_restore", "label": "Traditional Irish Wigging / Tuckpointing Restoration"},
+    {"id": "chimney_rebuild", "label": "Chimney Stack Deconstruction & Flaunching Rebuild"}
 ]
 
 def calculate_iou(box_a, box_b):
@@ -807,6 +814,138 @@ def create_app(config_class=Config):
                         "remedial_action": "coating_removal",
                         "title": "Impermeable Synthetic Coating & Sealant Spalling",
                         "explanation": "Vapor-impermeable synthetic sealant traps rising damp and salts; sub-film crypto-efflorescence crystallization pressure shears outer stone skins off in explosive sheets."
+                    }
+                ]
+            },
+            {
+                "slug": "dublin-georgian-cement-damage",
+                "title": "Dublin Georgian Terrace: Inappropriate Cement Pointing",
+                "description": "Late Georgian red brick façade in Dublin repaired with dense Portland cement strap pointing standing proud of joints, trapping rainwater and causing accelerated arrises spalling on soft Dublin Red Stock bricks.",
+                "country": "Ireland",
+                "region": "Dublin 2 (Fitzwilliam Square)",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": "heritage_cement_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.18, "y_min": 0.22, "x_max": 0.82, "y_max": 0.82,
+                        "category": "inappropriate_cement_strap", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Inappropriate Portland Cement Pointing & Edge Spall",
+                        "explanation": "Rigid 1:3 Portland cement ribbon pointing traps capillary water against soft historic clay brick, blocking evaporation and forcing moisture through brick faces, accelerating cryo-hydraulic face shearing."
+                    }
+                ]
+            },
+            {
+                "slug": "victorian-dublin-chimney-decay",
+                "title": "Victorian Dublin Chimney Stack: Flue Acid & Weather Decay",
+                "description": "Exposed multi-flue Victorian brick chimney stack suffering severe wind-driven rain saturation, crumbling lime mortar, fractured terracotta flue terminals, and asymmetric stack lean from coal soot sulfate expansion.",
+                "country": "Ireland",
+                "region": "Dublin 6 (Rathmines)",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "heritage_chimney_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.20, "y_min": 0.15, "x_max": 0.80, "y_max": 0.85,
+                        "category": "chimney_decay", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Roofline Chimney Stack Decay & Flue Acid Attack",
+                        "explanation": "Severe weather exposure combined with flue condensates containing sulfurous acids leaches mortar binders, fractures clay chimney pots, and induces outward stack curvature."
+                    }
+                ]
+            },
+            {
+                "slug": "period-irish-rising-damp",
+                "title": "Period Irish Brick Villa: Capillary Rising Damp & Salt Bloom",
+                "description": "Pre-1940s solid Dublin stock brick elevation lacking effective physical damp-proof course (DPC), exhibiting pronounced horizontal capillary tide mark 1m above ground and heavy subflorescence salt burst.",
+                "country": "Ireland",
+                "region": "Dublin 8 (Portobello)",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": "heritage_damp_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.15, "y_min": 0.25, "x_max": 0.85, "y_max": 0.88,
+                        "category": "rising_damp_salt", "severity": "critical",
+                        "remedial_action": "poultice_desalt",
+                        "title": "Capillary Rising Damp Tide Mark & Subflorescence",
+                        "explanation": "Groundwater wicked up through porous handmade bricks carries dissolved nitrates and chlorides; evaporation at 1m height precipitates expansive salt crystals that disintegrate clay faces."
+                    }
+                ]
+            },
+            {
+                "slug": "georgian-terrace-irish-wigging",
+                "title": "Merrion Square Georgian Façade: Irish Wigging Failure",
+                "description": "High-status Dublin Georgian brick façade exhibiting historic Irish wigging pointing with red-pigmented stopping mortar and fine white lime putty ribbon; severe coastal weathering has loosened the ribbon fillet.",
+                "country": "Ireland",
+                "region": "Dublin 2 (Merrion Square)",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "heritage_wigging_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.20, "y_min": 0.20, "x_max": 0.80, "y_max": 0.80,
+                        "category": "irish_wigging_failure", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Irish Wigging & Georgian Tuckpointing Ribbon Loss",
+                        "explanation": "Loss of adhesion between sacrificial white lime putty ribbon and red brick-dust stopping mortar allows water entry into weathered bed joints, compromising historic aesthetic geometry."
+                    }
+                ]
+            },
+            {
+                "slug": "dublin-red-stock-pointing-erosion",
+                "title": "Crumlin Artisan Dwelling: Dublin Red Stock Lime Washout",
+                "description": "Late Victorian artisan dwelling built of local Dublin Red Stock clay bricks, exhibiting deep open mortar beds (15-25mm recession), joint voiding, and missing bedding mortar from continuous driving Atlantic rain.",
+                "country": "Ireland",
+                "region": "Dublin 12 (Crumlin)",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": "heritage_pointing_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.16, "y_min": 0.18, "x_max": 0.84, "y_max": 0.82,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Severe Bed Joint Mortar Washout & Edge Recession",
+                        "explanation": "Decades of driving rain have leached non-hydraulic lime binders from joint mouths, leaving recessed voids that admit water into the wall core and destabilize brick contact."
+                    }
+                ]
+            },
+            {
+                "slug": "iveagh-trust-gauged-brick-arch",
+                "title": "Iveagh Trust Edwardian Brick: Gauged Rubbing Brick Arch Sag",
+                "description": "Historic decorative red brick tenement block (1901) featuring precision-gauged soft red rubbing brick flat jack arches over window openings, displaying dropped center keystones and fine lime putty joint shear.",
+                "country": "Ireland",
+                "region": "Dublin 8 (Bride Street)",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "heritage_iveagh_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.22, "y_min": 0.15, "x_max": 0.78, "y_max": 0.85,
+                        "category": "gauged_arch_failure", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Gauged Rubbing Brick Jack Arch Sag & Dropped Key",
+                        "explanation": "Micro-movement in window head lintels coupled with lime putty joint erosion causes tapered rubbing brick voussoirs to slide downward, creating diagonal compressive shear across window reveals."
                     }
                 ]
             }
@@ -1783,7 +1922,9 @@ def create_app(config_class=Config):
             "indent_stone": "€320 - €620 / square meter",
             "poultice_desalt": "€180 - €380 / linear meter",
             "biocide_steam": "€35 - €65 / square meter",
-            "coating_removal": "€95 - €210 / square meter"
+            "coating_removal": "€95 - €210 / square meter",
+            "wigging_restore": "€180 - €350 / square meter",
+            "chimney_rebuild": "€450 - €1,200 / stack rebuild"
         }
 
         REMEDIAL_LABELS = {
@@ -1798,7 +1939,9 @@ def create_app(config_class=Config):
             "indent_stone": "Surgical Stone Indenting & Re-facing",
             "poultice_desalt": "Nebulous Mist Cleaning & Lime Poultice Desalting",
             "biocide_steam": "Superheated Dry Steam (150°C) & Biocide Wash",
-            "coating_removal": "Latex Poultice Paint Stripping & Desalination"
+            "coating_removal": "Latex Poultice Paint Stripping & Desalination",
+            "wigging_restore": "Traditional Irish Wigging / Tuckpointing Restoration",
+            "chimney_rebuild": "Chimney Stack Deconstruction & Flaunching Rebuild"
         }
 
         ARCHETYPE_LABELS = {
@@ -2066,6 +2209,31 @@ def create_app(config_class=Config):
                 "severity": "critical", "action": "coating_removal",
                 "explanation": "Synthetic silicone sealers or bitumen paints trap rising damp and soluble salts beneath an impervious skin; sub-film crystallization pressure triggers catastrophic sheet spalling.",
                 "mechanics": "Loss of masonry breathability + explosive sub-film salt crystallization pressure."
+            },
+            "inappropriate_cement_strap": {
+                "severity": "critical", "action": "repoint_lime",
+                "explanation": "Rigid 1:3 Portland cement ribbon or patch pointing applied over soft historic handmade brick. Traps capillary moisture and accelerates brick arrises spalling while cement breaks away in chunks.",
+                "mechanics": "Modulus of elasticity mismatch + capillary water entrapment forcing moisture evaporation through soft clay brick arrises."
+            },
+            "chimney_decay": {
+                "severity": "critical", "action": "chimney_rebuild",
+                "explanation": "Exposed roofline chimney stacks suffering severe freeze-thaw weathering, crumbling lime joints, fractured terracotta flue pots, and asymmetric stack lean from coal soot sulfate expansion.",
+                "mechanics": "Cryo-hydraulic saturation + ammonium sulfate chemical expansion from coal smoke flue deposits causing stack curvature."
+            },
+            "rising_damp_salt": {
+                "severity": "critical", "action": "poultice_desalt",
+                "explanation": "Groundwater capillary rise in solid historic brickwork lacking functional DPC, creating visible horizontal tide marks and expansive subflorescence salt crystals powdering the brick face.",
+                "mechanics": "Continuous capillary wicking of soluble nitrates/chlorides + sub-surface crypto-efflorescence crystallization pressure."
+            },
+            "irish_wigging_failure": {
+                "severity": "moderate", "action": "wigging_restore",
+                "explanation": "Uniquely Irish Georgian pointing technique featuring red-pigmented brick-dust stopping mortar and an applied white lime putty ribbon; weathering or cement repairs cause ribbon detachment.",
+                "mechanics": "Thermal and moisture shear failure along stopping mortar interface + loss of sacrificial decorative lime ribbon."
+            },
+            "gauged_arch_failure": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Precision rubbing brick flat jack arches over window openings exhibiting dropped center keystones, slipped voussoirs, and joint crushing from lintel deflection.",
+                "mechanics": "Loss of frictional wedge equilibrium along fine lime putty joints under superincumbent point loads."
             }
         }
 
@@ -2691,6 +2859,48 @@ def create_app(config_class=Config):
                 "rainfall": "Severe Maritime (810 mm/yr)",
                 "freeze_thaw": "54 cycles / yr",
                 "salt_spray": "Firth of Forth Salt Wind & Sub-Film Cryo-Burst"
+            },
+            "dublin-georgian-cement-damage": {
+                "lat": 53.3377, "lng": -6.2514,
+                "geology": "Lower Carboniferous Calp Formation & Soft Dublin Red Stock Brick",
+                "rainfall": "Moderate Atlantic (750 mm/yr)",
+                "freeze_thaw": "34 cycles / yr",
+                "salt_spray": "Urban Low-Saline Air & Acidic Sulfate"
+            },
+            "victorian-dublin-chimney-decay": {
+                "lat": 53.3228, "lng": -6.2642,
+                "geology": "Glacial Till Subsoil over Calp Limestone; Exposed Roofline Ridge",
+                "rainfall": "Severe Driving Rain (820 mm/yr at roofline)",
+                "freeze_thaw": "48 cycles / yr (Elevated Exposure)",
+                "salt_spray": "Flue Soot Ammonium Sulfate Acid Condensation"
+            },
+            "period-irish-rising-damp": {
+                "lat": 53.3312, "lng": -6.2678,
+                "geology": "Grand Canal Alluvium & Soft Victorian Porous Mudstone Brick",
+                "rainfall": "High Capillary Saturation (790 mm/yr)",
+                "freeze_thaw": "28 cycles / yr",
+                "salt_spray": "Ground Nitrate & Chloride Crystallization"
+            },
+            "georgian-terrace-irish-wigging": {
+                "lat": 53.3398, "lng": -6.2494,
+                "geology": "Merrion Alluvial Gravels & Hand-moulded Georgian Red Stock",
+                "rainfall": "Moderate Maritime (735 mm/yr)",
+                "freeze_thaw": "32 cycles / yr",
+                "salt_spray": "Dublin Bay Coastal Damp Aerosol"
+            },
+            "dublin-red-stock-pointing-erosion": {
+                "lat": 53.3245, "lng": -6.3110,
+                "geology": "Crumlin Brickfield Yellow/Red Clay Bedrock & Dublin Stock Brick",
+                "rainfall": "Severe Wind-Scour (860 mm/yr)",
+                "freeze_thaw": "38 cycles / yr",
+                "salt_spray": "Urban Atmospheric Runoff Matrix Leaching"
+            },
+            "iveagh-trust-gauged-brick-arch": {
+                "lat": 53.3402, "lng": -6.2709,
+                "geology": "Poddle River Alluvium & High-Grade Pressed/Gauged Rubbing Brick",
+                "rainfall": "Moderate-High (760 mm/yr)",
+                "freeze_thaw": "34 cycles / yr",
+                "salt_spray": "Urban Microclimate & Soot Deposition"
             }
         }
 
