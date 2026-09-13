@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>20 Student Assessment Worked Examples - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #090e1a;
+      --panel: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0284c7;
+      --critical: #ef4444;
+      --moderate: #f59e0b;
+      --minor: #10b981;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .btn-primary {
+      background: var(--accent-strong);
+      color: white;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover {
+      background: #0369a1;
+    }
+    .container {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem;
+    }
+    .intro-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .intro-banner h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.4rem;
+      color: #f8fafc;
+    }
+    .intro-banner p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 950px;
+      line-height: 1.6;
+    }
+    .stats-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      background: #090e1a;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .stat-pill strong {
+      color: var(--accent);
+    }
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .filter-chips {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .chip {
+      background: #1e293b;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip:hover {
+      background: #334155;
+      color: white;
+    }
+    .chip.active {
+      background: var(--accent-strong);
+      color: white;
+      border-color: var(--accent);
+    }
+    .specimen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(700px, 1fr));
+      gap: 1.5rem;
+    }
+    .specimen-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .specimen-card:hover {
+      border-color: #475569;
+      transform: translateY(-2px);
+    }
+    .card-top {
+      background: #131c31;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .specimen-num {
+      background: #0284c7;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 5px;
+      letter-spacing: 0.5px;
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .archetype-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+    .card-content {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      flex: 1;
+    }
+    .card-img-pane {
+      position: relative;
+      background: #000;
+      border-right: 1px solid var(--border);
+      min-height: 280px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-img-pane img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .target-box {
+      position: absolute;
+      border: 3px solid #ef4444;
+      background: rgba(239, 68, 68, 0.22);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.75);
+      border-radius: 4px;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .target-box-label {
+      position: absolute;
+      top: -24px;
+      left: 0;
+      background: #ef4444;
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .card-details-pane {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .flaw-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid #273549;
+      padding-bottom: 0.5rem;
+    }
+    .flaw-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fbbf24;
+      margin: 0;
+    }
+    .sev-pill {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .sev-critical { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid #ef4444; }
+    .sev-moderate { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid #f59e0b; }
+    .sev-minor { background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid #10b981; }
+    .detail-section {
+      font-size: 0.8rem;
+    }
+    .detail-section strong {
+      display: block;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .detail-section p {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.45;
+    }
+    .exam-box {
+      background: #090e1a;
+      border: 1px solid #1e3a8a;
+      border-left: 3px solid #38bdf8;
+      border-radius: 6px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+    }
+    .exam-box-title {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #38bdf8;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .exam-box p {
+      margin: 0;
+      color: #e2e8f0;
+    }
+    .card-footer {
+      background: #131c31;
+      border-top: 1px solid var(--border);
+      padding: 0.65rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .cost-tag {
+      font-weight: 700;
+      color: #fbbf24;
+    }
+    .reticles-hidden .target-box {
+      opacity: 0;
+    }
+    @media (max-width: 900px) {
+      .specimen-grid { grid-template-columns: 1fr; }
+      .card-content { grid-template-columns: 1fr; }
+      .card-img-pane { height: 240px; }
+    }
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      .header, .filter-bar, .no-print { display: none !important; }
+      .specimen-grid { display: block !important; }
+      .specimen-card {
+        background: #fff !important;
+        border: 1px solid #94a3b8 !important;
+        box-shadow: none !important;
+        margin-bottom: 1.5rem !important;
+        page-break-inside: avoid !important;
+      }
+      .card-top, .card-footer { background: #f1f5f9 !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
+      .card-title { color: #0f172a !important; }
+      .detail-section p, .exam-box p { color: #1e293b !important; }
+      .exam-box { background: #f8fafc !important; border-color: #94a3b8 !important; }
+      .cost-tag { color: #b45309 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <div class="header">
+    <h1><span>🏛️</span> 20 Student Assessment Worked Examples Catalog</h1>
+    <div class="header-actions">
+      <button type="button" class="btn btn-primary" id="btn-toggle-reticles" onclick="toggleReticles()">
+        <i class="fa-solid fa-eye-slash"></i> <span id="lbl-reticles">Hide Solution Reticles (Student Mode)</span>
+      </button>
+      <button type="button" class="btn" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> Print / Save PDF
+      </button>
+      <a href="/cards" class="btn"><i class="fa-solid fa-id-card"></i> Flashcard Trainer</a>
+      <a href="/field-guide" class="btn"><i class="fa-solid fa-book"></i> Field Guide</a>
+      <a href="/" class="btn">&larr; Catalog</a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Description Banner -->
+    <div class="intro-banner">
+      <h2>Curated Master Test Bank: 20 Real-World Masonry Defect Specimens</h2>
+      <p>
+        A comprehensive collection of 20 diagnostic specimens specifically engineered for candidate visual assessment,
+        clinical defect taxonomy testing, and remedial conservation specification. Each worked example includes verified imagery,
+        pathological failure mechanics, tolerance criteria, student testing tasks, and model solution targets.
+      </p>
+      <div class="stats-row">
+        <div class="stat-pill">Specimens: <strong>20 Complete Walls</strong></div>
+        <div class="stat-pill">Archetypes: <strong>11 Masonry Formations</strong></div>
+        <div class="stat-pill">Flaw Varieties: <strong>Structural Shear, Cryo-Spalling, Leaching, Jacking &amp; Voiding</strong></div>
+        <div class="stat-pill">Financial Standard: <strong>Euro (€) Conservation Rates</strong></div>
+      </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-chips">
+        <button type="button" class="chip active" onclick="filterCategory('all', this)">All 20 Specimens</button>
+        <button type="button" class="chip" onclick="filterCategory('brick', this)">Brickwork (1-4)</button>
+        <button type="button" class="chip" onclick="filterCategory('lime_rubble', this)">Historic Lime &amp; Rubble (5-8)</button>
+        <button type="button" class="chip" onclick="filterCategory('ashlar', this)">Dressed Ashlar (9-11)</button>
+        <button type="button" class="chip" onclick="filterCategory('dry_stone', this)">Dry Stone Walling (12-16)</button>
+        <button type="button" class="chip" onclick="filterCategory('retaining_earth', this)">Retaining &amp; Cob Earth (17-18)</button>
+        <button type="button" class="chip" onclick="filterCategory('specialist', this)">Specialist &amp; CMU (19-20)</button>
+      </div>
+      <div style="font-size: 0.78rem; color: var(--muted);" id="visible-count">
+        Showing 20 of 20 specimens
+      </div>
+    </div>
+
+    <!-- 20 Specimen Grid -->
+    <div class="specimen-grid" id="specimen-grid">
+
+      <!-- SPECIMEN 01 -->
+      <div class="specimen-card" data-cat="brick">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#01</span>
+            <h3 class="card-title">Victorian Red Brick Cavity Wall</h3>
+          </div>
+          <span class="archetype-badge">Brick Cavity</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/brick_efflorescence_01.jpg" alt="Victorian Red Brick Efflorescence">
+            <div class="target-box" style="left: 20%; top: 22%; width: 62%; height: 58%;">
+              <span class="target-box-label">Target: Salt Leaching</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Crystalline Salt Leaching (Efflorescence)</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Late 19th-century Manchester residential facade. Internal moisture evaporates from rain-saturated clay wythes, depositing white sodium and calcium sulfate crystals on the external skin.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Capillary moisture transport + surface crystallization pressure (crypto-efflorescence) causing progressive friable softening of brick arrises and binder leaching.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Delineate the primary moisture leaching boundary. Identify the salt deposition zone, cite the driving moisture vector, and specify non-abrasive remedial remediation.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BRE Digest 245 &bull; RICS CR2</strong></span>
+          <span class="cost-tag">Remedial: €45 - €75 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 02 -->
+      <div class="specimen-card" data-cat="brick">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#02</span>
+            <h3 class="card-title">Industrial Fired Brick Pier</h3>
+          </div>
+          <span class="archetype-badge">Brick Cavity</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/old_brick_decay_01.jpg" alt="Industrial Brick Frost Spalling">
+            <div class="target-box" style="left: 22%; top: 28%; width: 56%; height: 50%;">
+              <span class="target-box-label">Target: Spalled Faces</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Severe Cryo-Hydraulic Frost Spalling</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Exposed industrial mill pier. Low-temperature fired underburned bricks saturated by driving rain have experienced catastrophic face shearing during repeated freeze-thaw cycles.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Pore water volume expands by 9% upon freezing. The resulting hydraulic pressure exceeds the tensile strength of the vitreous brick skin, shearing outer faces off.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Locate the primary blown brick faces. Calculate spall depth (>15mm critical threshold) and prescribe frost-resistant replacement unit criteria.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BS EN 771-1 &bull; BRE Digest 251</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² rebuild</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 03 -->
+      <div class="specimen-card" data-cat="brick">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#03</span>
+            <h3 class="card-title">Edwardian Semi-Detached Flank Wall</h3>
+          </div>
+          <span class="archetype-badge">Brick Cavity</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/modern_brick_damage_01.jpg" alt="Stepped Settlement Crack">
+            <div class="target-box" style="left: 28%; top: 12%; width: 46%; height: 75%;">
+              <span class="target-box-label">Target: Stepped Shear</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Diagonal Stepped Settlement Shear Fracture</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Flank elevation adjacent to corner bay. Differential subsidence of foundation subsoil has induced diagonal shear stresses through bed and perpendicular mortar joints.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Foundation rotation causes diagonal principal tensile stress; failure occurs along the weakest plane (the mortar joint matrix), producing a classic stepped fracture.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Trace the diagonal stepped fault line. Classify aperture width against BRE Digest 251 damage categories and specify helical tie stitch intervals.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BRE Digest 251 (Cat 3) &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €85 - €160 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 04 -->
+      <div class="specimen-card" data-cat="brick">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#04</span>
+            <h3 class="card-title">Commercial Brickwork Gable Wall</h3>
+          </div>
+          <span class="archetype-badge">Brick Cavity</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/brick_thermal_01.jpg" alt="Thermal Expansion Crack">
+            <div class="target-box" style="left: 40%; top: 5%; width: 24%; height: 90%;">
+              <span class="target-box-label">Target: Movement Fissure</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Vertical Thermal Expansion &amp; Tie Failure</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Continuous 16-meter brick run constructed without expansion joints. Long south-facing solar exposure has generated compressive thermal strain and vertical cracking.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Unaccommodated irreversible thermal expansion creates longitudinal compressive bowing and vertical cracking at corners where return wythes restrain movement.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Differentiate between foundation settlement and thermal movement. Specify vertical movement joint cutting parameters and elastomeric sealant.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BS 5628 &bull; BRE Digest 361</strong></span>
+          <span class="cost-tag">Remedial: €85 - €160 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 05 -->
+      <div class="specimen-card" data-cat="lime_rubble">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#05</span>
+            <h3 class="card-title">18th-Century Coursed Lime Rubble</h3>
+          </div>
+          <span class="archetype-badge">Historic Lime</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/lime_coursed_01.jpg" alt="Lime Mortar Washout">
+            <div class="target-box" style="left: 20%; top: 30%; width: 60%; height: 50%;">
+              <span class="target-box-label">Target: Lime Washout</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Deep Bed Joint Lime Binder Washout</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Wicklow Ordovician slate rubble walling. Driving Atlantic rainfall has dissolved and leached the sacrificial calcium hydroxide binder, creating 40mm joint cavities.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Chemical dissolution of carbonated lime under acidic rainwater runoff + mechanical scouring, leading to unbonded stone courses and direct water ingress into core.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify joint void depth. Prescribe rake-back depth and select correct hydraulic lime classification (NHL 2.0 vs NHL 3.5) with aggregate sieve sizing.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>SPAB Technical Note 1 &bull; Historic England</strong></span>
+          <span class="cost-tag">Remedial: €45 - €75 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 06 -->
+      <div class="specimen-card" data-cat="lime_rubble">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#06</span>
+            <h3 class="card-title">Uncoursed Rubble: Continuous Vertical Joint Shear</h3>
+          </div>
+          <span class="archetype-badge">Stone Rubble</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_joints_01.jpg" alt="Continuous Vertical Joints in Stone Rubble">
+            <div class="target-box" style="left: 32%; top: 12%; width: 23%; height: 56%;">
+              <span class="target-box-label">Target: Vertical Shear Plane</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Continuous Vertical Joint Alignment &amp; Bond Failure</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Uncoursed stone rubble walling constructed without bond staggering. Multiple vertical joints align directly across consecutive courses, creating a continuous structural cleavage plane, accompanied by oversized mortar beds (>25mm).</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Lack of horizontal stone overlap eliminates shear interlock. Vertical compressive stress concentrates along collinear unbonded perpends, inducing vertical splitting failure (UltraTech Masonry Mistake #2 &amp; IS 1597 Part 1).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify collinear perpend joints forming continuous vertical failure planes. Prescribe joint raking to 25mm, installation of helical stainless steel ties across the shear line, and hydraulic lime repointing.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>IS 1597 (Part 1) &bull; EN 1996-1-1 &bull; UltraTech Standard</strong></span>
+          <span class="cost-tag">Remedial: €85 - €160 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 07 -->
+      <div class="specimen-card" data-cat="lime_rubble">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#07</span>
+            <h3 class="card-title">Fieldstone Rubble: Severe Lime Run-Off &amp; Calcite Crust</h3>
+          </div>
+          <span class="archetype-badge">Stone Rubble</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_limerunoff_01.jpg" alt="Lime Run-Off and Calcite Leaching">
+            <div class="target-box" style="left: 25%; top: 10%; width: 43%; height: 82%;">
+              <span class="target-box-label">Target: Calcite Encrustation</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Severe Lime Run-Off &amp; Cryptoflorescence Salt Burst</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Fieldstone rubble masonry exhibiting severe calcium hydroxide leaching, cascading white carbonate run-off staining, and sub-surface cryptoflorescence salt crystallization from water percolation through mortar beds.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Excess moisture dissolves free Ca(OH)₂ from uncured mortar; upon reaching the wall face, it reacts with atmospheric CO₂ to precipitate hard, insoluble calcite (CaCO₃) sheets. Concurrently, sub-surface pore crystallization generates pressures &gt;50 MPa, causing stone pitting (UltraTech Mistakes #3 &amp; #4).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Differentiate superficial powdery efflorescence from insoluble calcium carbonate crusts. Prescribe gentle sulfamic/acetic poulticing, coping drip groove (throating) installation, and breathable hydraulic lime repointing.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BS 8221-1 &bull; UltraTech Advisory &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €55 - €95 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 08 -->
+      <div class="specimen-card" data-cat="lime_rubble">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#08</span>
+            <h3 class="card-title">Stone Boundary Wall: Missing Through-Stones &amp; Wythe Disconnection</h3>
+          </div>
+          <span class="archetype-badge">Stone Rubble</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_coursing_01.jpg" alt="Missing Through-Stones in Rubble Wall">
+            <div class="target-box" style="left: 12%; top: 15%; width: 53%; height: 70%;">
+              <span class="target-box-label">Target: Wythe Disconnection</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Absence of Transverse Through-Stones (Bond Stones)</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Random rubble stone boundary wall with dressed corner quoins lacking transverse headers/through-stones to tie opposing faces. Multiple irregular slabs are set on edge vertically rather than bedded horizontally.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Without through-stones spaced at 1.5m horizontal and 0.6m vertical intervals, the loose internal core hearting exerts outward lateral surcharge on external wythes, causing outward wythe separation and buckling (UltraTech Construction Tip #1 &amp; IS 1597).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify absence of transverse header ties across wall depth. Prescribe stainless steel tie stitching, low-pressure core void grouting, and localized rebuilding with through-stones spanning ≥75% of wall thickness.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>IS 1597 (Part 1) &bull; BRE GBG 14 &bull; CIRIA C599</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² rebuild</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 09 -->
+      <div class="specimen-card" data-cat="ashlar">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#09</span>
+            <h3 class="card-title">Georgian Ashlar Limestone Portico</h3>
+          </div>
+          <span class="archetype-badge">Ashlar Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ashlar_cracking_01.jpg" alt="Ashlar Cracking & Spalling">
+            <div class="target-box" style="left: 28%; top: 30%; width: 50%; height: 48%;">
+              <span class="target-box-label">Target: Bedding Spall</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Sedimentary Bedding Exfoliation &amp; Face Spall</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Finely dressed Portland freestone block. Stone installed face-bedded (bedding planes vertical) rather than naturally bedded, causing outer lamina to peel under compression.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Shear delamination parallel to natural geological foliation; moisture freezing in microscopic fissures accelerates buckling of the unreinforced outer stone sheet.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify the face-bedding plane orientation. Specify stone indenting procedure (dressing back to sound stone and piecing in matching freestone).</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>Historic England Stone &bull; BS 8298</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² indent</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 10 -->
+      <div class="specimen-card" data-cat="ashlar">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#10</span>
+            <h3 class="card-title">Sedimentary Stone: Improper Bedding &amp; Laminae Delamination</h3>
+          </div>
+          <span class="archetype-badge">Ashlar Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_bedding_01.jpg" alt="Improper Bedding in Sedimentary Stone">
+            <div class="target-box" style="left: 20%; top: 12%; width: 68%; height: 64%;">
+              <span class="target-box-label">Target: Face-Bedding Cleavage</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Face-Bedding Orientation &amp; Sedimentary Delamination</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Sedimentary stone blocks installed with natural quarry bedding planes oriented vertically parallel to the wall face (face-bedding) rather than horizontally perpendicular to compressive loads.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Natural sedimentation laminations act as low-shear cleavage planes. Axial compressive load acting parallel to laminations triggers buckling, splitting, and exfoliation of stone slabs under weather exposure (UltraTech Masonry Mistake #2 &amp; IS 1124).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify orientation of sedimentary bedding planes. Prescribe stone indenting or face stabilization, dressing back to sound stone and replacing units on their natural quarry bed.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>IS 1124 &bull; BS 8298 &bull; UltraTech Standard</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² indent</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 11 -->
+      <div class="specimen-card" data-cat="ashlar">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#11</span>
+            <h3 class="card-title">Exposed Porous Stone: Critical Frost Attack &amp; Ice Wedging</h3>
+          </div>
+          <span class="archetype-badge">Ashlar Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_frost_01.jpg" alt="Frost Attack on Stone Masonry">
+            <div class="target-box" style="left: 15%; top: 12%; width: 70%; height: 76%;">
+              <span class="target-box-label">Target: Cryo-Spall Wedging</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Freeze-Thaw Ice Wedging, Pore Saturation &amp; Shatter</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Exposed stone masonry with high capillary pore volume (>15% water absorption) subjected to freezing temperatures while saturated (>91% critical saturation).</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Water expands by 9% upon phase transition to ice inside constrained pore networks. Hydraulic pressures exceed the 3-5 MPa tensile limit of stone, wedging bedding joints wide open and shattering stone faces (UltraTech Masonry Mistake #5 &amp; EN 12371).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Measure joint dilation caused by ice lenses. Prescribe protective weather shedding copings with 50mm overhangs and freeze-thaw resistant stone replacement (Category F1 under EN 771-6).</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>EN 12371 &bull; IS 1121 &bull; UltraTech Cold-Weather Guide</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² rebuild</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 12 -->
+      <div class="specimen-card" data-cat="dry_stone">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#12</span>
+            <h3 class="card-title">Traditional Irish Dry Stone Boundary</h3>
+          </div>
+          <span class="archetype-badge">Dry Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/drystone_01.jpg" alt="Dry Stone Coping Loss">
+            <div class="target-box" style="left: 15%; top: 8%; width: 30%; height: 24%;">
+              <span class="target-box-label">Target: Coping Dislodgement</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Coping Capstone Dislodgement &amp; Hearting Exposure</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Connemara granite field boundary. Vertical coping capstones displaced by livestock rubbing and wind shear, allowing driving rain to wash into loose core hearting.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Loss of top deadweight compression clamping outer wythes together; unroofed wall core allows small packing stones to wash down, leading to structural voiding.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Locate the unseated coping stones. Specify traditional buck-and-doe pinning technique without cement mortar.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>DSWA Master Codes &bull; Heritage Council</strong></span>
+          <span class="cost-tag">Remedial: €50 - €90 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 13 -->
+      <div class="specimen-card" data-cat="dry_stone">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#13</span>
+            <h3 class="card-title">Double-Faced Field Boundary</h3>
+          </div>
+          <span class="archetype-badge">Dry Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/stone_bulge_01.jpg" alt="Lateral Wythe Bulge">
+            <div class="target-box" style="left: 40%; top: 35%; width: 38%; height: 40%;">
+              <span class="target-box-label">Target: Lateral Bulge</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Out-of-Plumb Lateral Wythe Bulge</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Limestone field walling on hillside. The face stones have pushed outward into a prominent barrel bulge, exceeding frictional stability limit.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Absence of transverse through-stones spanning the wall thickness. Internal hearting settlement generates lateral hydrostatic and granular thrust against slender outer wythe.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Measure bulge displacement (>15mm critical tolerance). Define dismantling sequence and through-stone placement rules (1 per m²).</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>DSWA Standards &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €220 - €480 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 14 -->
+      <div class="specimen-card" data-cat="dry_stone">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#14</span>
+            <h3 class="card-title">Aran Islands Karst Limestone Wall</h3>
+          </div>
+          <span class="archetype-badge">Dry Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/drystone_aran_01.jpg" alt="Aran Karst Dry Stone Wall">
+            <div class="target-box" style="left: 20%; top: 40%; width: 60%; height: 45%;">
+              <span class="target-box-label">Target: Foundation Shift</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Differential Base Subsidence &amp; Foundation Creep</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Thin soil over limestone pavement. Uneven dissolution of underlying limestone clints and peat washout has allowed basal footing boulders to shift horizontally.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Loss of bearing support beneath lower course triggering angular distortion and stepped shear cracks through dry stone interlocking matrix.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify dipped foundation zone. Specify base trench excavation, bed rock chinking, and footing stone relaying.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>Irish Heritage Council &bull; DSWA</strong></span>
+          <span class="cost-tag">Remedial: €220 - €480 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 15 -->
+      <div class="specimen-card" data-cat="dry_stone">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#15</span>
+            <h3 class="card-title">Mountain Pasture Boundary</h3>
+          </div>
+          <span class="archetype-badge">Dry Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/drystone_collapse_01.jpg" alt="Dry Stone Collapse Breach">
+            <div class="target-box" style="left: 32%; top: 25%; width: 48%; height: 50%;">
+              <span class="target-box-label">Target: Structural Collapse</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Complete Wythe Structural Shear Collapse (Breach)</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Severe localized gap breach where both outer wythes and core hearting have suffered catastrophic gravitational failure following storm runoff.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Uncorrected lateral bulging exceeded frictional shear equilibrium; progressive stone slipping triggered instantaneous total collapse of wall section.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Mark collapse zone boundaries. Formulate stone sorting strategy (faces vs hearting vs copings) and step-by-step rebuild protocol.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>DSWA Master Codes &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² complete rebuild</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 16 -->
+      <div class="specimen-card" data-cat="dry_stone">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#16</span>
+            <h3 class="card-title">Highland Retaining Dyke</h3>
+          </div>
+          <span class="archetype-badge">Dry Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/retaining_drystone_01.jpg" alt="Dry Stone Retaining Dyke">
+            <div class="target-box" style="left: 30%; top: 30%; width: 45%; height: 50%;">
+              <span class="target-box-label">Target: Batter Loss</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Slope Surcharge &amp; Dry Stone Batter Shift</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Dry stone revetment retaining steep slope. Saturated soil backfill has exerted lateral surcharge, rotating the wall face outward and eliminating the inward batter.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Overturning moment caused by lateral soil surcharge exceeding gravitational restoring moment of dry stone mass; lack of free-draining granular backfill.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Assess remaining batter angle. Specify excavation of backfill, installation of geotextile drainage, and rebuild to 1:6 inward batter.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>CIRIA C760 &bull; DSWA Retaining Codes</strong></span>
+          <span class="cost-tag">Remedial: €350 - €600 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 17 -->
+      <div class="specimen-card" data-cat="retaining_earth">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#17</span>
+            <h3 class="card-title">Roadside Granite Retaining Wall</h3>
+          </div>
+          <span class="archetype-badge">Retaining Wall</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/retaining_granite_01.jpg" alt="Retaining Wall Drainage Failure">
+            <div class="target-box" style="left: 28%; top: 35%; width: 47%; height: 50%;">
+              <span class="target-box-label">Target: Hydrostatic Bulge</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Hydrostatic Outward Bulge &amp; Weep Hole Siltation</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Heavy granite retention structure along roadway. Silted weep holes have blocked groundwater egress, generating hydrostatic head behind the masonry face.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Pore water pressure rise behind retaining wall increases lateral earth pressure coefficient; forces lower and mid-height stones outward beyond plumb.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify weep hole blockage signs. Prescribe diamond core-drilling of new weep relief holes with filter sleeves and hydrostatic pressure monitoring.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>CIRIA C760 &bull; Eurocode 7 (EN 1997)</strong></span>
+          <span class="cost-tag">Remedial: €65 - €110 / weep station</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 18 -->
+      <div class="specimen-card" data-cat="retaining_earth">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#18</span>
+            <h3 class="card-title">Vernacular Cob Cottage Wall</h3>
+          </div>
+          <span class="archetype-badge">Cob Earth</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/cob_earth_01.jpg" alt="Cob Earth Basal Undercut">
+            <div class="target-box" style="left: 18%; top: 45%; width: 62%; height: 48%;">
+              <span class="target-box-label">Target: Basal Undercut</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Basal Rain-Splash Undercut &amp; Desiccation Fissures</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Mass unbaked earth and straw wall. Lower 600mm has weathered into a deep concave notch from splash-back, compromising gravity bearing support.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Clay-silt binder slakes upon repeated wetting; desiccation shrinkage cracks allow rain deep into wall core, reducing compressive yield capacity.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Measure undercut depth (<40mm limit). Prescribe stone plinth underpinning and breathable hydraulic lime shelter coat.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>Historic England: Earth &bull; SPAB Q&A</strong></span>
+          <span class="cost-tag">Remedial: €280 - €550 / m² cob repair</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 19 -->
+      <div class="specimen-card" data-cat="specialist">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#19</span>
+            <h3 class="card-title">East Anglian Knapped Flint Facade</h3>
+          </div>
+          <span class="archetype-badge">Flint Knapped</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/flint_knapped_01.jpg" alt="Knapped Flint Wall Matrix Washout">
+            <div class="target-box" style="left: 20%; top: 15%; width: 65%; height: 65%;">
+              <span class="target-box-label">Target: Flint Nodule Loss</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Flint Nodule Unseating &amp; Chalk Matrix Erosion</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Cretaceous Upper Chalk flint flushwork facade. Driving rain has scoured the soft lime-chalk matrix, loosening individual knapped silica nodules.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Non-porous vitreous flint has zero suction bond with mortar; reliance is 100% mechanical interlocking. When mortar recesses >8mm, nodules dislodge.</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Identify missing and loose flint nodules. Specify sacrificial chalk-lime mortar mix (NHL 2.0) and galleting packing technique.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>SPAB Flint Note &bull; Historic England</strong></span>
+          <span class="cost-tag">Remedial: €55 - €95 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 20 -->
+      <div class="specimen-card" data-cat="specialist">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#20</span>
+            <h3 class="card-title">Modular Concrete Blockwork (CMU) Structural Framing</h3>
+          </div>
+          <span class="archetype-badge">Concrete Block</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_cmu_blockwork_01.jpg" alt="Modular Concrete Blockwork Structural Framing">
+            <div class="target-box" style="left: 16%; top: 15%; width: 48%; height: 57%;">
+              <span class="target-box-label">Target: Infill Movement Joint</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">CMU Infill Movement Joint Omission &amp; Shear Stress</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Multi-storey reinforced concrete framed building with concrete masonry unit (CMU) infill panels under construction. Continuous panels lack vertical contraction joints, inducing restraint stresses.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Differential shrinkage between reinforced concrete frame members and concrete masonry units creates diagonal tension and longitudinal bed joint shear cracking when unrestrained by movement joints (Eurocode 6 &amp; IS 2185).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Calculate maximum permissible movement joint spacing (≤6m). Specify vertical joint cutting, closed-cell polyethylene backing rods, and polyurethane elastomeric sealant.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>Eurocode 6 (EN 1996) &bull; IS 2185 &bull; UltraTech Advisory</strong></span>
+          <span class="cost-tag">Remedial: €45 - €80 / linear meter</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let reticlesVisible = true;
+
+    function toggleReticles() {
+      reticlesVisible = !reticlesVisible;
+      const grid = document.getElementById('specimen-grid');
+      const btnLbl = document.getElementById('lbl-reticles');
+      const btn = document.getElementById('btn-toggle-reticles');
+
+      if (reticlesVisible) {
+        grid.classList.remove('reticles-hidden');
+        btnLbl.innerText = "Hide Solution Reticles (Student Mode)";
+        btn.classList.add('btn-primary');
+      } else {
+        grid.classList.add('reticles-hidden');
+        btnLbl.innerText = "Show Solution Reticles (Teacher Mode)";
+        btn.classList.remove('btn-primary');
+      }
+    }
+
+    function filterCategory(cat, btn) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+
+      const cards = document.querySelectorAll('.specimen-card');
+      let visible = 0;
+
+      cards.forEach(card => {
+        const cardCat = card.getAttribute('data-cat');
+        if (cat === 'all' || cardCat === cat) {
+          card.style.display = 'flex';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      document.getElementById('visible-count').innerText = `Showing ${visible} of 20 specimens`;
+    }
+  </script>
+</body>
+</html>
+

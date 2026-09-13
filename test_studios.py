@@ -85,6 +85,27 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertEqual(len(csv_lines), 12)  # 1 header + 11 archetypes
         self.assertIn('€', res_csv.data.decode('utf-8'))
 
+    def test_ultratech_stone_specimens_and_catalog(self):
+        """Verify authentic UltraTech stone masonry assets, database records, and 20 worked examples."""
+        # 1. Verify worked examples catalog
+        res = self.client.get('/examples')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'20 Student Assessment Worked Examples Catalog', res.data)
+        self.assertIn(b'ultratech_stone_joints_01.jpg', res.data)
+        self.assertIn(b'ultratech_stone_limerunoff_01.jpg', res.data)
+        self.assertIn(b'ultratech_stone_bedding_01.jpg', res.data)
+        self.assertIn(b'ultratech_stone_frost_01.jpg', res.data)
+        self.assertIn(b'ultratech_cmu_blockwork_01.jpg', res.data)
+
+        # 2. Verify UltraTech inspection pages
+        res_wall = self.client.get('/inspect/ultratech-stone-continuous-joints')
+        self.assertEqual(res_wall.status_code, 200)
+        self.assertIn(b'Continuous Vertical Joint', res_wall.data)
+
+        res_bedding = self.client.get('/inspect/ultratech-stone-improper-bedding')
+        self.assertEqual(res_bedding.status_code, 200)
+        self.assertIn(b'Face-Bedding', res_bedding.data)
+
     def test_admin_auth_protection(self):
         """Ensure admin routes are strictly inaccessible without authentication."""
         protected_endpoints = [

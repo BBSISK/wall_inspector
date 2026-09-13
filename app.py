@@ -40,6 +40,14 @@ TAXONOMY_BY_WALL_TYPE = {
         {"id": "ivy_penetration", "label": "Structural Ivy / Biological Root Penetration"},
         {"id": "rubble_voiding", "label": "Internal Core Rubble Voiding"}
     ],
+    "stone_rubble": [
+        {"id": "continuous_vertical_joint", "label": "Continuous Vertical Joint Alignment"},
+        {"id": "through_stone_failure", "label": "Missing or Fractured Through-Stone"},
+        {"id": "face_bedding_delamination", "label": "Face-Bedding Delamination & Exfoliation"},
+        {"id": "lime_runoff_staining", "label": "Lime Run-Off & Calcite Leaching"},
+        {"id": "cryptoflorescence", "label": "Cryptoflorescence / Sub-Surface Salt Burst"},
+        {"id": "frost_attack_spall", "label": "Frost Attack Wedging & Matrix Shatter"}
+    ],
     "ashlar": [
         {"id": "ashlar_spall", "label": "Surface Face Delamination / Exfoliation"},
         {"id": "joint_separation", "label": "Fine Ashlar Joint Separation"},
@@ -222,18 +230,18 @@ def create_app(config_class=Config):
             {
                 "slug": "historic-lime-mortar-rubble",
                 "title": "Historic Lime Mortar Rubble Wall",
-                "description": "18th-century random rubble masonry wall showing mortar washout, ivy displacement, and hollow render delamination.",
+                "description": "18th-century random rubble masonry wall showing deep mortar washout, joint voiding, and sacrificial binder erosion.",
                 "country": "Ireland",
                 "region": "Wicklow",
                 "wall_type": "lime_mortar",
                 "structural_function": "boundary",
                 "difficulty": "intermediate",
-                "image_filename": None,
-                "image_url_direct": "https://res.cloudinary.com/iltvgpiy/image/upload/v1789227079/wall_inspector/historic-lime-mortar-rubble.png",
+                "image_filename": "lime_coursed_01.jpg",
+                "image_url_direct": None,
                 "defects": [
                     {
                         "target_type": "bounding_box",
-                        "x_min": 0.22, "y_min": 0.30, "x_max": 0.65, "y_max": 0.75,
+                        "x_min": 0.32, "y_min": 0.25, "x_max": 0.80, "y_max": 0.75,
                         "category": "lime_washout", "severity": "critical",
                         "remedial_action": "repoint_lime",
                         "title": "Deep Joint Lime Washout",
@@ -244,72 +252,90 @@ def create_app(config_class=Config):
             {
                 "slug": "ashlar-dressed-limestone-facade",
                 "title": "Georgian Dressed Ashlar Masonry",
-                "description": "Fine-jointed ashlar limestone masonry displaying iron cramp oxidation fractures and surface spalling.",
+                "description": "Fine-jointed ashlar limestone masonry displaying structural diagonal shear fracture and arrises edge spalling.",
                 "country": "Ireland",
                 "region": "Dublin",
                 "wall_type": "ashlar",
                 "structural_function": "load_bearing",
                 "difficulty": "advanced",
-                "image_filename": None,
-                "image_url_direct": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+                "image_filename": "ashlar_cracking_01.jpg",
+                "image_url_direct": None,
                 "defects": [
                     {
                         "target_type": "bounding_box",
-                        "x_min": 0.35, "y_min": 0.25, "x_max": 0.70, "y_max": 0.68,
-                        "category": "joint_separation", "severity": "moderate",
+                        "x_min": 0.24, "y_min": 0.10, "x_max": 0.82, "y_max": 0.85,
+                        "category": "joint_separation", "severity": "critical",
                         "remedial_action": "helical_stitch",
-                        "title": "Ashlar Joint Shear & Separation",
-                        "explanation": "Differential thermal movement and foundation settlement opening fine precision arrises."
+                        "title": "Ashlar Structural Shear Fracture",
+                        "explanation": "Foundation rotation and differential structural settlement opening wide diagonal fracture across precision dressed ashlar blocks."
                     }
                 ]
             },
             {
                 "slug": "granite-retaining-wall-failure",
                 "title": "Granite Gravity Retaining Wall",
-                "description": "Heavy dry-jointed granite retaining structure experiencing hydrostatic outward bulging and drainage weep hole blockage.",
+                "description": "Heavy coursed granite retaining structure experiencing hydrostatic outward bulging and drainage weep hole siltation.",
                 "country": "Ireland",
                 "region": "Galway",
                 "wall_type": "retaining_wall",
                 "structural_function": "retaining",
                 "difficulty": "advanced",
-                "image_filename": None,
-                "image_url_direct": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80",
+                "image_filename": "retaining_granite_01.jpg",
+                "image_url_direct": None,
                 "defects": [
                     {
                         "target_type": "bounding_box",
-                        "x_min": 0.28, "y_min": 0.35, "x_max": 0.75, "y_max": 0.85,
+                        "x_min": 0.30, "y_min": 0.25, "x_max": 0.85, "y_max": 0.85,
                         "category": "hydrostatic_bulge", "severity": "critical",
                         "remedial_action": "drainage_relief",
-                        "title": "Hydrostatic Outward Bulge",
-                        "explanation": "Excess pore water pressure behind the masonry facing forcing stones out-of-plumb."
+                        "title": "Hydrostatic Outward Bulge & Silted Weeps",
+                        "explanation": "Excess pore water pressure behind the masonry facing forcing stones out-of-plumb due to silted drainage weep pipes."
                     }
                 ]
             },
             {
                 "slug": "historic-cob-earth-structure",
                 "title": "Vernacular Cob & Rammed Earth Wall",
-                "description": "Mass-earth subsoil and straw wall exhibiting basal rain-splash erosion and vertical desiccation cracks.",
+                "description": "Mass-earth subsoil and straw wall exhibiting basal rain-splash erosion, undercut notch, and vertical desiccation cracks.",
                 "country": "Ireland",
                 "region": "Wexford",
                 "wall_type": "cob_earth",
                 "structural_function": "load_bearing",
                 "difficulty": "intermediate",
-                "image_filename": None,
-                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Cob+Earth+Structure",
-                "defects": []
+                "image_filename": "cob_earth_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.18, "y_min": 0.45, "x_max": 0.80, "y_max": 0.93,
+                        "category": "joint_separation", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Basal Rain-Splash Undercut & Notch Erosion",
+                        "explanation": "Mass unbaked earth and straw wall displaying deep concave erosion notch along ground level from splash-back."
+                    }
+                ]
             },
             {
                 "slug": "knapped-flint-lime-facade",
                 "title": "Knapped Flint & Flushwork Wall",
-                "description": "Decorative and protective knapped field-flint facing showing chalk-matrix erosion and stone pop-outs.",
+                "description": "Decorative and protective knapped field-flint facing showing chalk-matrix erosion and stone nodule pop-outs.",
                 "country": "United Kingdom",
                 "region": "Norfolk",
                 "wall_type": "flint_knapped",
                 "structural_function": "load_bearing",
                 "difficulty": "advanced",
-                "image_filename": None,
-                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Knapped+Flint+Wall",
-                "defects": []
+                "image_filename": "flint_knapped_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.20, "y_min": 0.15, "x_max": 0.85, "y_max": 0.80,
+                        "category": "lime_washout", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Flint Nodule Unseating & Matrix Washout",
+                        "explanation": "Chalk-lime mortar matrix eroded by driving rain, loosening mechanical bond on knapped silica nodules."
+                    }
+                ]
             },
             {
                 "slug": "glazed-architectural-terracotta",
@@ -320,22 +346,31 @@ def create_app(config_class=Config):
                 "wall_type": "terracotta_faience",
                 "structural_function": "curtain",
                 "difficulty": "advanced",
-                "image_filename": None,
-                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Terracotta+Faience",
+                "image_filename": "ashlar_cracking_01.jpg",
+                "image_url_direct": None,
                 "defects": []
             },
             {
                 "slug": "hollow-concrete-blockwork-pier",
-                "title": "Modular Concrete Block Boundary Wall",
-                "description": "Core-filled concrete masonry blocks showing bed-joint shear fractures and moisture efflorescence.",
-                "country": "Ireland",
-                "region": "Cork",
+                "title": "Modular Concrete Blockwork (CMU) Structural Framing",
+                "description": "Reinforced concrete frame with modular concrete block (CMU) infill panels, displaying unreinforced vertical movement joints and bed-joint shear stresses.",
+                "country": "International",
+                "region": "Industrial Zone",
                 "wall_type": "concrete_block",
-                "structural_function": "boundary",
+                "structural_function": "load_bearing",
                 "difficulty": "beginner",
-                "image_filename": None,
-                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Concrete+Blockwork",
-                "defects": []
+                "image_filename": "ultratech_cmu_blockwork_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.16, "y_min": 0.15, "x_max": 0.64, "y_max": 0.72,
+                        "category": "block_bed_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "CMU Infill Movement Joint Omission",
+                        "explanation": "Continuous concrete masonry unit infill panels installed without vertical contraction control joints every 6m, risking restrained shrinkage shear cracking."
+                    }
+                ]
             },
             {
                 "slug": "cyclopean-boulder-fieldstone-wall",
@@ -346,9 +381,18 @@ def create_app(config_class=Config):
                 "wall_type": "boulder_fieldstone",
                 "structural_function": "retaining",
                 "difficulty": "intermediate",
-                "image_filename": None,
-                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Boulder+Fieldstone",
-                "defects": []
+                "image_filename": "drystone_collapse_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.25, "y_min": 0.22, "x_max": 0.77, "y_max": 0.87,
+                        "category": "roll_out", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Basal Boulder Sliding & Chinking Loss",
+                        "explanation": "Unmortared erratic granite boulders sliding forward under gravity and slope surcharge due to loss of basal pin chinking."
+                    }
+                ]
             },
             {
                 "slug": "granite-quoin-dressed-corner",
@@ -359,9 +403,174 @@ def create_app(config_class=Config):
                 "wall_type": "granite_quoin",
                 "structural_function": "load_bearing",
                 "difficulty": "advanced",
-                "image_filename": None,
-                "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Granite+Quoins",
-                "defects": []
+                "image_filename": "ashlar_cracking_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.30, "y_min": 0.20, "x_max": 0.70, "y_max": 0.70,
+                        "category": "arment_crushing", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Quoin Arris Compressive Crushing & Edge Spall",
+                        "explanation": "Extreme vertical point load concentration along dressed return corner arris causing diagonal stone fractures."
+                    }
+                ]
+            },
+            {
+                "slug": "ultratech-stone-continuous-joints",
+                "title": "Uncoursed Rubble: Continuous Vertical Joint Shear",
+                "description": "Uncoursed rubble stone masonry exhibiting continuous vertical joints without bond staggering, forming a vertical failure plane under compressive load, alongside oversized mortar beds (>25mm).",
+                "country": "India / International",
+                "region": "Rajasthan",
+                "wall_type": "stone_rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "ultratech_stone_joints_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.32, "y_min": 0.12, "x_max": 0.55, "y_max": 0.68,
+                        "category": "continuous_vertical_joint", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Continuous Vertical Joint Alignment",
+                        "explanation": "Vertical joints un-staggered across multiple courses form an unbonded vertical cleavage plane prone to splitting under compression (IS 1597 Part 1)."
+                    },
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.10, "y_min": 0.15, "x_max": 0.30, "y_max": 0.55,
+                        "category": "lime_runoff_staining", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Excessive Mortar Bed Thickness (>25mm)",
+                        "explanation": "Mortar joints exceed 25mm thickness without stone spall packing, creating excessive shrinkage stress and uneven load distribution."
+                    }
+                ]
+            },
+            {
+                "slug": "ultratech-stone-improper-bedding",
+                "title": "Sedimentary Stone: Face-Bedding Delamination",
+                "description": "Sedimentary stone masonry laid with quarry natural bedding planes oriented vertically parallel to the wall face (face-bedding), resulting in sheet exfoliation and compressive delamination.",
+                "country": "India / International",
+                "region": "Madhya Pradesh",
+                "wall_type": "stone_rubble",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "ultratech_stone_bedding_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.20, "y_min": 0.12, "x_max": 0.88, "y_max": 0.76,
+                        "category": "face_bedding_delamination", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Face-Bedding Orientation & Laminae Delamination",
+                        "explanation": "Natural quarry bedding planes oriented vertically parallel to the wall face induce shear splitting, exfoliation, and compressive delamination under axial load (IS 1124 / EN 771-6)."
+                    }
+                ]
+            },
+            {
+                "slug": "ultratech-stone-lime-runoff",
+                "title": "Fieldstone Rubble: Severe Lime Run-Off & Calcite Crust",
+                "description": "Fieldstone rubble masonry exhibiting severe calcium hydroxide leaching, white carbonate run-off staining, and sub-surface cryptoflorescence salt crystallization from water percolation.",
+                "country": "India / International",
+                "region": "Karnataka",
+                "wall_type": "stone_rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "ultratech_stone_limerunoff_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.25, "y_min": 0.10, "x_max": 0.68, "y_max": 0.92,
+                        "category": "lime_runoff_staining", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Severe Lime Run-Off (Calcite Staining)",
+                        "explanation": "Rainwater washing through uncured high-lime mortar leaches Ca(OH)2, reacting with atmospheric CO2 to deposit hard, insoluble CaCO3 crusts over the masonry face."
+                    },
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.04, "y_min": 0.10, "x_max": 0.28, "y_max": 0.65,
+                        "category": "cryptoflorescence", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Sub-Surface Salt Crystallisation (Cryptoflorescence)",
+                        "explanation": "Soluble sulphate and chloride salts evaporating inside stone pores generate crystallisation pressures exceeding 50 MPa, causing granular disintegration."
+                    }
+                ]
+            },
+            {
+                "slug": "ultratech-stone-frost-attack",
+                "title": "Exposed Stone Rubble: Critical Frost Attack",
+                "description": "Exposed porous stone masonry experiencing severe freeze-thaw cycles. Water volume expansion (9%) inside saturated stone pores wedges joints apart and blows out outer stone arrises.",
+                "country": "India / International",
+                "region": "Himachal Pradesh",
+                "wall_type": "stone_rubble",
+                "structural_function": "boundary",
+                "difficulty": "advanced",
+                "image_filename": "ultratech_stone_frost_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.15, "y_min": 0.12, "x_max": 0.85, "y_max": 0.88,
+                        "category": "frost_attack_spall", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Freeze-Thaw Ice Wedging & Stone Face Spalling",
+                        "explanation": "Critical moisture saturation (>91% pore capacity) combined with sub-zero temperatures generates expansive ice crystallization pressures, wedging joints apart and shattering stone faces (EN 12371)."
+                    }
+                ]
+            },
+            {
+                "slug": "ultratech-stone-through-stone-defect",
+                "title": "Boundary Rubble: Missing Through-Stones & Wythe Disconnection",
+                "description": "Stone boundary wall featuring dressed corner quoins but lacking transverse through-stones (headers) to tie the outer wythes together, alongside irregular vertical slab placement.",
+                "country": "India / International",
+                "region": "Maharashtra",
+                "wall_type": "stone_rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "ultratech_stone_coursing_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.12, "y_min": 0.15, "x_max": 0.65, "y_max": 0.85,
+                        "category": "through_stone_failure", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Absence of Transverse Through-Stones (Bond Stones)",
+                        "explanation": "Outer wythes lack through-stones spanning the wall thickness at 1.5m intervals, allowing independent outward buckling under internal core pressure (IS 1597)."
+                    },
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.28, "y_min": 0.40, "x_max": 0.65, "y_max": 0.95,
+                        "category": "continuous_vertical_joint", "severity": "moderate",
+                        "remedial_action": "rebuild_section",
+                        "title": "Vertical Slab Placement (Lack of Horizontal Coursing)",
+                        "explanation": "Stones set on edge rather than on their natural widest bed, diminishing compressive contact area and eliminating horizontal lap interlock."
+                    }
+                ]
+            },
+            {
+                "slug": "ultratech-stone-macroporous-decay",
+                "title": "Porous Stone Blockwork: Pore Saturation & Decay",
+                "description": "Dressed volcanic/sedimentary stone blocks exhibiting excessive open pore structure, promoting capillary water suction, deep salt transport, and matrix weakening.",
+                "country": "India / International",
+                "region": "Deccan Plateau",
+                "wall_type": "ashlar",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": "ultratech_stone_pores_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.10, "y_min": 0.15, "x_max": 0.90, "y_max": 0.85,
+                        "category": "ashlar_spall", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Vesicular Pore Network & Accelerated Moisture Uptake",
+                        "explanation": "High open-porosity matrix absorbs rainwater rapidly, accelerating freeze-thaw decay and serving as a conduit for mobile salt deposition."
+                    }
+                ]
             },
             {
                 "slug": "traditional-irish-dry-stone",
@@ -396,7 +605,8 @@ def create_app(config_class=Config):
         ]
 
         for seed in seed_catalog:
-            if not Wall.query.filter_by(slug=seed["slug"]).first():
+            w = Wall.query.filter_by(slug=seed["slug"]).first()
+            if not w:
                 w = Wall(
                     slug=seed["slug"],
                     title=seed["title"],
@@ -412,8 +622,18 @@ def create_app(config_class=Config):
                 )
                 db.session.add(w)
                 db.session.commit()
+            else:
+                # Update existing wall if it was using placeholder or missing local image
+                if seed.get("image_filename") and (w.image_filename != seed["image_filename"] or "placehold.co" in (w.image_url_direct or "")):
+                    w.image_filename = seed["image_filename"]
+                    w.image_url_direct = seed.get("image_url_direct")
+                    w.title = seed["title"]
+                    w.description = seed["description"]
+                    db.session.commit()
 
-                for d in seed.get("defects", []):
+            for d in seed.get("defects", []):
+                existing_d = Defect.query.filter_by(wall_id=w.id, title=d["title"]).first()
+                if not existing_d:
                     gt = Defect(
                         wall_id=w.id,
                         target_type=d["target_type"],
@@ -428,7 +648,7 @@ def create_app(config_class=Config):
                         explanation=d["explanation"]
                     )
                     db.session.add(gt)
-                db.session.commit()
+            db.session.commit()
 
     def admin_required(f):
         @wraps(f)
@@ -1324,6 +1544,7 @@ def create_app(config_class=Config):
             "brick_cavity": "Brick Cavity",
             "dry_stone": "Dry Stone",
             "lime_mortar": "Historic Lime",
+            "stone_rubble": "Stone Rubble",
             "ashlar": "Ashlar Stone",
             "retaining_wall": "Retaining Wall",
             "cob_earth": "Cob & Earth",
@@ -1529,6 +1750,31 @@ def create_app(config_class=Config):
                 "severity": "critical", "action": "helical_stitch",
                 "explanation": "Vertical shear displacement between heavy dressed quoin stones and adjacent rubble or brick panel.",
                 "mechanics": "Differential settlement between rigid quoin tower and flexible panel."
+            },
+            "continuous_vertical_joint": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Vertical joints aligned without proper overlap across consecutive courses, creating a continuous vertical shear plane prone to vertical splitting under compression.",
+                "mechanics": "Bond failure along collinear vertical perpends under compressive shear (IS 1597 Part 1 / EN 1996-1-1)."
+            },
+            "face_bedding_delamination": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Sedimentary stone installed with quarry bedding planes parallel to the wall face (face-bedded) rather than normal to compressive thrust. Compressive load causes shear splitting and exfoliation along laminar cleavage planes.",
+                "mechanics": "Parallel load acting along anisotropic sedimentation laminae inducing buckling and spalling (IS 1124 / BS 8298)."
+            },
+            "lime_runoff_staining": {
+                "severity": "critical", "action": "repoint_lime",
+                "explanation": "Excess water migrating through high-calcium mortar beds dissolves free calcium hydroxide Ca(OH)2, leaching down the facade and carbonating into disfiguring, impermeable calcite (CaCO3) crusts.",
+                "mechanics": "Chemical leaching of portlandite Ca(OH)2 + atmospheric carbonation to insoluble CaCO3 crusts."
+            },
+            "cryptoflorescence": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Soluble salts evaporating within the sub-surface pore network generate crystallization pressures exceeding stone tensile strength (50-100 MPa), disintegrating the stone face into crumbly powder.",
+                "mechanics": "Sub-surface crystal expansion pressure exceeding stone tensile capacity (EN 12370)."
+            },
+            "frost_attack_spall": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Critical moisture saturation (>91% pore capacity) combined with sub-zero temperatures generates expansive ice crystallization pressures, wedging joints apart and shattering outer stone arrises.",
+                "mechanics": "9% volumetric water-to-ice phase expansion causing hydraulic fracturing in closed pore networks (IS 1121 / EN 12371)."
             }
         }
 
@@ -1810,6 +2056,11 @@ def create_app(config_class=Config):
             mimetype="text/csv",
             headers={"Content-Disposition": "attachment; filename=Global_Wall_Inspector_Field_Crib_Sheet.csv"}
         )
+
+    @app.route("/examples")
+    @app.route("/worked-examples")
+    def worked_examples_view():
+        return render_template("worked_examples_catalog.html")
 
     # ==========================================
     # 2. Dual-Wall Comparative Analysis Studio
