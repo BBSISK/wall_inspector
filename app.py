@@ -38,7 +38,10 @@ TAXONOMY_BY_WALL_TYPE = {
         {"id": "lime_washout", "label": "Deep Joint Lime Washout"},
         {"id": "render_delamination", "label": "Lime Render Hollow / Delamination"},
         {"id": "ivy_penetration", "label": "Structural Ivy / Biological Root Penetration"},
-        {"id": "rubble_voiding", "label": "Internal Core Rubble Voiding"}
+        {"id": "rubble_voiding", "label": "Internal Core Rubble Voiding"},
+        {"id": "ribbon_pointing_failure", "label": "Impermeable Ribbon Pointing & Cement Trap"},
+        {"id": "cryptogamic_lichen_attack", "label": "Biogenic Cryptogamic Colonization & Acid Etch"},
+        {"id": "faunal_mason_bee_boring", "label": "Faunal Mason Bee Boring & Avian Guano"}
     ],
     "stone_rubble": [
         {"id": "continuous_vertical_joint", "label": "Continuous Vertical Joint Alignment"},
@@ -51,7 +54,10 @@ TAXONOMY_BY_WALL_TYPE = {
     "ashlar": [
         {"id": "ashlar_spall", "label": "Surface Face Delamination / Exfoliation"},
         {"id": "joint_separation", "label": "Fine Ashlar Joint Separation"},
-        {"id": "iron_cramp_burst", "label": "Oxidized Iron Cramp Stone Fracture"}
+        {"id": "iron_cramp_burst", "label": "Oxidized Iron Cramp Stone Fracture"},
+        {"id": "contour_scaling", "label": "Contour Scaling in Sandstone"},
+        {"id": "gypsum_crust_cavitation", "label": "Sheltered Gypsum Crust & Cavitation"},
+        {"id": "impermeable_coating_blister", "label": "Impermeable Coating & Sealant Spall"}
     ],
     "retaining_wall": [
         {"id": "hydrostatic_bulge", "label": "Hydrostatic Outward Bulge"},
@@ -98,7 +104,11 @@ REMEDIAL_OPTIONS = [
     {"id": "drainage_relief", "label": "Weep Hole Core-Drilling & Hydrostatic Relief"},
     {"id": "biocide_root", "label": "Controlled Biocide Treatment & Root Extraction"},
     {"id": "underpin_base", "label": "Differential Foundation Underpinning"},
-    {"id": "monitor_gauge", "label": "Calibrated Tell-Tale Crack Gauge Monitoring"}
+    {"id": "monitor_gauge", "label": "Calibrated Tell-Tale Crack Gauge Monitoring"},
+    {"id": "indent_stone", "label": "Surgical Stone Indenting & Re-facing (NHL 2)"},
+    {"id": "poultice_desalt", "label": "Nebulous Water Mist & Lime Poultice Desalination"},
+    {"id": "biocide_steam", "label": "Superheated Dry Steam (150°C) & Quaternary Biocide"},
+    {"id": "coating_removal", "label": "Latex Poultice Paint Stripping & Desalination"}
 ]
 
 def calculate_iou(box_a, box_b):
@@ -1571,7 +1581,11 @@ def create_app(config_class=Config):
             "drainage_relief": "€65 - €110 / weep station",
             "biocide_root": "€25 - €45 / square meter",
             "underpin_base": "€750 - €1,400 / linear meter",
-            "monitor_gauge": "€35 - €60 / station"
+            "monitor_gauge": "€35 - €60 / station",
+            "indent_stone": "€320 - €620 / square meter",
+            "poultice_desalt": "€180 - €380 / linear meter",
+            "biocide_steam": "€35 - €65 / square meter",
+            "coating_removal": "€95 - €210 / square meter"
         }
 
         REMEDIAL_LABELS = {
@@ -1582,7 +1596,11 @@ def create_app(config_class=Config):
             "drainage_relief": "Weep Hole Core-Drilling & Hydrostatic Relief",
             "biocide_root": "Controlled Biocide & Woody Root Extraction",
             "underpin_base": "Differential Foundation Underpinning",
-            "monitor_gauge": "Calibrated Tell-Tale Crack Gauge Monitoring"
+            "monitor_gauge": "Calibrated Tell-Tale Crack Gauge Monitoring",
+            "indent_stone": "Surgical Stone Indenting & Re-facing",
+            "poultice_desalt": "Nebulous Mist Cleaning & Lime Poultice Desalting",
+            "biocide_steam": "Superheated Dry Steam (150°C) & Biocide Wash",
+            "coating_removal": "Latex Poultice Paint Stripping & Desalination"
         }
 
         ARCHETYPE_LABELS = {
@@ -1820,6 +1838,36 @@ def create_app(config_class=Config):
                 "severity": "critical", "action": "rebuild_section",
                 "explanation": "Critical moisture saturation (>91% pore capacity) combined with sub-zero temperatures generates expansive ice crystallization pressures, wedging joints apart and shattering outer stone arrises.",
                 "mechanics": "9% volumetric water-to-ice phase expansion causing hydraulic fracturing in closed pore networks (IS 1121 / EN 12371)."
+            },
+            "contour_scaling": {
+                "severity": "critical", "action": "indent_stone",
+                "explanation": "Thick shell-like crust (15-30mm) spalling parallel to outer sandstone surface contours, irrespective of quarry bedding orientation.",
+                "mechanics": "Pore blockage by calcium sulfate creates differential hygrothermal movement stresses between indurated crust and substrate sandstone."
+            },
+            "gypsum_crust_cavitation": {
+                "severity": "critical", "action": "poultice_desalt",
+                "explanation": "Impermeable black gypsum crust (CaSO4·2H2O) forming in rain-sheltered overhangs; sub-crust magnesium sulfate crystallization hollows out cavernous internal voids (alveolar decay).",
+                "mechanics": "Atmospheric SO2 acid attack on CaCO3 in sheltered zones + sub-crust crypto-efflorescence cavitation."
+            },
+            "ribbon_pointing_failure": {
+                "severity": "critical", "action": "repoint_lime",
+                "explanation": "Dense 1:3 Portland cement ribbon pointing standing proud of stone face. Shrinkage cracks draw water in while impermeable mortar prevents joint evaporation, forcing all moisture into soft stone.",
+                "mechanics": "Moisture diversion into soft stone arrises + capillary water entrapment behind rigid cement fillets."
+            },
+            "cryptogamic_lichen_attack": {
+                "severity": "moderate", "action": "biocide_steam",
+                "explanation": "Crustose lichens secrete chelating oxalic acids that chemically pit limestone, while thick moss cushions act as water sponges maintaining pore saturation and inducing freeze shatter.",
+                "mechanics": "Oxalic biochemical etching + moisture retention inducing severe localized freeze-thaw bursting."
+            },
+            "faunal_mason_bee_boring": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Solitary mason bees (Osmia bicornis) bore 6-10mm cylindrical nesting tunnels into soft lime mortar joints; avian guano deposits acidic uric acid that dissolves calcite matrix.",
+                "mechanics": "Mechanical honeycombing of mortar joint core + biochemical uric acid dissolution."
+            },
+            "impermeable_coating_blister": {
+                "severity": "critical", "action": "coating_removal",
+                "explanation": "Synthetic silicone sealers or bitumen paints trap rising damp and soluble salts beneath an impervious skin; sub-film crystallization pressure triggers catastrophic sheet spalling.",
+                "mechanics": "Loss of masonry breathability + explosive sub-film salt crystallization pressure."
             }
         }
 

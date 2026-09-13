@@ -102,7 +102,7 @@ class TestStudiosAndAuth(unittest.TestCase):
         # 1. Verify worked examples catalog
         res = self.client.get('/examples')
         self.assertEqual(res.status_code, 200)
-        self.assertIn(b'20 Student Assessment Worked Examples Catalog', res.data)
+        self.assertIn(b'26 Student Assessment Worked Examples Catalog', res.data)
         self.assertIn(b'ultratech_stone_joints_01.jpg', res.data)
         self.assertIn(b'ultratech_stone_limerunoff_01.jpg', res.data)
         self.assertIn(b'ultratech_stone_bedding_01.jpg', res.data)

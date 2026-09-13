@@ -377,7 +377,7 @@
 
   <!-- Sticky Header -->
   <div class="header">
-    <h1><span>🏛️</span> 20 Student Assessment Worked Examples Catalog</h1>
+    <h1><span>🏛️</span> 26 Student Assessment Worked Examples Catalog</h1>
     <div class="header-actions">
       <button type="button" class="btn btn-primary" id="btn-toggle-reticles" onclick="toggleReticles()">
         <i class="fa-solid fa-eye-slash"></i> <span id="lbl-reticles">Hide Solution Reticles (Student Mode)</span>
@@ -395,16 +395,16 @@
 
     <!-- Description Banner -->
     <div class="intro-banner">
-      <h2>Curated Master Test Bank: 20 Real-World Masonry Defect Specimens</h2>
+      <h2>Curated Master Test Bank: 26 Real-World Masonry Defect Specimens</h2>
       <p>
-        A comprehensive collection of 20 diagnostic specimens specifically engineered for candidate visual assessment,
+        A comprehensive collection of 26 diagnostic specimens specifically engineered for candidate visual assessment,
         clinical defect taxonomy testing, and remedial conservation specification. Each worked example includes verified imagery,
         pathological failure mechanics, tolerance criteria, student testing tasks, and model solution targets.
       </p>
       <div class="stats-row">
-        <div class="stat-pill">Specimens: <strong>20 Complete Walls</strong></div>
+        <div class="stat-pill">Specimens: <strong>26 Complete Walls</strong></div>
         <div class="stat-pill">Archetypes: <strong>11 Masonry Formations</strong></div>
-        <div class="stat-pill">Flaw Varieties: <strong>Structural Shear, Cryo-Spalling, Leaching, Jacking &amp; Voiding</strong></div>
+        <div class="stat-pill">Flaw Varieties: <strong>Structural Shear, Cryo-Spalling, Leaching, Jacking, Cavitation &amp; Scaling</strong></div>
         <div class="stat-pill">Financial Standard: <strong>Euro (€) Conservation Rates</strong></div>
       </div>
     </div>
@@ -412,20 +412,21 @@
     <!-- Category Filter Bar -->
     <div class="filter-bar">
       <div class="filter-chips">
-        <button type="button" class="chip active" onclick="filterCategory('all', this)">All 20 Specimens</button>
+        <button type="button" class="chip active" onclick="filterCategory('all', this)">All 26 Specimens</button>
         <button type="button" class="chip" onclick="filterCategory('brick', this)">Brickwork (1-4)</button>
         <button type="button" class="chip" onclick="filterCategory('lime_rubble', this)">Historic Lime &amp; Rubble (5-8)</button>
         <button type="button" class="chip" onclick="filterCategory('ashlar', this)">Dressed Ashlar (9-11)</button>
         <button type="button" class="chip" onclick="filterCategory('dry_stone', this)">Dry Stone Walling (12-16)</button>
         <button type="button" class="chip" onclick="filterCategory('retaining_earth', this)">Retaining &amp; Cob Earth (17-18)</button>
         <button type="button" class="chip" onclick="filterCategory('specialist', this)">Specialist &amp; CMU (19-20)</button>
+        <button type="button" class="chip" onclick="filterCategory('stone_pathology', this)">Stone Pathology (21-26)</button>
       </div>
       <div style="font-size: 0.78rem; color: var(--muted);" id="visible-count">
-        Showing 20 of 20 specimens
+        Showing 26 of 26 specimens
       </div>
     </div>
 
-    <!-- 20 Specimen Grid -->
+    <!-- 26 Specimen Grid -->
     <div class="specimen-grid" id="specimen-grid">
 
       <!-- SPECIMEN 01 -->
@@ -1248,6 +1249,252 @@
         </div>
       </div>
 
+      <!-- SPECIMEN 21 -->
+      <div class="specimen-card" data-cat="stone_pathology">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#21</span>
+            <h3 class="card-title">Historic Sandstone: Contour Scaling</h3>
+          </div>
+          <span class="archetype-badge">Ashlar Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_pores_01.jpg" alt="Contour Scaling in Sandstone">
+            <div class="target-box" style="left: 18%; top: 22%; width: 64%; height: 56%;">
+              <span class="target-box-label">Target: Contour Scaling Shell</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Contour Scaling in Sandstone</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Dressed 19th-century sandstone facade (Millstone Grit / York stone). A thick (15mm–30mm) indurated crust is spalling and shearing away parallel to the outer surface contour, cutting straight across natural sedimentary quarry bedding planes.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Pore blockage by calcium sulfate and atmospheric pollutants creates an outer layer with altered thermal/moisture movement coefficients. Differential hygrothermal stresses between crust and substrate induce planar cleavage failure (Historic England &amp; BS 8298).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Delineate the contour scaling shell. Explain why this flaw is frequently misdiagnosed as face-bedding, and prescribe surgical stone indenting with matching sandstone bedded in NHL 2.0.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>Historic England Stone &bull; BS 8298 &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €320 - €620 / square meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 22 -->
+      <div class="specimen-card" data-cat="stone_pathology">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#22</span>
+            <h3 class="card-title">Sheltered Limestone: Black Gypsum Crust &amp; Cavitation</h3>
+          </div>
+          <span class="archetype-badge">Ashlar Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ashlar_cracking_01.jpg" alt="Sheltered Black Gypsum Crust & Cavitation">
+            <div class="target-box" style="left: 22%; top: 18%; width: 58%; height: 58%;">
+              <span class="target-box-label">Target: Black Crust &amp; Cavity</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Sheltered Gypsum Crust &amp; Cavitation (Alveolar Decay)</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Historic limestone cornices and undercut string courses sheltered from rain washing. Atmospheric SO₂ reacts with calcite to form an impermeable black gypsum (CaSO₄·2H₂O) skin holding trapped carbon soot.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Absence of rain washing allows gypsum to thicken up to 12mm. The crust blisters, while sub-crust magnesium sulfate crystallization hollows out deep cavernous voids (alveolar decay / cavitation) (BS 8221-1).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Map the unwashed black gypsum skin boundary. Sound with acoustic hammer to identify subsurface cavernous hollows and specify controlled nebulous water mist cleaning and lime poulticing.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BS 8221-1 &bull; Historic England Note 7 &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €180 - €380 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 23 -->
+      <div class="specimen-card" data-cat="stone_pathology">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#23</span>
+            <h3 class="card-title">Rubble Wall: Inappropriate Ribbon Pointing</h3>
+          </div>
+          <span class="archetype-badge">Historic Lime</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/stone_rubble_01.jpg" alt="Inappropriate Ribbon Pointing Trap">
+            <div class="target-box" style="left: 16%; top: 20%; width: 66%; height: 60%;">
+              <span class="target-box-label">Target: Raised Ribbon Pointing</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Impermeable Ribbon Pointing &amp; Cement Trap Decay</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Vernacular rubble wall repaired with dense 1:3 Portland cement applied as raised 'ribbon' joints standing proud of the stone face, creating an artificial moisture trap.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Cement shrinkage gaps draw in rainwater via capillary action, while raised ledges retain water. The impermeable mortar blocks joint evaporation, forcing all moisture out through softer stone units, causing stone crumbling and frost detachment (SPAB Note).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Trace perimeter shrinkage gaps along cement ribbons. Delineate adjacent stone arrises displaying accelerated sacrificial fretting and specify non-impact oscillating diamond blade raking to 25mm depth.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>SPAB Advice Note &bull; Historic England Pointing &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €65 - €110 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 24 -->
+      <div class="specimen-card" data-cat="stone_pathology">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#24</span>
+            <h3 class="card-title">Historic Masonry: Cryptogamic Colonization</h3>
+          </div>
+          <span class="archetype-badge">Historic Lime</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/lime_coursed_01.jpg" alt="Biogenic Cryptogamic Colonization">
+            <div class="target-box" style="left: 20%; top: 20%; width: 60%; height: 55%;">
+              <span class="target-box-label">Target: Cryptogamic Etch &amp; Moss</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Biogenic Cryptogamic Colonization &amp; Acid Etching</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Historic lime-coursed masonry exhibiting heavy growth of crustose lichens and dense cushions of bryophyte moss along horizontal coping ledges and joint recesses.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Lichens secrete chelating oxalic and lichenic acids that chemically etch calcium carbonate in limestone. Moss pads act as water sponges, maintaining 100% moisture saturation that triggers winter freeze-thaw shatter (Historic England).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Distinguish between harmless aesthetic biological patina vs active oxalic acid etching. Prescribe quaternary ammonium biocide treatment and superheated dry steam washing at 150°C.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>Historic England: Biological Growths &bull; BS 8221-1 &bull; RICS CR2</strong></span>
+          <span class="cost-tag">Remedial: €35 - €65 / square meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 25 -->
+      <div class="specimen-card" data-cat="stone_pathology">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#25</span>
+            <h3 class="card-title">Faunal Biodeterioration: Mason Bee Boring</h3>
+          </div>
+          <span class="archetype-badge">Historic Lime</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/drystone_02.jpg" alt="Mason Bee Boring & Guano Attack">
+            <div class="target-box" style="left: 22%; top: 24%; width: 56%; height: 52%;">
+              <span class="target-box-label">Target: Bee Galleries &amp; Guano</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Faunal Mason Bee Boring &amp; Avian Guano Dissolution</h4>
+              <span class="sev-pill sev-moderate">Moderate Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Historic church boundary wall where solitary mason bees (Osmia bicornis) have bored multiple 6mm–10mm diameter nesting galleries into soft lime joints, coupled with bird guano on projecting stone copings.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Intense insect excavation honeycombs and destabilizes mortar perpends, while bird droppings release concentrated uric and phosphoric acids that chemically dissolve calcium carbonate binder (BRE GBG 14).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Locate active bee nesting galleries. Measure joint depth loss, specify lime grout syringe consolidation, and recommend non-lethal stainless-steel deterrent wiring.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BRE Good Building Guide 14 &bull; Historic England Fauna &bull; RICS CR2</strong></span>
+          <span class="cost-tag">Remedial: €45 - €85 / linear meter</span>
+        </div>
+      </div>
+
+      <!-- SPECIMEN 26 -->
+      <div class="specimen-card" data-cat="stone_pathology">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="specimen-num">#26</span>
+            <h3 class="card-title">Victorian Plinth: Impermeable Coating Failure</h3>
+          </div>
+          <span class="archetype-badge">Ashlar Stone</span>
+        </div>
+        <div class="card-content">
+          <div class="card-img-pane">
+            <img src="/static/img/walls/ultratech_stone_frost_01.jpg" alt="Impermeable Coating & Sealant Spalling">
+            <div class="target-box" style="left: 18%; top: 20%; width: 64%; height: 60%;">
+              <span class="target-box-label">Target: Delaminated Coating Blister</span>
+            </div>
+          </div>
+          <div class="card-details-pane">
+            <div class="flaw-header">
+              <h4 class="flaw-title">Impermeable Synthetic Coating &amp; Sealant Spalling</h4>
+              <span class="sev-pill sev-critical">Critical Risk</span>
+            </div>
+            <div class="detail-section">
+              <strong>Context &amp; Pathology:</strong>
+              <p>Victorian dressed stone bay plinth treated with silicone-based water repellent and oil-based masonry paint. Extensive blistering, flaking, and stone face detachment are visible.</p>
+            </div>
+            <div class="detail-section">
+              <strong>Failure Mechanics:</strong>
+              <p>Hydrophobic surface sealers prevent natural masonry breathability. Migrating moisture and salts are trapped beneath the synthetic film; sub-surface crypto-efflorescence crystallization pressure shears off the outer 10mm–25mm stone skin (BRE Digest 245).</p>
+            </div>
+            <div class="exam-box">
+              <div class="exam-box-title"><i class="fa-solid fa-graduation-cap"></i> Student Assessment Task:</div>
+              <p>Map delaminated coating blisters. Detail why synthetic water-repellent sealers violate the 'breathing wall' principle, and specify latex poultice chemical paint removal and desalting.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>Standards: <strong>BS 8221-2 &bull; BRE Digest 245 &bull; SPAB Breathing Wall &bull; RICS CR3</strong></span>
+          <span class="cost-tag">Remedial: €95 - €210 / square meter</span>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1288,7 +1535,7 @@
         }
       });
 
-      document.getElementById('visible-count').innerText = `Showing ${visible} of 20 specimens`;
+      document.getElementById('visible-count').innerText = `Showing ${visible} of 26 specimens`;
     }
   </script>
 </body>
