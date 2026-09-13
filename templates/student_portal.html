@@ -2,61 +2,448 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Student Inspection Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Inspection Portal & Skills Passport - Global Wall Inspector</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
-    .portal-card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; padding: 2.5rem; max-width: 460px; width: 100%; box-shadow: 0 15px 35px rgba(0,0,0,0.3); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2rem 1.5rem;
+    }
+    .portal-container {
+      width: 100%;
+      max-width: 860px;
+    }
+    .portal-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: #1e293b;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      margin-bottom: 1.5rem;
+    }
+    .portal-tab-btn {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      color: #94a3b8;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .portal-tab-btn.active {
+      background: #2563eb;
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+    .portal-card {
+      background: #1e293b;
+      border-radius: 14px;
+      border: 1px solid #334155;
+      padding: 2.25rem;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
     h2 { margin: 0 0 0.5rem; font-size: 1.75rem; text-align: center; }
     p { color: #94a3b8; font-size: 0.9rem; text-align: center; margin: 0 0 1.5rem; }
-    label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; font-weight: 600; }
+    label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 1rem; font-weight: 600; letter-spacing: 0.5px; }
     input { width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 1rem; margin-top: 0.35rem; }
+    input:focus { border-color: #38bdf8; outline: none; }
     .code-input { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; text-align: center; font-size: 1.25rem; color: #38bdf8; }
     .btn { display: block; width: 100%; background: #2563eb; color: white; border: none; padding: 0.85rem; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; }
     .btn:hover { background: #1d4ed8; }
     .error-msg { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; text-align: center; margin-bottom: 1rem; }
+    
+    /* Passport Styles */
+    .passport-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .badge-tier {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: #065f46;
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .metric-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .metric-val { font-size: 2rem; font-weight: 800; color: #38bdf8; }
+    .metric-lbl { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+    
+    .radar-wrapper {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .radar-svg {
+      width: 100%;
+      max-width: 520px;
+      height: auto;
+      overflow: visible;
+    }
+    
+    .archetype-bars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+    .arc-row {
+      background: #0f172a;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    .arc-meta { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; }
+    .arc-track { height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
+    .arc-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #0284c7, #10b981); }
   </style>
 </head>
 <body>
-  <div class="portal-card">
-    <h2>Student Inspection Portal</h2>
-    <p>Enter your assigned assessment credentials to access your diagnostic examination.</p>
+  <div class="portal-container">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <h1 style="margin: 0; font-size: 2rem; color: #f8fafc;">🏛️ Global Wall Inspector</h1>
+      <p style="margin: 0.35rem 0 0; color: #94a3b8; font-size: 0.95rem;">Professional Masonry Assessment & Continuous Professional Development (CPD) Portal</p>
+    </div>
 
-    {% if error %}
-      <div class="error-msg">{{ error }}</div>
-    {% endif %}
+    <!-- Mode Selector Tabs -->
+    <div class="portal-tabs">
+      <button type="button" class="portal-tab-btn active" id="tab-btn-exam" onclick="switchPortalTab('exam')">
+        <span>🎯 Assessment Examination Launch</span>
+      </button>
+      <button type="button" class="portal-tab-btn" id="tab-btn-passport" onclick="switchPortalTab('passport')">
+        <span>🎓 Skills Passport & CPD Radar</span>
+      </button>
+    </div>
 
-    <form method="POST">
-      <label>Full Name</label>
-      <input type="text" name="student_name" placeholder="e.g. Kelly O'Connor" required>
+    <!-- TAB 1: Assessment Examination Launch -->
+    <div id="tab-panel-exam" class="portal-card">
+      <h2>Assessment Exam Login</h2>
+      <p>Enter your student identity and assignment PIN code to begin your timed or diagnostic assessment queue.</p>
 
-      <label>Assignment Access Code</label>
-      <input type="text" name="assignment_code" class="code-input" placeholder="e.g. STONE-01" required>
+      {% if error %}
+        <div class="error-msg">{{ error }}</div>
+      {% endif %}
 
-      <button type="submit" class="btn">Launch Assessment &rarr;</button>
-    </form>
-    
-    <!-- Student Portfolio Mobile PWA Card -->
-    <div style="margin-top: 1.5rem; background: #0f172a; border: 1px dashed #0284c7; border-radius: 8px; padding: 1rem; display: flex; align-items: center; gap: 1rem;">
-      <img id="portal-qr-img" src="" alt="Student App QR" style="width: 72px; height: 72px; background: white; padding: 3px; border-radius: 6px; flex-shrink: 0;">
-      <div>
-        <strong style="color: #38bdf8; font-size: 0.85rem; display: block;">📲 Practical Portfolio Mobile App</strong>
-        <p style="margin: 0.2rem 0 0; font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">
-          Scan with your phone camera to photograph coursework, conduct 4-star self-critiques, and upload to your personal cloud portfolio.
-        </p>
-        <a href="/mobile/student" style="color: #38bdf8; font-size: 0.75rem; font-weight: bold; text-decoration: none; display: inline-block; margin-top: 0.25rem;">
-          Launch Student Mobile App &rarr;
-        </a>
+      <form method="POST" style="max-width: 480px; margin: 0 auto;">
+        <label>Full Student Name</label>
+        <input type="text" name="student_name" id="exam-student-name" placeholder="e.g. Kelly O'Connor" required>
+
+        <label>Assignment Access Code (PIN)</label>
+        <input type="text" name="assignment_code" class="code-input" placeholder="e.g. STONE-01" required>
+
+        <button type="submit" class="btn">Launch Assessment Queue &rarr;</button>
+      </form>
+      
+      <!-- Student Portfolio Mobile PWA Card -->
+      <div style="margin-top: 2rem; background: #0f172a; border: 1px dashed #0284c7; border-radius: 10px; padding: 1.25rem; display: flex; align-items: center; gap: 1.25rem;">
+        <img id="portal-qr-img" src="" alt="Student App QR" style="width: 80px; height: 80px; background: white; padding: 4px; border-radius: 8px; flex-shrink: 0;">
+        <div>
+          <strong style="color: #38bdf8; font-size: 0.95rem; display: block;">📲 Practical Portfolio Mobile App (PWA)</strong>
+          <p style="margin: 0.25rem 0 0; font-size: 0.8rem; color: #94a3b8; line-height: 1.4;">
+            Pull down the student companion app directly to your phone. Capture on-site coursework mockups, evaluate joint flushness with the Mason Plumb HUD, and sync to your personal portfolio.
+          </p>
+          <a href="/mobile/student" style="color: #38bdf8; font-size: 0.82rem; font-weight: bold; text-decoration: none; display: inline-block; margin-top: 0.4rem;">
+            Launch Mobile Student App in Browser &rarr;
+          </a>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 1.5rem; display: flex; justify-content: center; gap: 1.5rem;">
+        <a href="/quiz" style="color: #f59e0b; text-decoration: none; font-size: 0.85rem; font-weight: bold;">⚡ Practice Reflex Quiz &rarr;</a>
+        <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.85rem;">&larr; Return to Public Catalog</a>
       </div>
     </div>
 
-    <div style="text-align: center; margin-top: 1.25rem; display: flex; justify-content: center; gap: 1.25rem;">
-      <a href="/quiz" style="color: #f59e0b; text-decoration: none; font-size: 0.85rem; font-weight: bold;">⚡ Practice Reflex Quiz &rarr;</a>
-      <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.85rem;">&larr; Return to Catalog</a>
+    <!-- TAB 2: Skills Passport & CPD Radar Matrix -->
+    <div id="tab-panel-passport" class="portal-card" style="display: none;">
+      <!-- Search / Lookup Bar -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: #0f172a; padding: 0.75rem; border-radius: 10px; border: 1px solid #334155;">
+        <input type="text" id="passport-search-input" placeholder="Search by student name or session ID (e.g. Kelly, Anonymous)..." style="margin: 0; background: #1e293b;">
+        <button type="button" onclick="loadPassportData()" class="btn" style="width: auto; margin: 0; padding: 0 1.25rem; font-size: 0.9rem; white-space: nowrap;">
+          🔍 View Skills
+        </button>
+      </div>
+
+      <!-- Passport Header & Tier Badge -->
+      <div class="passport-header">
+        <div>
+          <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Masonry Pathologist Profile</span>
+          <h2 id="pass-student-name" style="text-align: left; margin: 0.2rem 0; font-size: 1.6rem; color: #f8fafc;">Loading Passport...</h2>
+          <p id="pass-tier-desc" style="text-align: left; margin: 0; font-size: 0.85rem; max-width: 500px; color: #cbd5e1;">Evaluating student diagnostic competencies...</p>
+        </div>
+        <div style="text-align: right;">
+          <span id="pass-tier-badge" class="badge-tier">EVALUATING</span>
+        </div>
+      </div>
+
+      <!-- Metrics KPI Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-val" id="pass-cpd-hours" style="color: #34d399;">0.0</div>
+          <div class="metric-lbl">Logged CPD Hours</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="pass-mean-score" style="color: #38bdf8;">0.0%</div>
+          <div class="metric-lbl">Diagnostic Precision</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="pass-total-attempts" style="color: #fbbf24;">0</div>
+          <div class="metric-lbl">Assessments Completed</div>
+        </div>
+      </div>
+
+      <!-- 11-Axis Interactive Radar Chart -->
+      <div class="radar-wrapper">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <strong style="font-size: 0.85rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">11-Archetype Competence Radar</strong>
+          <span style="font-size: 0.75rem; color: #94a3b8;">Scale: 0% (Center) &rarr; 100% (Outer Ring)</span>
+        </div>
+        
+        <svg id="radar-svg" class="radar-svg" viewBox="0 0 500 500">
+          <!-- Web grid lines and polygon rendered via JS -->
+        </svg>
+
+        <div id="radar-tooltip" style="display: none; position: absolute; background: #1e293b; border: 1px solid #10b981; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; color: #f8fafc; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+      </div>
+
+      <!-- Archetype Score List -->
+      <h3 style="font-size: 1.05rem; margin: 1.5rem 0 0.75rem; color: #f8fafc;">Diagnostic Archetype Breakdown</h3>
+      <div class="archetype-bars" id="archetype-bars-container">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Verified Credentials Section -->
+      <div id="passport-certs-container" style="margin-top: 1.5rem; display: none; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 1rem;">
+        <strong style="color: #34d399; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">📜 Verified Official Credentials</strong>
+        <div id="passport-certs-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
     </div>
   </div>
 
   <script>
+    function switchPortalTab(tab) {
+      const isExam = tab === 'exam';
+      document.getElementById('tab-btn-exam').classList.toggle('active', isExam);
+      document.getElementById('tab-btn-passport').classList.toggle('active', !isExam);
+      document.getElementById('tab-panel-exam').style.display = isExam ? 'block' : 'none';
+      document.getElementById('tab-panel-passport').style.display = isExam ? 'none' : 'block';
+
+      if (!isExam && !window.hasLoadedPassport) {
+        loadPassportData();
+      }
+    }
+
+    async function loadPassportData() {
+      const searchVal = document.getElementById('passport-search-input').value.trim();
+      const url = `/api/student/passport${searchVal ? '?name=' + encodeURIComponent(searchVal) : ''}`;
+      
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success) {
+          window.hasLoadedPassport = true;
+          renderPassport(data);
+        }
+      } catch (err) {
+        console.error("Failed to load passport data:", err);
+      }
+    }
+
+    function renderPassport(data) {
+      document.getElementById('pass-student-name').innerText = data.student_name || "Diagnostic Candidate";
+      document.getElementById('pass-tier-badge').innerText = data.tier_badge || "ACCESSION";
+      document.getElementById('pass-tier-desc').innerText = data.tier_desc || "";
+      document.getElementById('pass-cpd-hours').innerText = (data.cpd_hours || 0).toFixed(1);
+      document.getElementById('pass-mean-score').innerText = (data.mean_score || 0).toFixed(1) + "%";
+      document.getElementById('pass-total-attempts').innerText = data.total_attempts || 0;
+
+      // Color tier badge based on level
+      const badge = document.getElementById('pass-tier-badge');
+      if (data.tier_level === 3) {
+        badge.style.background = '#854d0e';
+        badge.style.borderColor = '#fbbf24';
+        badge.style.color = '#fef08a';
+      } else if (data.tier_level === 2) {
+        badge.style.background = '#065f46';
+        badge.style.borderColor = '#10b981';
+        badge.style.color = '#a7f3d0';
+      } else {
+        badge.style.background = '#1e3a8a';
+        badge.style.borderColor = '#38bdf8';
+        badge.style.color = '#bae6fd';
+      }
+
+      // Render Radar Chart
+      renderRadarChart(data.radar || []);
+
+      // Render Breakdown Bars
+      renderArchetypeBars(data.radar || []);
+
+      // Render Certificates if any
+      const certsBox = document.getElementById('passport-certs-container');
+      const certsList = document.getElementById('passport-certs-list');
+      if (data.certificates && data.certificates.length > 0) {
+        certsBox.style.display = 'block';
+        certsList.innerHTML = data.certificates.map(c => `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.82rem;">
+            <div>
+              <strong style="color: #f8fafc;">${c.tier}</strong>
+              <small style="color: #94a3b8; display: block;">Issued: ${c.issued_at} • Score: ${c.score}%</small>
+            </div>
+            <a href="/certificate/${c.code}" target="_blank" style="background: #059669; color: white; text-decoration: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+              Verify & Print &rarr;
+            </a>
+          </div>
+        `).join('');
+      } else {
+        certsBox.style.display = 'none';
+      }
+    }
+
+    function renderRadarChart(radarData) {
+      const svg = document.getElementById('radar-svg');
+      if (!radarData || radarData.length === 0) return;
+
+      const size = 500;
+      const center = size / 2;
+      const radius = 175;
+      const count = radarData.length;
+      const angleStep = (Math.PI * 2) / count;
+
+      let svgHtml = `
+        <defs>
+          <linearGradient id="radar-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#10b981" stop-opacity="0.6"/>
+          </linearGradient>
+          <filter id="radar-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+      `;
+
+      // Concentric background rings (20%, 40%, 60%, 80%, 100%)
+      const levels = [0.2, 0.4, 0.6, 0.8, 1.0];
+      levels.forEach(lvl => {
+        let ringPoints = [];
+        for (let i = 0; i < count; i++) {
+          const angle = (i * angleStep) - (Math.PI / 2);
+          const x = center + (radius * lvl) * Math.cos(angle);
+          const y = center + (radius * lvl) * Math.sin(angle);
+          ringPoints.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+        }
+        svgHtml += `<polygon points="${ringPoints.join(' ')}" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>`;
+        svgHtml += `<text x="${center + 4}" y="${center - (radius * lvl) + 12}" fill="#64748b" font-size="9" font-family="monospace">${Math.round(lvl * 100)}%</text>`;
+      });
+
+      // Axis spokes & labels
+      let dataPoints = [];
+      radarData.forEach((item, i) => {
+        const angle = (i * angleStep) - (Math.PI / 2);
+        const spokeX = center + radius * Math.cos(angle);
+        const spokeY = center + radius * Math.sin(angle);
+
+        // Axis line
+        svgHtml += `<line x1="${center}" y1="${center}" x2="${spokeX.toFixed(1)}" y2="${spokeY.toFixed(1)}" stroke="#334155" stroke-width="1.2"/>`;
+
+        // Text label positioning
+        const labelRadius = radius + 25;
+        const lx = center + labelRadius * Math.cos(angle);
+        const ly = center + labelRadius * Math.sin(angle);
+        const anchor = Math.abs(Math.cos(angle)) < 0.2 ? 'middle' : (Math.cos(angle) > 0 ? 'start' : 'end');
+
+        svgHtml += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="#94a3b8" font-size="10.5" font-weight="600" text-anchor="${anchor}" dominant-baseline="central">${item.label}</text>`;
+
+        // Value point (score 0-100)
+        const scoreFraction = Math.max(0.08, (item.score || 0) / 100);
+        const px = center + (radius * scoreFraction) * Math.cos(angle);
+        const py = center + (radius * scoreFraction) * Math.sin(angle);
+        dataPoints.push({ x: px, y: py, item: item });
+      });
+
+      // Data polygon
+      const polyCoords = dataPoints.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      svgHtml += `<polygon points="${polyCoords}" fill="url(#radar-grad)" stroke="#38bdf8" stroke-width="2.5" filter="url(#radar-glow)"/>`;
+
+      // Data point nodes
+      dataPoints.forEach(pt => {
+        svgHtml += `
+          <circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4.5" fill="#ffffff" stroke="#10b981" stroke-width="2" style="cursor: pointer;">
+            <title>${pt.item.label}: ${pt.item.score}% (${pt.item.evaluations} evaluations)</title>
+          </circle>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+    }
+
+    function renderArchetypeBars(radarData) {
+      const container = document.getElementById('archetype-bars-container');
+      if (!radarData || radarData.length === 0) {
+        container.innerHTML = '<p style="color: #64748b;">No archetype evaluations found yet.</p>';
+        return;
+      }
+
+      container.innerHTML = radarData.map(d => `
+        <div class="arc-row">
+          <div class="arc-meta">
+            <strong style="color: #f8fafc;">${d.label}</strong>
+            <span style="color: ${d.score >= 75 ? '#34d399' : (d.score >= 50 ? '#fbbf24' : '#94a3b8')}; font-weight: 700;">
+              ${d.score > 0 ? d.score + '%' : 'Pending'}
+            </span>
+          </div>
+          <div class="arc-track">
+            <div class="arc-fill" style="width: ${d.score}%;"></div>
+          </div>
+          <small style="color: #64748b; font-size: 0.7rem; margin-top: 4px; display: block;">${d.evaluations} attempt(s) recorded</small>
+        </div>
+      `).join('');
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       const studentUrl = `${window.location.origin}/mobile/student`;
       const qrEl = document.getElementById("portal-qr-img");

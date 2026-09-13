@@ -1593,6 +1593,141 @@ def create_app(config_class=Config):
         ).order_by(StudentSubmission.created_at.desc()).all()
         return jsonify({"submissions": [s.to_dict() for s in submissions]})
 
+    @app.route("/api/student/passport", methods=["GET"])
+    def api_student_passport():
+        query_name = request.args.get("name", "").strip()
+        query_id = request.args.get("identifier", "").strip()
+
+        ARCHETYPE_LABELS = {
+            "brick_cavity": "Brick Cavity",
+            "dry_stone": "Dry Stone",
+            "lime_mortar": "Historic Lime",
+            "ashlar": "Ashlar Stone",
+            "retaining_wall": "Retaining Wall",
+            "cob_earth": "Cob & Earth",
+            "flint_knapped": "Knapped Flint",
+            "terracotta_faience": "Terracotta & Faience",
+            "concrete_block": "Concrete Block",
+            "boulder_fieldstone": "Field Boulder",
+            "granite_quoin": "Granite Quoin"
+        }
+
+        # Query attempts matching student name or session
+        attempts = []
+        submissions = []
+        certs = []
+
+        if query_name or query_id:
+            name_term = query_name or query_id
+            attempts = AssessmentAttempt.query.filter(
+                (AssessmentAttempt.student_name.ilike(f"%{name_term}%")) |
+                (AssessmentAttempt.student_session_id.ilike(f"%{name_term}%"))
+            ).order_by(AssessmentAttempt.created_at.desc()).all()
+
+            submissions = StudentSubmission.query.filter(
+                (StudentSubmission.student_name.ilike(f"%{name_term}%")) |
+                (StudentSubmission.student_identifier.ilike(f"%{name_term}%"))
+            ).order_by(StudentSubmission.created_at.desc()).all()
+
+            certs = Certificate.query.filter(
+                Certificate.student_name.ilike(f"%{name_term}%")
+            ).order_by(Certificate.issued_at.desc()).all()
+        else:
+            # General / most recent activity
+            attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.created_at.desc()).limit(20).all()
+            submissions = StudentSubmission.query.order_by(StudentSubmission.created_at.desc()).limit(10).all()
+            certs = Certificate.query.order_by(Certificate.issued_at.desc()).limit(5).all()
+
+        # Build archetype score buckets
+        archetype_scores = {k: [] for k in ARCHETYPE_LABELS.keys()}
+        wall_cache = {}
+
+        for att in attempts:
+            if att.wall_id not in wall_cache:
+                wall = Wall.query.get(att.wall_id)
+                wall_cache[att.wall_id] = wall.wall_type if wall else "dry_stone"
+            w_type = wall_cache[att.wall_id]
+            if w_type in archetype_scores and att.score_percentage is not None:
+                archetype_scores[w_type].append(att.score_percentage)
+
+        for sub in submissions:
+            w_type = sub.wall_type or "dry_stone"
+            if w_type in archetype_scores:
+                scores = list((sub.rubric_scores or {}).values())
+                if scores:
+                    pct = (sum(scores) / (len(scores) * 4.0)) * 100
+                    archetype_scores[w_type].append(pct)
+
+        # Calculate radar chart data points
+        radar_data = []
+        evaluated_count = 0
+        all_scores = []
+
+        for arc_key, arc_label in ARCHETYPE_LABELS.items():
+            scores_list = archetype_scores[arc_key]
+            if scores_list:
+                avg_score = round(sum(scores_list) / len(scores_list), 1)
+                evaluated_count += 1
+                all_scores.append(avg_score)
+            else:
+                avg_score = 0.0
+
+            radar_data.append({
+                "archetype": arc_key,
+                "label": arc_label,
+                "score": avg_score,
+                "evaluations": len(scores_list)
+            })
+
+        mean_score = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0.0
+        cpd_hours = round((len(attempts) * 1.0) + (len(submissions) * 1.5) + (3.0 if certs else 0.5), 1)
+
+        # Accreditation Tier Calculation
+        if evaluated_count >= 7 and mean_score >= 80:
+            tier_name = "Master Diagnostic Pathologist"
+            tier_level = 3
+            tier_badge = "🥇 LEVEL 3: MASTER PATHOLOGIST"
+            tier_desc = "Accredited master-level proficiency across complex historic and modern masonry archetypes."
+        elif (evaluated_count >= 4 and mean_score >= 70) or certs:
+            tier_name = "Certified Conservation Inspector"
+            tier_level = 2
+            tier_badge = "🥈 LEVEL 2: CONSERVATION INSPECTOR"
+            tier_desc = "Certified competency in pathology diagnostics, structural appraisal, and hydraulic lime repair specifications."
+        elif evaluated_count >= 1:
+            tier_name = "Field Masonry Technician"
+            tier_level = 1
+            tier_badge = "🥉 LEVEL 1: FIELD TECHNICIAN"
+            tier_desc = "Foundational proficiency in visual defect identification and diagnostic marking."
+        else:
+            tier_name = "Apprentice Surveyor"
+            tier_level = 0
+            tier_badge = "🔰 APPRENTICE SURVEYOR"
+            tier_desc = "Commenced diagnostic training. Complete assigned examinations to unlock certification tiers."
+
+        resolved_name = query_name or (attempts[0].student_name if attempts else "Guest Inspector")
+
+        return jsonify({
+            "success": True,
+            "student_name": resolved_name,
+            "tier_name": tier_name,
+            "tier_level": tier_level,
+            "tier_badge": tier_badge,
+            "tier_desc": tier_desc,
+            "cpd_hours": cpd_hours,
+            "mean_score": mean_score,
+            "total_attempts": len(attempts),
+            "total_submissions": len(submissions),
+            "radar": radar_data,
+            "certificates": [
+                {
+                    "code": c.certificate_code,
+                    "tier": c.tier,
+                    "score": c.average_score,
+                    "issued_at": c.issued_at.strftime("%Y-%m-%d") if c.issued_at else ""
+                } for c in certs
+            ]
+        })
+
     return app
 
 app = create_app()
