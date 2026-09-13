@@ -1589,6 +1589,229 @@ def create_app(config_class=Config):
         return jsonify({"success": True, "count": len(deck), "deck": deck})
 
     # ==========================================
+    # Printable Pocket Field Crib-Sheet & Guide
+    # ==========================================
+    FIELD_GUIDE_DATA = [
+        {
+            "id": "brick_cavity",
+            "name": "Brick Cavity Masonry",
+            "category": "Structural Masonry",
+            "geology": "Carboniferous Coal Measures Fired Clay wythes with cavity ties",
+            "description": "Twin brick/block wythe construction stabilized by metal cavity ties; vulnerable to moisture accumulation and thermal movement.",
+            "defects": [
+                {"name": "Efflorescence", "indicators": "White crystalline salt blooms and crypto-efflorescence", "action": "Dry brush; eliminate moisture ingress; point NHL 3.5"},
+                {"name": "Frost-Thaw Spalling", "indicators": "Tensile shearing/blowing of outer brick faces", "action": "Cut out and replace damaged units with matching frost-resistant units"},
+                {"name": "Mortar Erosion", "indicators": "Bed/perp joints eroded >10mm; exposed arrises", "action": "Rake back 25mm and repoint with hydraulic lime NHL 3.5"},
+                {"name": "Stepped Shear Crack", "indicators": "Diagonal stepped fracture tracing perpendicular and bed joints", "action": "Install 6mm helical stainless steel crack stitches at 450mm centers"},
+                {"name": "Thermal Expansion Fissure", "indicators": "Continuous vertical fractures near corners lacking movement joints", "action": "Saw-cut 10mm vertical expansion movement joint & seal with elastomeric mastic"}
+            ],
+            "tolerances": "Aperture < 1.5mm | Bed joint recession < 10mm | Movement joint spacing < 12m",
+            "binder": "Hydraulic Lime NHL 3.5 (1:2.5 sharp sand) - vapor permeable",
+            "euro_rates": "Repointing: €45–€75/m | Helical Stitching: €85–€160/m | Rebuild Section: €280–€550/m²",
+            "standards": ["BRE Digest 251 (Cat 0–3)", "BRE Digest 361", "BS EN 771-1", "RICS Condition Rating 2/3"]
+        },
+        {
+            "id": "dry_stone",
+            "name": "Traditional Dry Stone Walling",
+            "category": "Historic & Vernacular",
+            "geology": "Carboniferous Karst Limestone / Sandstone fieldstone (unmortared)",
+            "description": "Double-faced unmortared gravity walling stabilized entirely by friction, inward batter, and interlocking core hearting.",
+            "defects": [
+                {"name": "Coping Dislodgement", "indicators": "Top capstones knocked loose by livestock or wind", "action": "Relay heavy buck-and-doe or flat capstones tightly pinned"},
+                {"name": "Hearting Washout", "indicators": "Loss of smaller core packing stones; hollow internal voids", "action": "Dismantle face course and repack dense interlocking stone hearting"},
+                {"name": "Lateral Wythe Bulge", "indicators": "Outward belly displacement (>15mm) under internal thrust", "action": "Carefully take down bulged section and rebuild with 1:6 inward batter"},
+                {"name": "Missing Through-Stone", "indicators": "Wythe separation; absence of transverse tie stones", "action": "Insert continuous tie through-stones every 1.0m horizontal and vertical"},
+                {"name": "Base Subsidence", "indicators": "Basal course sinking into soft ground or subsoil washout", "action": "Excavate foundation trench to solid subsoil and bed heavy footing boulders"}
+            ],
+            "tolerances": "Inward batter ratio 1:6 | Lateral bulge tolerance < 15mm | Through-stones required every 1m²",
+            "binder": "No Binder (Strictly dry gravity interlock with tightly wedged chinking pin stones)",
+            "euro_rates": "Take down & rebuild plumb: €220–€480/m | Chinking pin restoration: €50–€90/m",
+            "standards": ["Dry Stone Walling Association (DSWA) Master Craftsman Codes", "Irish Heritage Council Field Boundary Guidelines", "RICS CR2/CR3"]
+        },
+        {
+            "id": "lime_mortar",
+            "name": "Historic Lime Mortar Rubble Wall",
+            "category": "Historic & Vernacular",
+            "geology": "Ordovician Slate, Schist & Calcareous Sandstone rubble in hydraulic lime",
+            "description": "Random rubble masonry bedded in porous, flexible hydraulic or non-hydraulic lime mortar.",
+            "defects": [
+                {"name": "Deep Lime Washout", "indicators": "Binder leached away by water passage leaving sandy hollows", "action": "Rake back 25mm-35mm and repoint with NHL 2.0 / coarse sand aggregate"},
+                {"name": "Render Delamination", "indicators": "Hollow drummy acoustic response when gently tapped", "action": "Carefully remove detached render; re-apply breathable 3-coat lime render"},
+                {"name": "Structural Ivy Penetration", "indicators": "Woody roots embedded deep into joints, prying stones apart", "action": "Sever rootstems at base, allow dieback, extract, and repoint with lime"},
+                {"name": "Internal Core Voiding", "indicators": "Cavernous cavities behind outer facing stones", "action": "Low-pressure void consolidation grout injection (pure hydraulic lime slurry)"}
+            ],
+            "tolerances": "Joint raking depth < 25mm | Core void ratio < 10% | Delamination area < 0.5m²",
+            "binder": "Hydraulic Lime NHL 2.0 (1:2.5 coarse sand + 5% crushed brick pozzolan)",
+            "euro_rates": "Repointing: €45–€75/m | Core Grout Injection: €120–€240/m³ void | Biocide: €25–€45/m²",
+            "standards": ["SPAB Technical Advice Note 1 (Breathing Buildings)", "Historic England Mortars & Renders", "BRE Digest 245"]
+        },
+        {
+            "id": "ashlar",
+            "name": "Georgian Dressed Ashlar Limestone",
+            "category": "Civic & Classical",
+            "geology": "Carboniferous Calp Limestone & Leinster Granite fine freestone",
+            "description": "Precision finely dressed stone blocks with razor-thin arrises (2mm–3mm joints) and non-hydraulic lime putty bedding.",
+            "defects": [
+                {"name": "Bedding Plane Exfoliation", "indicators": "Face delamination flaking parallel to natural sedimentary bed", "action": "Pneumatic dressing back to sound matrix or localized stone indent repair"},
+                {"name": "Fine Joint Separation", "indicators": "Tensional arris separation admitting wind-driven rain", "action": "Rake hairline joint with fine hacksaw blade; repoint with CL90 fat lime putty"},
+                {"name": "Iron Cramp Fracture (Rust Jacking)", "indicators": "Spalling block fracture centered directly over hidden ferrous ties", "action": "Surgically extract oxidized iron cramps; replace with 316 stainless or phosphor bronze"}
+            ],
+            "tolerances": "Joint arris width 2.5mm ± 0.5mm | Out-of-plane face step < 1.0mm | Rust heave: 0mm",
+            "binder": "Non-hydraulic Fat Lime Putty (CL90) with fine stone dust (1:1.5 mix ratio)",
+            "euro_rates": "Stone indent repair: €280–€550/m² | Stainless cramp replacement: €85–€160/unit",
+            "standards": ["Historic England Practical Conservation: Stone", "RICS Condition Rating 3 (Urgent)", "BS 8298 Design of Stone Cladding"]
+        },
+        {
+            "id": "retaining_wall",
+            "name": "Gravity Retaining Wall & Dyke",
+            "category": "Structural Masonry",
+            "geology": "Porphyritic Granite & Basalt igneous retention blocks",
+            "description": "Mass masonry retaining structure holding back soil, rock, or backfill through deadweight gravity resistance.",
+            "defects": [
+                {"name": "Hydrostatic Outward Bulge", "indicators": "Forward rotation or mid-height belly bulge from water pressure", "action": "Relieve pore water; core-drill additional weep holes; reconstruct batter"},
+                {"name": "Weep Hole Blockage", "indicators": "Silted or calcified drain ports; damp staining on wall face", "action": "High-pressure clean out weep tubes; install gravel-pack geotextile filters"},
+                {"name": "Basal Shear Slip", "indicators": "Horizontal displacement of base stones relative to sub-base", "action": "Toe underpinning; concrete heel toe beam or geotechnical ground anchors"}
+            ],
+            "tolerances": "Out-of-plumb batter < 25mm/m | Hydrostatic pressure head 0mm (free-draining) | Basal slip: 0mm",
+            "binder": "Unmortared dry backing with free-draining granular aggregate (or Class M4 at base)",
+            "euro_rates": "Weep hole drilling: €65–€110/station | Underpinning: €480–€950/linear meter",
+            "standards": ["CIRIA C760 Embedded Retaining Walls", "Eurocode 7 Geotechnical Design (EN 1997)", "BRE Digest 472"]
+        },
+        {
+            "id": "cob_earth",
+            "name": "Cob & Mass Earth Structure",
+            "category": "Historic & Vernacular",
+            "geology": "Subsoil clay, sharp sand, chopped wheat straw and water mass-earth",
+            "description": "Mass monolithic unbaked subsoil earth walling built in lifts on a protective stone plinth footing.",
+            "defects": [
+                {"name": "Basal Splash Undercut", "indicators": "Severe recession at bottom 600mm from splashing rainwater", "action": "Underpin base with stone plinth course; apply breathable lime shelter coat"},
+                {"name": "Vertical Shrinkage Fissures", "indicators": "Desiccation cracks running vertically through lift layers", "action": "Stitch with timber hazel ties; ram firmly with clay-straw-lime cob loaf"},
+                {"name": "Plastic Compressive Slump", "indicators": "Bulging and shearing of lower wall under roof load when damp", "action": "Prop roof loads immediately; dry out wall core; cut out plasticized earth"}
+            ],
+            "tolerances": "Basal undercut depth < 40mm | Fissure aperture < 3.0mm | Load eccentricity < 10%",
+            "binder": "Sacrificial hydraulic lime wash (NHL 2.0) with tallow & animal hair (No cement!)",
+            "euro_rates": "Cob section rebuild: €280–€550/m² | Lime shelter wash: €25–€45/m²",
+            "standards": ["Historic England Practical Conservation: Earth", "Devon Earth Building Association Standards", "SPAB Tech Q&A"]
+        },
+        {
+            "id": "flint_knapped",
+            "name": "Knapped Flint & Chalk Lime Wall",
+            "category": "Historic & Vernacular",
+            "geology": "Cretaceous Upper White Chalk nodules & cryptocrystalline silica flint flakes",
+            "description": "Hand-knapped glass-hard flint nodules bedded in hydraulic chalk lime with decorative flint gallet dressings.",
+            "defects": [
+                {"name": "Flint Nodule Unseating", "indicators": "Smooth flint stones falling out of weathered joint pockets", "action": "Re-seat flints into deep hydraulic lime bed with mechanical keying"},
+                {"name": "Chalk-Lime Matrix Washout", "indicators": "Erosion of bedding mortar exposing glassy perimeter of flints", "action": "Rake joints to 20mm; point flush with NHL 2.0 mortar and chalk aggregate"},
+                {"name": "Flint Gallet Dressing Loss", "indicators": "Missing decorative secondary flint chips wedged in bed joints", "action": "Press matching sharp flint gallet chips into fresh lime joint before set"}
+            ],
+            "tolerances": "Matrix recession < 8mm | Zero unseated flint nodules | Gallet loss < 10%",
+            "binder": "Fat lime chalk putty mortar NHL 2.0 with crushed chalk & sharp sand aggregate",
+            "euro_rates": "Flint repointing & galleting: €55–€95/linear meter | Stone reset: €35–€60/stone",
+            "standards": ["SPAB Technical Advice Note: Flint Walling", "Historic England Knapped Flint Guidelines", "RICS CR2"]
+        },
+        {
+            "id": "terracotta_faience",
+            "name": "Architectural Terracotta & Faience",
+            "category": "Civic & Classical",
+            "geology": "Triassic Mercia Mudstone & Etruria Marl fired vitrified fireclay",
+            "description": "Hollow glazed architectural ceramic units anchored to structural steel or masonry backing with hidden cramps.",
+            "defects": [
+                {"name": "Surface Glaze Crazing", "indicators": "Fine hairline network in vitreous glaze allowing moisture intake", "action": "Micro-porous consolidation treatment; clear breathable siloxane sealer"},
+                {"name": "Anchor Bracket Heave (Jacking)", "indicators": "Concealed ferrous bracket corroding, lifting ceramic units outward", "action": "Core access from rear or joint; replace iron brackets with 316 stainless ties"},
+                {"name": "Hollow Web Fracture", "indicators": "Internal cross-webs sheared under frame settlement or thermal loads", "action": "Inject low-pressure non-staining lime grout into hollow cell cavities"}
+            ],
+            "tolerances": "Glaze craze width < 0.2mm | Anchor displacement: 0mm | Hollow web fracture: 0 units",
+            "binder": "Non-staining pure lime grout injection with thixotropic modifier (or NHL 2.0 pointing)",
+            "euro_rates": "Hollow cell grout injection: €120–€240/unit | Ceramic unit indent: €350–€750/unit",
+            "standards": ["Tiles and Architectural Ceramics Society (TACS) Codes", "Historic England Terracotta & Faience", "BS 8298"]
+        },
+        {
+            "id": "concrete_block",
+            "name": "Modular Concrete Blockwork (CMU)",
+            "category": "Modern & Engineered",
+            "geology": "Dense aggregate aggregated concrete CMU with sand-cement binder",
+            "description": "Standardized modular concrete masonry units with horizontal bed reinforcement and sand-cement mortar joints.",
+            "defects": [
+                {"name": "Longitudinal Bed Joint Crack", "indicators": "Continuous horizontal fracture tracing along bed joints", "action": "Rake bed joint; install retrofitted 6mm helical bed joint reinforcement bar"},
+                {"name": "Expansive Sulfate Attack", "indicators": "Mortar softening into white crumbly paste; expansion and spalling", "action": "Rake out decayed mortar; repoint with sulfate-resisting cement mortar (Class M4)"},
+                {"name": "Face Shell / Web Shear", "indicators": "Outer concrete skin shearing away from hollow central webs", "action": "Dismantle and rebuild damaged block courses; install core grouting"}
+            ],
+            "tolerances": "Bed crack width < 1.5mm | Sulfate softening depth < 5mm | Web shear: 0 units",
+            "binder": "Sulfate-resisting hydraulic mortar Class M4 (1:4 cement:sand with plasticizer)",
+            "euro_rates": "Helical bed reinforcement: €45–€80/linear meter | Block course rebuild: €190–€380/m²",
+            "standards": ["BRE Digest 363 (Sulfate attack on concrete in ground)", "BS 8103-2 Masonry", "Eurocode 6 (EN 1996)"]
+        },
+        {
+            "id": "boulder_fieldstone",
+            "name": "Cyclopean Glacial Boulder Wall",
+            "category": "Historic & Vernacular",
+            "geology": "Dalradian Gneiss & Plutonic Granitic Glacial Erratics",
+            "description": "Massive unworked glacial erratic boulders assembled with unmortared interstitial chinking stones.",
+            "defects": [
+                {"name": "Basal Boulder Roll-Out", "indicators": "Large rounded footing boulder displaced forward on slope", "action": "Jack boulder back to alignment; construct reinforced earth toe berm"},
+                {"name": "Chinking Pin Stone Loss", "indicators": "Small wedge stones fallen from interstices, leaving loose packing", "action": "Drive hard angular granite pin chinking wedges tightly into voids"},
+                {"name": "Cryogenic Frost Lens Heave", "indicators": "Ground frost freezing beneath boulders, uplifting base course", "action": "Improve subsoil drainage trench; install frost-free crushed stone footing pad"}
+            ],
+            "tolerances": "Pin stone loss < 5% | Basal boulder slide < 5mm | Out-of-plumb < 20mm/m",
+            "binder": "Dry gravity interlock with tightly wedged chinking pin stones",
+            "euro_rates": "Chinking pin restoration: €50–€90/m | Boulder resetting & rebuild: €260–€520/m",
+            "standards": ["Irish Heritage Council Field Boundary Guidelines", "DSWA Master Standards", "RICS CR2"]
+        },
+        {
+            "id": "granite_quoin",
+            "name": "Dressed Granite Quoin Corners",
+            "category": "Civic & Classical",
+            "geology": "Coarse-Grained Leinster Igneous Granite Arris Blocks",
+            "description": "Heavy finely dressed granite return corner stones providing vertical alignment and rigidity to rubble panels.",
+            "defects": [
+                {"name": "Quoin Compressive Crushing", "indicators": "Corner arrises fracturing diagonally under intense point loading", "action": "Relieve vertical stress; drill and epoxy stainless threaded rods; lime point"},
+                {"name": "Lead Dowel Weather Split", "indicators": "Vertical splitting aligned with internal molten lead dowel sockets", "action": "Extract corroded iron/lead pin; repoint with hydraulic lime NHL 3.5"},
+                {"name": "Panel-to-Quoin Relief Shear", "indicators": "Vertical separation crack between rigid quoin and flexible rubble", "action": "Install flexible helical stainless stitches bridging quoin to rubble panel"}
+            ],
+            "tolerances": "Arris compressive crushing: 0mm | Dowel heave < 1.0mm | Relief shear < 2.0mm",
+            "binder": "Coarse hydraulic lime NHL 3.5 with crushed granite grit fines (1:2 mix)",
+            "euro_rates": "Corner block redressing: €510–€980/stone | Stitch to rubble panel: €85–€160/m",
+            "standards": ["RICS Building Pathology Guidelines", "CIRIA Rock Engineering in Conservation", "Historic England Stone"]
+        }
+    ]
+
+    @app.route("/field-guide")
+    @app.route("/cribsheet")
+    def field_guide():
+        return render_template("field_guide.html", guide_items=FIELD_GUIDE_DATA)
+
+    @app.route("/api/field-guide/csv")
+    def export_field_guide_csv():
+        import csv
+        import io
+        from flask import Response
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Archetype ID", "Archetype Name", "Category", "Geology / Substrate",
+            "Primary Defects", "Key Diagnostic Indicators", "Critical Tolerances",
+            "Sacrificial Binder / Mortar", "Remedial Euro Benchmark Rates", "Industry Standards & Citations"
+        ])
+
+        for item in FIELD_GUIDE_DATA:
+            defects_str = "; ".join([d["name"] for d in item["defects"]])
+            indicators_str = "; ".join([f"{d['name']}: {d['indicators']}" for d in item["defects"]])
+            standards_str = "; ".join(item["standards"])
+            writer.writerow([
+                item["id"], item["name"], item["category"], item["geology"],
+                defects_str, indicators_str, item["tolerances"],
+                item["binder"], item["euro_rates"], standards_str
+            ])
+
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment; filename=Global_Wall_Inspector_Field_Crib_Sheet.csv"}
+        )
+
+    # ==========================================
     # 2. Dual-Wall Comparative Analysis Studio
     # ==========================================
     @app.route("/compare")

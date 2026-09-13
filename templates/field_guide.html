@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pocket Field Crib-Sheet & Pathology Guide - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #090e1a;
+      --panel-dark: #0f172a;
+      --card-dark: #1e293b;
+      --border-dark: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0284c7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* Top Nav Bar */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-dark);
+      padding: 0.65rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .top-nav h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .top-nav-actions {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .nav-btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid var(--border-dark);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .nav-btn-primary {
+      background: var(--accent-strong);
+      color: white;
+      border-color: var(--accent);
+    }
+    .nav-btn-primary:hover {
+      background: #0369a1;
+    }
+    .nav-btn-success {
+      background: #059669;
+      color: white;
+      border-color: #10b981;
+    }
+    .nav-btn-success:hover {
+      background: #047857;
+    }
+
+    /* Main Container */
+    .guide-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* Header Banner */
+    .banner-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .banner-title h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+      color: #f8fafc;
+    }
+    .banner-title p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 800px;
+    }
+    .banner-chips {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .std-badge {
+      background: #0b1329;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Filter & Search Toolbar */
+    .toolbar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      background: #0f172a;
+      border: 1px solid var(--border-dark);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 260px;
+      max-width: 450px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      background: #090e1a;
+      border: 1px solid var(--border-dark);
+      color: white;
+      padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+    .search-box i {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .filter-chips {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      background: #1e293b;
+      color: var(--text-muted);
+      border: 1px solid var(--border-dark);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-chip:hover {
+      background: #334155;
+      color: white;
+    }
+    .filter-chip.active {
+      background: var(--accent-strong);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* Archetype Cards Grid */
+    .archetype-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(620px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .guide-card {
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .guide-card:hover {
+      border-color: #475569;
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      background: #131c31;
+      padding: 0.85rem 1.15rem;
+      border-bottom: 1px solid var(--border-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .card-title-wrap h3 {
+      margin: 0 0 3px;
+      font-size: 1.05rem;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .category-pill {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(2, 132, 199, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      white-space: nowrap;
+    }
+    .geology-tag {
+      font-size: 0.74rem;
+      color: #94a3b8;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .card-body {
+      padding: 1rem 1.15rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .desc-text {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    /* Defect Items Table */
+    .defect-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    .defect-table th {
+      background: #0f172a;
+      color: #94a3b8;
+      text-align: left;
+      padding: 6px 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .defect-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #273549;
+      vertical-align: top;
+    }
+    .defect-table tr:last-child td {
+      border-bottom: none;
+    }
+    .defect-name {
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+    }
+    .defect-indicator {
+      color: #94a3b8;
+      font-size: 0.74rem;
+    }
+    .defect-action {
+      color: #38bdf8;
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+
+    /* Diagnostics & Remedial Specification Box */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      background: #0f172a;
+      border: 1px solid #273549;
+      border-radius: 8px;
+      padding: 0.75rem 0.85rem;
+      font-size: 0.76rem;
+    }
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .spec-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .spec-val {
+      color: #e2e8f0;
+      line-height: 1.35;
+    }
+    .spec-val.highlight {
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    .card-footer {
+      background: #131c31;
+      padding: 0.6rem 1.15rem;
+      border-top: 1px solid var(--border-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .standards-list {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .std-tag {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .card-link-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid #334155;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .card-link-btn:hover {
+      background: #1e293b;
+      border-color: var(--accent);
+    }
+
+    /* Print Specific Styles */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 9pt;
+      }
+      .top-nav, .toolbar-row, .card-actions, .card-link-btn, .banner-chips, .no-print {
+        display: none !important;
+      }
+      .guide-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .banner-card {
+        background: none !important;
+        border: 2px solid #0f172a !important;
+        box-shadow: none !important;
+        padding: 8px 12px !important;
+        margin-bottom: 12px !important;
+      }
+      .banner-title h2 {
+        color: #0f172a !important;
+        font-size: 13pt !important;
+      }
+      .banner-title p {
+        color: #475569 !important;
+        font-size: 8pt !important;
+      }
+      .archetype-grid {
+        display: block !important;
+      }
+      .guide-card {
+        background: #ffffff !important;
+        border: 1px solid #94a3b8 !important;
+        box-shadow: none !important;
+        margin-bottom: 10px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .card-header {
+        background: #f1f5f9 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding: 6px 10px !important;
+      }
+      .card-title-wrap h3 {
+        color: #0f172a !important;
+        font-size: 10.5pt !important;
+      }
+      .category-pill {
+        border: 1px solid #0284c7 !important;
+        color: #0284c7 !important;
+        background: none !important;
+        font-size: 6.5pt !important;
+      }
+      .geology-tag {
+        color: #475569 !important;
+        font-size: 7.5pt !important;
+      }
+      .card-body {
+        padding: 8px 10px !important;
+        gap: 6px !important;
+      }
+      .desc-text {
+        color: #334155 !important;
+        font-size: 7.5pt !important;
+      }
+      .defect-table th {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding: 4px 6px !important;
+      }
+      .defect-table td {
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 4px 6px !important;
+      }
+      .defect-name {
+        color: #0f172a !important;
+        font-size: 7.5pt !important;
+      }
+      .defect-indicator {
+        color: #475569 !important;
+        font-size: 7pt !important;
+      }
+      .defect-action {
+        color: #0369a1 !important;
+        font-size: 7pt !important;
+      }
+      .spec-grid {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+        gap: 4px !important;
+      }
+      .spec-label {
+        color: #475569 !important;
+        font-size: 6.5pt !important;
+      }
+      .spec-val {
+        color: #0f172a !important;
+        font-size: 7.5pt !important;
+      }
+      .spec-val.highlight {
+        color: #b45309 !important;
+      }
+      .card-footer {
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+        padding: 4px 10px !important;
+      }
+      .std-tag {
+        background: #ffffff !important;
+        border: 1px solid #94a3b8 !important;
+        color: #0f172a !important;
+        font-size: 6.5pt !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <div class="top-nav">
+    <h1>
+      <span>📄</span> Pocket Field Crib-Sheet &amp; Pathology Guide
+    </h1>
+    <div class="top-nav-actions">
+      <button type="button" class="nav-btn nav-btn-primary" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> 🖨️ Print / Save PDF (A4)
+      </button>
+      <a href="/api/field-guide/csv" class="nav-btn nav-btn-success" download>
+        <i class="fa-solid fa-file-csv"></i> 📥 Download CSV
+      </a>
+      <a href="/cards" class="nav-btn">📇 Flashcard Trainer</a>
+      <a href="/compare" class="nav-btn">⚖️ Compare Studio</a>
+      <a href="/map" class="nav-btn">🗺️ Map Atlas</a>
+      <a href="/portal" class="nav-btn">🎓 Skills Passport</a>
+      <a href="/" class="nav-btn">&larr; Catalog</a>
+    </div>
+  </div>
+
+  <div class="guide-container">
+
+    <!-- Header Description Card -->
+    <div class="banner-card">
+      <div class="banner-title">
+        <h2>Global Wall Inspector — Field Assessment Crib-Sheet</h2>
+        <p>
+          Standardized clinical pathology reference matrix covering all 11 masonry archetypes, failure mechanics,
+          dimensional tolerances, conservation specifications, and Euro (€) benchmark remedial pricing.
+        </p>
+      </div>
+      <div class="banner-chips">
+        <span class="std-badge"><i class="fa-solid fa-book-bookmark"></i> BRE Digest 251</span>
+        <span class="std-badge"><i class="fa-solid fa-certificate"></i> RICS CR1–CR3</span>
+        <span class="std-badge"><i class="fa-solid fa-feather"></i> SPAB Lime Standards</span>
+        <span class="std-badge"><i class="fa-solid fa-shield-halved"></i> Eurocode 6 (EN 1996)</span>
+      </div>
+    </div>
+
+    <!-- Toolbar: Search & Category Filter Chips -->
+    <div class="toolbar-row">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="guide-search" placeholder="Search defect, archetype, tolerance, or standard..." oninput="filterGuide()">
+      </div>
+
+      <div class="filter-chips">
+        <button type="button" class="filter-chip active" onclick="setCategoryFilter('all', this)">All 11 Archetypes</button>
+        <button type="button" class="filter-chip" onclick="setCategoryFilter('Structural Masonry', this)">Structural Masonry</button>
+        <button type="button" class="filter-chip" onclick="setCategoryFilter('Historic & Vernacular', this)">Historic &amp; Vernacular</button>
+        <button type="button" class="filter-chip" onclick="setCategoryFilter('Civic & Classical', this)">Civic &amp; Classical</button>
+        <button type="button" class="filter-chip" onclick="setCategoryFilter('Modern & Engineered', this)">Modern &amp; Engineered</button>
+      </div>
+    </div>
+
+    <!-- 11 Archetype Cards Grid -->
+    <div class="archetype-grid" id="archetype-grid">
+      {% for item in guide_items %}
+        <div class="guide-card" data-category="{{ item.category }}" data-id="{{ item.id }}">
+          
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h3>
+                <span>
+                  {% if item.id == 'brick_cavity' %}🧱
+                  {% elif item.id == 'dry_stone' %}🪨
+                  {% elif item.id == 'lime_mortar' %}🏛️
+                  {% elif item.id == 'ashlar' %}📐
+                  {% elif item.id == 'retaining_wall' %}🛡️
+                  {% elif item.id == 'cob_earth' %}🌾
+                  {% elif item.id == 'flint_knapped' %}💎
+                  {% elif item.id == 'terracotta_faience' %}🏺
+                  {% elif item.id == 'concrete_block' %}⬛
+                  {% elif item.id == 'boulder_fieldstone' %}⛰️
+                  {% elif item.id == 'granite_quoin' %}🏗️
+                  {% endif %}
+                </span>
+                {{ item.name }}
+              </h3>
+              <span class="geology-tag"><strong>Substrate:</strong> {{ item.geology }}</span>
+            </div>
+            <span class="category-pill">{{ item.category }}</span>
+          </div>
+
+          <div class="card-body">
+            <p class="desc-text">{{ item.description }}</p>
+
+            <!-- Defect Pathology Table -->
+            <table class="defect-table">
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Diagnostic Defect</th>
+                  <th style="width: 42%;">Visual Indicator</th>
+                  <th style="width: 30%;">Remedial Treatment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in item.defects %}
+                  <tr>
+                    <td class="defect-name">{{ d.name }}</td>
+                    <td class="defect-indicator">{{ d.indicators }}</td>
+                    <td class="defect-action">{{ d.action }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <!-- Spec & Tolerance Grid -->
+            <div class="spec-grid">
+              <div class="spec-item">
+                <span class="spec-label"><i class="fa-solid fa-ruler-combined"></i> Critical Tolerances</span>
+                <span class="spec-val">{{ item.tolerances }}</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label"><i class="fa-solid fa-flask"></i> Mortar / Binder Spec</span>
+                <span class="spec-val">{{ item.binder }}</span>
+              </div>
+              <div class="spec-item" style="grid-column: span 2;">
+                <span class="spec-label"><i class="fa-solid fa-euro-sign"></i> Euro (€) Remedial Benchmark Rates</span>
+                <span class="spec-val highlight">{{ item.euro_rates }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <div class="standards-list">
+              <span style="font-size: 0.68rem; font-weight: 700; color: #64748b; margin-right: 4px;">Standards:</span>
+              {% for s in item.standards %}
+                <span class="std-tag">{{ s }}</span>
+              {% endfor %}
+            </div>
+            <div class="card-actions">
+              <a href="/cards?archetype={{ item.id }}" class="card-link-btn" title="Study flashcards for this archetype">
+                📇 Flashcards
+              </a>
+              <a href="/compare" class="card-link-btn" title="Compare this specimen">
+                ⚖️ Compare
+              </a>
+            </div>
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <script>
+    let activeCategory = 'all';
+
+    function setCategoryFilter(category, btn) {
+      activeCategory = category;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      filterGuide();
+    }
+
+    function filterGuide() {
+      const query = (document.getElementById('guide-search').value || '').toLowerCase().trim();
+      const cards = document.querySelectorAll('.guide-card');
+
+      cards.forEach(card => {
+        const cardCat = card.getAttribute('data-category') || '';
+        const cardText = card.innerText.toLowerCase();
+
+        const matchesCat = (activeCategory === 'all' || cardCat === activeCategory);
+        const matchesQuery = (!query || cardText.includes(query));
+
+        if (matchesCat && matchesQuery) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

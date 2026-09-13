@@ -66,6 +66,25 @@ class TestStudiosAndAuth(unittest.TestCase):
             self.assertTrue(bool(w.get('rainfall')))
             self.assertTrue(bool(w.get('freeze_thaw')))
 
+    def test_field_guide(self):
+        """Test Printable Pocket Field Crib-Sheet and CSV export."""
+        res = self.client.get('/field-guide')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'Field Assessment Crib-Sheet', res.data)
+        self.assertIn('€'.encode('utf-8'), res.data)
+
+        # Test alias
+        res_alias = self.client.get('/cribsheet')
+        self.assertEqual(res_alias.status_code, 200)
+
+        # Test CSV export
+        res_csv = self.client.get('/api/field-guide/csv')
+        self.assertEqual(res_csv.status_code, 200)
+        self.assertEqual(res_csv.mimetype, 'text/csv')
+        csv_lines = res_csv.data.decode('utf-8').strip().splitlines()
+        self.assertEqual(len(csv_lines), 12)  # 1 header + 11 archetypes
+        self.assertIn('€', res_csv.data.decode('utf-8'))
+
     def test_admin_auth_protection(self):
         """Ensure admin routes are strictly inaccessible without authentication."""
         protected_endpoints = [
