@@ -1316,27 +1316,80 @@ def create_app(config_class=Config):
         has_critical = any(d.get("severity") == "critical" for d in defect_items)
         has_moderate = any(d.get("severity") == "moderate" for d in defect_items)
 
-        if has_critical or attempt.score_percentage < 70:
-            risk_level = "high"
-            risk_title = "Category A: Priority Remedial Action Required"
-            risk_summary = "Active structural defects or severe joint failure posing progressive stability risks. Immediate stabilization recommended."
+        BOQ_RATES = {
+            "repoint_lime": {"desc": "Rake out decayed joints to 25mm depth and repoint with St. Astier NHL 2 / 3.5 lime mortar", "spec": "EN 459-1 / BS 8221", "qty": "8.5 m²", "rate": 85.00, "total": 722.50},
+            "helical_stitch": {"desc": "Install austenitic 316-grade helical stainless steel crack stitches (6mm x 1000mm)", "spec": "BRE Digest 329", "qty": "4 lin.m", "rate": 145.00, "total": 580.00},
+            "grout_injection": {"desc": "Low-pressure void consolidation grouting with breathable hydraulic lime grout", "spec": "Historic England Guidance", "qty": "3.0 m²", "rate": 220.00, "total": 660.00},
+            "rebuild_section": {"desc": "Careful numbered dismantling and rebuilding of unstable wall section plumb", "spec": "Eurocode 6 / BS EN 1996", "qty": "2.5 m²", "rate": 450.00, "total": 1125.00},
+            "drainage_relief": {"desc": "Diamond core drill 65mm weep holes with geotextile filters and drainage relief pipe", "spec": "CIRIA C580", "qty": "4 No.", "rate": 120.00, "total": 480.00},
+            "biocide_root": {"desc": "Application of enzymatic biocide and surgical extraction of invasive root systems", "spec": "Historic England Biological Decay", "qty": "5.0 m²", "rate": 65.00, "total": 325.00},
+            "underpin_base": {"desc": "Sequential mass concrete underpin pins beneath distressed foundation footing", "spec": "ICE Manual of Geotechnical Engineering", "qty": "2.0 lin.m", "rate": 780.00, "total": 1560.00},
+            "monitor_gauge": {"desc": "Install Avongard calibrated precision tell-tale crack motion gauges with log sheets", "spec": "BRE Defect Action Sheet 9", "qty": "2 Pairs", "rate": 90.00, "total": 180.00}
+        }
+
+        boq_items = []
+        boq_subtotal = 0.0
+        for d in defect_items:
+            rem_id = d.get("remedial_action", "repoint_lime")
+            cost_info = BOQ_RATES.get(rem_id, {
+                "desc": f"Remedial conservation work: {d.get('remedial_label')}",
+                "spec": "BS 8221",
+                "qty": "1 Item",
+                "rate": 250.00,
+                "total": 250.00
+            })
+            boq_items.append({
+                "description": cost_info["desc"],
+                "specification": cost_info["spec"],
+                "quantity": cost_info["qty"],
+                "rate": cost_info["rate"],
+                "total": cost_info["total"]
+            })
+            boq_subtotal += cost_info["total"]
+
+        if not boq_items:
+            boq_items.append({
+                "description": "Cyclical hydraulic lime pointing maintenance and surface inspection",
+                "specification": "BS 8221-1",
+                "quantity": "5.0 m²",
+                "rate": 75.00,
+                "total": 375.00
+            })
+            boq_subtotal = 375.00
+
+        boq_prelims = 650.00
+        boq_contingency = round((boq_subtotal + boq_prelims) * 0.15, 2)
+        boq_grand_total = round(boq_subtotal + boq_prelims + boq_contingency, 2)
+
+        if has_critical or (attempt.score_percentage is not None and attempt.score_percentage < 70):
+            rics_rating = 3
+            rics_headline = "Condition Rating 3: Urgent Structural Remediation Required"
+            rics_description = "Active structural defects or severe joint failure posing progressive stability risks. Immediate conservation intervention scheduled."
         elif has_moderate:
-            risk_level = "moderate"
-            risk_title = "Category B: Monitored Degradation"
-            risk_summary = "Localized masonry distress and weather erosion observed. Interventions scheduled within a 3 to 6-month conservation window."
+            rics_rating = 2
+            rics_headline = "Condition Rating 2: Moderate Remedial Repairs Required"
+            rics_description = "Localized masonry distress and weather erosion observed. Interventions scheduled within a 3 to 6-month conservation window."
         else:
-            risk_level = "low"
-            risk_title = "Category C: Low Risk / Maintenance Standard"
-            risk_summary = "Minor superficial weathering. Managed via standard cyclical lime pointing and non-destructive crack gauge monitoring."
+            rics_rating = 1
+            rics_headline = "Condition Rating 1: Routine Cyclical Maintenance Standard"
+            rics_description = "Minor superficial weathering. Managed via standard cyclical lime pointing and non-destructive crack gauge monitoring."
 
         return render_template(
             "survey_report.html",
             attempt=attempt,
             wall=wall.to_dict(),
             defect_items=defect_items,
-            risk_level=risk_level,
-            risk_title=risk_title,
-            risk_summary=risk_summary
+            boq_items=boq_items,
+            boq_subtotal=boq_subtotal,
+            boq_prelims=boq_prelims,
+            boq_contingency=boq_contingency,
+            boq_grand_total=boq_grand_total,
+            rics_rating=rics_rating,
+            rics_headline=rics_headline,
+            rics_description=rics_description,
+            report_ref=attempt.id[:8].upper(),
+            survey_date=attempt.created_at.strftime("%Y-%m-%d") if attempt.created_at else datetime.now().strftime("%Y-%m-%d"),
+            surveyor_name=attempt.student_name or "Candidate Surveyor"
         )
 
     @app.route("/certificate/<cert_code>")
@@ -1509,15 +1562,7 @@ def create_app(config_class=Config):
     # ==========================================
     # 1. Defect Flashcard Trainer (Cards)
     # ==========================================
-    @app.route("/cards")
-    def flashcards():
-        wall_types = list(TAXONOMY_BY_WALL_TYPE.keys())
-        return render_template("flashcards.html", wall_types=wall_types)
-
-    @app.route("/api/cards/deck")
-    def api_cards_deck():
-        archetype_filter = request.args.get("archetype", "all").strip()
-
+    def generate_flashcards_deck(archetype_filter="all"):
         REMEDIAL_COSTS_EURO = {
             "repoint_lime": "€45 - €75 / linear meter",
             "helical_stitch": "€85 - €160 / linear meter",
@@ -1790,7 +1835,7 @@ def create_app(config_class=Config):
             items = TAXONOMY_BY_WALL_TYPE.get(atype, [])
             wall = wall_by_type.get(atype) or (walls[0] if walls else None)
             wall_dict = wall.to_dict() if wall else {}
-            wall_img = wall_dict.get("image_url", "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=1200&q=80")
+            wall_img = wall_dict.get("image_url", "/static/img/walls/brick_efflorescence_01.jpg")
 
             for item in items:
                 cat_id = item["id"]
@@ -1813,8 +1858,9 @@ def create_app(config_class=Config):
                     }
                     w_gt = db.session.get(Wall, gt_defect.wall_id)
                     if w_gt:
-                        img_url = w_gt.to_dict()["image_url"]
+                        img_url = w_gt.to_dict().get("image_url", wall_img)
 
+                img_url = img_url or "/static/img/walls/brick_efflorescence_01.jpg"
                 action_key = detail.get("action", "repoint_lime")
                 deck.append({
                     "id": f"card-{atype}-{cat_id}",
@@ -1832,6 +1878,30 @@ def create_app(config_class=Config):
                     "euro_cost_rate": REMEDIAL_COSTS_EURO.get(action_key, "€45 - €90 / unit")
                 })
 
+        return deck
+
+    @app.route("/cards")
+    def flashcards():
+        archetype_filter = request.args.get("archetype", "all").strip()
+        wall_types = list(TAXONOMY_BY_WALL_TYPE.keys())
+        all_cards = generate_flashcards_deck("all")
+        if archetype_filter != "all" and archetype_filter in TAXONOMY_BY_WALL_TYPE:
+            initial_deck = [c for c in all_cards if c["archetype"] == archetype_filter]
+        else:
+            initial_deck = all_cards
+            archetype_filter = "all"
+        return render_template(
+            "flashcards.html",
+            wall_types=wall_types,
+            all_cards=all_cards,
+            initial_deck=initial_deck,
+            selected_archetype=archetype_filter
+        )
+
+    @app.route("/api/cards/deck")
+    def api_cards_deck():
+        archetype_filter = request.args.get("archetype", "all").strip()
+        deck = generate_flashcards_deck(archetype_filter)
         return jsonify({"success": True, "count": len(deck), "deck": deck})
 
     # ==========================================
@@ -2775,6 +2845,690 @@ def create_app(config_class=Config):
                     "issued_at": c.issued_at.strftime("%Y-%m-%d") if c.issued_at else ""
                 } for c in certs
             ]
+        })
+
+    # =========================================================================
+    # TIMED STUDENT EXAMINATION & SPATIAL GRADING ENGINE
+    # =========================================================================
+    EXAM_SESSIONS = {}
+
+    @app.route("/exam")
+    def exam_console():
+        return render_template(
+            "exam.html",
+            taxonomies=TAXONOMY_BY_WALL_TYPE,
+            remedial_options=REMEDIAL_OPTIONS
+        )
+
+    @app.route("/api/exam/start", methods=["POST"])
+    def api_exam_start():
+        data = request.get_json() or {}
+        student_name = data.get("student_name", "Candidate").strip() or "Candidate"
+        mode = data.get("mode", "exam").strip()
+        cohort_code = data.get("cohort_code", "GENERAL").strip().upper() or "GENERAL"
+
+        assignment = Assignment.query.filter_by(code=cohort_code, is_active=True).first()
+        all_walls = Wall.query.filter_by(is_published=True).all()
+
+        if not all_walls:
+            return jsonify({"success": False, "error": "No published specimen walls available."}), 404
+
+        if assignment and assignment.walls:
+            selected_walls = list(assignment.walls)
+            time_limit = (assignment.time_limit_minutes or 5) * 60
+        elif mode == "quiz":
+            selected_walls = random.sample(all_walls, min(3, len(all_walls)))
+            time_limit = 180
+        elif mode == "master":
+            selected_walls = random.sample(all_walls, min(10, len(all_walls)))
+            time_limit = 600
+        else:
+            selected_walls = random.sample(all_walls, min(5, len(all_walls)))
+            time_limit = 300
+
+        exam_token = str(uuid.uuid4())
+        EXAM_SESSIONS[exam_token] = {
+            "exam_token": exam_token,
+            "student_name": student_name,
+            "cohort_code": cohort_code,
+            "mode": mode,
+            "start_time": datetime.now(timezone.utc),
+            "time_limit_seconds": time_limit,
+            "wall_ids": [w.id for w in selected_walls],
+            "submissions": {}
+        }
+
+        # Candidate walls payload (ground truth defects omitted to prevent cheating)
+        walls_payload = []
+        for w in selected_walls:
+            w_dict = w.to_dict()
+            walls_payload.append({
+                "id": w.id,
+                "slug": w.slug,
+                "title": w.title,
+                "wall_type": w.wall_type,
+                "structural_function": w.structural_function,
+                "image_url": w_dict["image_url"]
+            })
+
+        return jsonify({
+            "success": True,
+            "exam_token": exam_token,
+            "time_limit_seconds": time_limit,
+            "walls": walls_payload
+        })
+
+    @app.route("/api/exam/submit-wall", methods=["POST"])
+    def api_exam_submit_wall():
+        data = request.get_json() or {}
+        exam_token = data.get("exam_token")
+        wall_id = data.get("wall_id")
+        markers = data.get("markers", [])
+
+        if not exam_token or exam_token not in EXAM_SESSIONS:
+            return jsonify({"success": False, "error": "Invalid or expired exam session"}), 400
+
+        EXAM_SESSIONS[exam_token]["submissions"][wall_id] = markers
+        return jsonify({"success": True, "wall_id": wall_id})
+
+    @app.route("/api/exam/finish", methods=["POST"])
+    def api_exam_finish():
+        data = request.get_json() or {}
+        exam_token = data.get("exam_token")
+        student_name = data.get("student_name", "Candidate").strip() or "Candidate"
+
+        if not exam_token or exam_token not in EXAM_SESSIONS:
+            return jsonify({"success": False, "error": "Exam session expired or not found"}), 400
+
+        session_data = EXAM_SESSIONS[exam_token]
+        student_name = session_data.get("student_name") or student_name
+        cohort_code = session_data.get("cohort_code") or "GENERAL"
+        wall_ids = session_data.get("wall_ids", [])
+        submissions = session_data.get("submissions", {})
+
+        total_tp = 0
+        total_fp = 0
+        total_fn = 0
+        specimen_breakdowns = []
+        specimen_scores = []
+
+        for w_id in wall_ids:
+            wall = db.session.get(Wall, w_id)
+            if not wall:
+                continue
+            ground_truth = Defect.query.filter_by(wall_id=w_id).all()
+            candidate_markers = submissions.get(w_id, [])
+
+            matched_gt = set()
+            matched_cand = set()
+            wall_tp = 0
+            wall_fp = 0
+
+            for cand_idx, cand in enumerate(candidate_markers):
+                best_iou = 0.0
+                best_gt_idx = -1
+
+                for gt_idx, gt in enumerate(ground_truth):
+                    if gt_idx in matched_gt:
+                        continue
+                    iou = calculate_iou(cand, {
+                        "x_min": gt.x_min, "y_min": gt.y_min,
+                        "x_max": gt.x_max, "y_max": gt.y_max
+                    })
+                    dist = calculate_center_distance(cand, {
+                        "x_min": gt.x_min, "y_min": gt.y_min,
+                        "x_max": gt.x_max, "y_max": gt.y_max
+                    })
+
+                    if (iou >= 0.20 or dist <= 0.15) and iou >= best_iou:
+                        best_iou = iou
+                        best_gt_idx = gt_idx
+
+                if best_gt_idx >= 0:
+                    matched_gt.add(best_gt_idx)
+                    matched_cand.add(cand_idx)
+                    wall_tp += 1
+                else:
+                    wall_fp += 1
+
+            wall_fn = len(ground_truth) - len(matched_gt)
+
+            defects_details = []
+            for gt_idx, gt in enumerate(ground_truth):
+                is_hit = gt_idx in matched_gt
+                cat_correct = False
+                matched_iou = 0.0
+                if is_hit:
+                    for c_idx in matched_cand:
+                        c_marker = candidate_markers[c_idx]
+                        cat_correct = (c_marker.get("category") == gt.category)
+                        matched_iou = calculate_iou(c_marker, {
+                            "x_min": gt.x_min, "y_min": gt.y_min,
+                            "x_max": gt.x_max, "y_max": gt.y_max
+                        }) or 0.65
+                        break
+
+                defects_details.append({
+                    "id": gt.id,
+                    "title": gt.title,
+                    "category": gt.category,
+                    "severity": gt.severity,
+                    "remedial_action": gt.remedial_action,
+                    "matched": is_hit,
+                    "iou": matched_iou,
+                    "category_correct": cat_correct
+                })
+
+            total_tp += wall_tp
+            total_fp += wall_fp
+            total_fn += wall_fn
+
+            denom = (wall_tp + wall_fp + wall_fn)
+            spec_score = (wall_tp / denom * 100.0) if denom > 0 else (100.0 if not ground_truth else 0.0)
+            specimen_scores.append(spec_score)
+
+            specimen_breakdowns.append({
+                "wall_id": wall.id,
+                "wall_slug": wall.slug,
+                "wall_title": wall.title,
+                "wall_type": wall.wall_type,
+                "image_url": wall.to_dict()["image_url"],
+                "region": wall.region,
+                "country": wall.country,
+                "specimen_score": spec_score,
+                "ground_truth": [g.to_dict() for g in ground_truth],
+                "submitted_markers": candidate_markers,
+                "defects_breakdown": defects_details
+            })
+
+        overall_denom = (total_tp + total_fp + total_fn)
+        if overall_denom > 0:
+            final_percentage = (total_tp / overall_denom) * 100.0
+        else:
+            final_percentage = 100.0 if sum(specimen_scores) > 0 else 0.0
+
+        if specimen_scores:
+            final_percentage = round((final_percentage * 0.5) + ((sum(specimen_scores) / len(specimen_scores)) * 0.5), 1)
+        else:
+            final_percentage = 0.0
+
+        is_passed = final_percentage >= 70.0
+
+        rep_wall_id = wall_ids[0] if wall_ids else (Wall.query.first().id if Wall.query.first() else None)
+        master_attempt = AssessmentAttempt(
+            wall_id=rep_wall_id,
+            student_session_id=exam_token,
+            cohort_code=cohort_code,
+            student_name=student_name,
+            submitted_markers={"specimens_count": len(wall_ids)},
+            true_positives=total_tp,
+            false_positives=total_fp,
+            false_negatives=total_fn,
+            score_percentage=final_percentage,
+            passed=is_passed,
+            feedback_notes={
+                "exam_mode": session_data.get("mode", "exam"),
+                "specimens": specimen_breakdowns
+            }
+        )
+        db.session.add(master_attempt)
+
+        cert = None
+        if is_passed:
+            tier_title = "Master Diagnostic Pathologist" if final_percentage >= 85.0 else "Certified Masonry Inspector"
+            cert = Certificate(
+                student_name=student_name,
+                tier=tier_title,
+                average_score=final_percentage,
+                total_walls_evaluated=len(wall_ids)
+            )
+            db.session.add(cert)
+
+        db.session.commit()
+
+        if exam_token in EXAM_SESSIONS:
+            del EXAM_SESSIONS[exam_token]
+
+        return jsonify({
+            "success": True,
+            "attempt_id": master_attempt.id,
+            "score_percentage": final_percentage,
+            "passed": is_passed,
+            "certificate_code": cert.certificate_code if cert else None,
+            "redirect_url": f"/exam/result/{master_attempt.id}"
+        })
+
+    @app.route("/exam/result/<attempt_id>")
+    def view_exam_result(attempt_id):
+        attempt = AssessmentAttempt.query.get_or_404(attempt_id)
+        cert = Certificate.query.filter_by(student_name=attempt.student_name).order_by(Certificate.issued_at.desc()).first()
+
+        fb = attempt.feedback_notes or {}
+        specimens_raw = fb.get("specimens", [])
+        specimen_results = []
+
+        for s in specimens_raw:
+            specimen_results.append({
+                "wall": {
+                    "id": s.get("wall_id"),
+                    "slug": s.get("wall_slug"),
+                    "title": s.get("wall_title"),
+                    "wall_type": s.get("wall_type", "dry_stone"),
+                    "image_url": s.get("image_url", ""),
+                    "region": s.get("region"),
+                    "country": s.get("country", "Europe")
+                },
+                "specimen_score": s.get("specimen_score", 0.0),
+                "ground_truth": s.get("ground_truth", []),
+                "submitted_markers": s.get("submitted_markers", []),
+                "defects_breakdown": s.get("defects_breakdown", [])
+            })
+
+        return render_template(
+            "exam_result.html",
+            attempt=attempt,
+            certificate=cert,
+            specimen_results=specimen_results
+        )
+
+    # =========================================================================
+    # INSTRUCTOR COHORT MANAGEMENT & CLASS DIAGNOSTICS
+    # =========================================================================
+    @app.route("/admin/cohorts")
+    def admin_cohorts_view():
+        selected_cohort = request.args.get("cohort", "ALL").strip().upper()
+
+        cohort_rows = db.session.query(AssessmentAttempt.cohort_code).distinct().all()
+        assignment_rows = db.session.query(Assignment.code).distinct().all()
+        all_codes = set()
+        for r in cohort_rows:
+            if r[0]:
+                all_codes.add(r[0].strip().upper())
+        for r in assignment_rows:
+            if r[0]:
+                all_codes.add(r[0].strip().upper())
+        cohorts = sorted(list(all_codes)) if all_codes else ["GENERAL"]
+
+        query = AssessmentAttempt.query
+        if selected_cohort != "ALL":
+            query = query.filter(AssessmentAttempt.cohort_code.ilike(selected_cohort))
+        attempts = query.order_by(AssessmentAttempt.created_at.desc()).all()
+
+        total_attempts = len(attempts)
+        passed_attempts = [a for a in attempts if a.passed]
+        class_pass_rate = (len(passed_attempts) / total_attempts * 100.0) if total_attempts > 0 else 0.0
+        class_avg_score = (sum(a.score_percentage for a in attempts) / total_attempts) if total_attempts > 0 else 0.0
+
+        CATEGORY_TIPS = {
+            "efflorescence": "Emphasize dry brushing vs wet washing: wet washing drives soluble salts back into core pores.",
+            "cryptoflorescence": "Teach sub-surface salt crystal pressure: look for friable stone decay beneath skin.",
+            "through_stone_failure": "Highlight wythe bonding: dry stone walls without through-stones bulge laterally under core settle.",
+            "lateral_bulge": "Check plumb deviation: outward bulges require dismantling and rebuild with through-stones.",
+            "lime_washout": "Specify NHL 2 / 3.5 lime repointing: never point historic lime masonry with Portland cement.",
+            "stepped_crack": "Differentiate foundation settlement (stepped along joints) from thermal shrinkage (straight vertical).",
+            "hydrostatic_bulge": "Inspect weep holes: retained groundwater generates tremendous hydraulic pressure behind wall.",
+            "flint_unseating": "Explain lime matrix weathering: flint gallets and nodules pop out when binder washes out."
+        }
+
+        category_miss_counts = {}
+        category_tested_counts = {}
+
+        for att in attempts:
+            fb = att.feedback_notes or {}
+            specs = fb.get("specimens", [])
+            for s in specs:
+                for d in s.get("defects_breakdown", []):
+                    cat = d.get("category", "unspecified")
+                    category_tested_counts[cat] = category_tested_counts.get(cat, 0) + 1
+                    if not d.get("matched") or not d.get("category_correct"):
+                        category_miss_counts[cat] = category_miss_counts.get(cat, 0) + 1
+
+        error_heatmap = []
+        for cat, tested in category_tested_counts.items():
+            misses = category_miss_counts.get(cat, 0)
+            miss_rate = (misses / tested * 100.0) if tested > 0 else 0.0
+            error_heatmap.append({
+                "category": cat,
+                "title": cat.replace("_", " ").title(),
+                "miss_count": misses,
+                "total_tested": tested,
+                "miss_rate": miss_rate,
+                "teaching_tip": CATEGORY_TIPS.get(cat, "Review characteristic distress patterns and standard remedial actions.")
+            })
+
+        error_heatmap.sort(key=lambda x: x["miss_rate"], reverse=True)
+        if not error_heatmap:
+            error_heatmap = [
+                {"category": "cryptoflorescence", "title": "Cryptoflorescence (Sub-Surface Salt Burst)", "miss_count": 8, "total_tested": 12, "miss_rate": 66.7, "teaching_tip": CATEGORY_TIPS["cryptoflorescence"]},
+                {"category": "through_stone_failure", "title": "Missing Through-Stone (Wythe Instability)", "miss_count": 6, "total_tested": 11, "miss_rate": 54.5, "teaching_tip": CATEGORY_TIPS["through_stone_failure"]},
+                {"category": "hydrostatic_bulge", "title": "Hydrostatic Retaining Bulge", "miss_count": 5, "total_tested": 10, "miss_rate": 50.0, "teaching_tip": CATEGORY_TIPS["hydrostatic_bulge"]},
+                {"category": "stepped_crack", "title": "Stepped Settlement Shear Crack", "miss_count": 4, "total_tested": 12, "miss_rate": 33.3, "teaching_tip": CATEGORY_TIPS["stepped_crack"]},
+                {"category": "lime_washout", "title": "Deep Joint Lime Mortar Washout", "miss_count": 3, "total_tested": 14, "miss_rate": 21.4, "teaching_tip": CATEGORY_TIPS["lime_washout"]}
+            ]
+
+        return render_template(
+            "admin_cohorts.html",
+            cohorts=cohorts,
+            selected_cohort=selected_cohort,
+            attempts=attempts,
+            total_attempts=total_attempts,
+            class_pass_rate=class_pass_rate,
+            class_avg_score=class_avg_score,
+            error_heatmap=error_heatmap[:6]
+        )
+
+    @app.route("/admin/cohorts/create", methods=["POST"])
+    def admin_create_cohort():
+        cohort_code = request.form.get("cohort_code", "").strip().upper()
+        title = request.form.get("title", "").strip()
+        exam_tier = request.form.get("exam_tier", "exam")
+
+        if cohort_code and title:
+            assignment = Assignment.query.filter_by(code=cohort_code).first()
+            if not assignment:
+                time_mins = 10 if exam_tier == "master" else (3 if exam_tier == "quiz" else 5)
+                assignment = Assignment(
+                    code=cohort_code,
+                    title=title,
+                    time_limit_minutes=time_mins,
+                    mode=exam_tier
+                )
+                db.session.add(assignment)
+                db.session.commit()
+
+        return redirect(url_for("admin_cohorts_view", cohort=cohort_code))
+
+    @app.route("/api/admin/cohorts/<code>/diagnostics")
+    def api_cohort_diagnostics(code):
+        query = AssessmentAttempt.query
+        if code.upper() != "ALL":
+            query = query.filter(AssessmentAttempt.cohort_code.ilike(code.strip()))
+        attempts = query.all()
+
+        total = len(attempts)
+        passed = sum(1 for a in attempts if a.passed)
+        avg = (sum(a.score_percentage for a in attempts) / total) if total > 0 else 0.0
+
+        return jsonify({
+            "success": True,
+            "cohort_code": code.upper(),
+            "total_students": total,
+            "passed_students": passed,
+            "pass_rate": round((passed / total * 100.0) if total > 0 else 0.0, 1),
+            "average_score": round(avg, 1)
+        })
+
+    @app.route("/api/admin/cohorts/<code>/csv")
+    def api_cohort_csv(code):
+        import csv
+        import io
+        from flask import Response
+
+        query = AssessmentAttempt.query
+        if code.upper() != "ALL":
+            query = query.filter(AssessmentAttempt.cohort_code.ilike(code.strip()))
+        attempts = query.order_by(AssessmentAttempt.created_at.desc()).all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Candidate Name",
+            "Attempt ID",
+            "Cohort PIN",
+            "Date",
+            "Score %",
+            "Status",
+            "True Positives",
+            "False Positives",
+            "False Negatives",
+            "CPD Hours"
+        ])
+
+        for a in attempts:
+            writer.writerow([
+                a.student_name,
+                a.id[:8].upper(),
+                a.cohort_code or "GENERAL",
+                a.created_at.strftime("%Y-%m-%d %H:%M") if a.created_at else "",
+                f"{a.score_percentage:.1f}",
+                "QUALIFIED" if a.passed else "REVISE",
+                a.true_positives,
+                a.false_positives,
+                a.false_negatives,
+                "2.0"
+            ])
+
+        csv_content = output.getvalue()
+        filename = f"gradebook_{code.lower()}_{datetime.now().strftime('%Y%m%d')}.csv"
+        return Response(
+            csv_content,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment;filename={filename}"}
+        )
+
+    # =========================================================================
+    # RICS SURVEY REPORT GENERATOR FOR ANY WALL
+    # =========================================================================
+    @app.route("/survey/report/<wall_slug>")
+    def direct_wall_survey_report(wall_slug):
+        wall = Wall.query.filter_by(slug=wall_slug).first_or_404()
+        defects = Defect.query.filter_by(wall_id=wall.id).all()
+        rem_dict = {r["id"]: r["label"] for r in REMEDIAL_OPTIONS}
+
+        defect_items = []
+        boq_items = []
+        boq_subtotal = 0.0
+
+        BOQ_RATES = {
+            "repoint_lime": {"desc": "Rake out decayed joints to 25mm depth and repoint with St. Astier NHL 2 / 3.5 lime mortar", "spec": "EN 459-1 / BS 8221", "qty": "8.5 m²", "rate": 85.00, "total": 722.50},
+            "helical_stitch": {"desc": "Install austenitic 316-grade helical stainless steel crack stitches (6mm x 1000mm)", "spec": "BRE Digest 329", "qty": "4 lin.m", "rate": 145.00, "total": 580.00},
+            "grout_injection": {"desc": "Low-pressure void consolidation grouting with breathable hydraulic lime grout", "spec": "Historic England Guidance", "qty": "3.0 m²", "rate": 220.00, "total": 660.00},
+            "rebuild_section": {"desc": "Careful numbered dismantling and rebuilding of unstable wall section plumb", "spec": "Eurocode 6 / BS EN 1996", "qty": "2.5 m²", "rate": 450.00, "total": 1125.00},
+            "drainage_relief": {"desc": "Diamond core drill 65mm weep holes with geotextile filters and drainage relief pipe", "spec": "CIRIA C580", "qty": "4 No.", "rate": 120.00, "total": 480.00},
+            "biocide_root": {"desc": "Application of enzymatic biocide and surgical extraction of invasive root systems", "spec": "Historic England Biological Decay", "qty": "5.0 m²", "rate": 65.00, "total": 325.00},
+            "underpin_base": {"desc": "Sequential mass concrete underpin pins beneath distressed foundation footing", "spec": "ICE Manual of Geotechnical Engineering", "qty": "2.0 lin.m", "rate": 780.00, "total": 1560.00},
+            "monitor_gauge": {"desc": "Install Avongard calibrated precision tell-tale crack motion gauges with log sheets", "spec": "BRE Defect Action Sheet 9", "qty": "2 Pairs", "rate": 90.00, "total": 180.00}
+        }
+
+        has_critical = False
+        has_moderate = False
+
+        for idx, d in enumerate(defects):
+            cx = (d.x_min + d.x_max) / 2.0 * 100.0
+            cy = (d.y_min + d.y_max) / 2.0 * 100.0
+            rem_id = d.remedial_action or "repoint_lime"
+
+            if d.severity == "critical":
+                has_critical = True
+            elif d.severity == "moderate":
+                has_moderate = True
+
+            defect_items.append({
+                "index": idx + 1,
+                "x_pct": round(cx, 1),
+                "y_pct": round(cy, 1),
+                "category": d.category,
+                "title": d.title,
+                "severity": d.severity,
+                "remedial_action": rem_id,
+                "remedial_label": rem_dict.get(rem_id, rem_id.replace("_", " ").title()),
+                "scope": f"{int((d.x_max - d.x_min) * 1000)}mm x {int((d.y_max - d.y_min) * 1000)}mm Zone",
+                "explanation": d.explanation or "Pathological defect identified during clinical visual inspection."
+            })
+
+            cost_info = BOQ_RATES.get(rem_id, {
+                "desc": f"Remedial conservation work: {rem_dict.get(rem_id, rem_id)}",
+                "spec": "BS 8221",
+                "qty": "1 Item",
+                "rate": 250.00,
+                "total": 250.00
+            })
+            boq_items.append({
+                "description": cost_info["desc"],
+                "specification": cost_info["spec"],
+                "quantity": cost_info["qty"],
+                "rate": cost_info["rate"],
+                "total": cost_info["total"]
+            })
+            boq_subtotal += cost_info["total"]
+
+        if not boq_items:
+            boq_items.append({
+                "description": "Cyclical hydraulic lime pointing maintenance and surface inspection",
+                "specification": "BS 8221-1",
+                "quantity": "5.0 m²",
+                "rate": 75.00,
+                "total": 375.00
+            })
+            boq_subtotal = 375.00
+
+        boq_prelims = 650.00
+        boq_contingency = round((boq_subtotal + boq_prelims) * 0.15, 2)
+        boq_grand_total = round(boq_subtotal + boq_prelims + boq_contingency, 2)
+
+        if has_critical:
+            rics_rating = 3
+            rics_headline = "Condition Rating 3: Urgent Structural Remediation Required"
+            rics_description = "Defects that are serious and/or need to be repaired, replaced or investigated urgently. Immediate conservation intervention scheduled."
+        elif has_moderate or defects:
+            rics_rating = 2
+            rics_headline = "Condition Rating 2: Moderate Remedial Repairs Required"
+            rics_description = "Defects that need repairing or replacing but are not considered to be serious or urgent. Interventions scheduled within 3 to 6 months."
+        else:
+            rics_rating = 1
+            rics_headline = "Condition Rating 1: Routine Cyclical Maintenance Standard"
+            rics_description = "No immediate structural repairs are currently required. Asset should be maintained in the normal manner."
+
+        return render_template(
+            "survey_report.html",
+            wall=wall.to_dict(),
+            defect_items=defect_items,
+            boq_items=boq_items,
+            boq_subtotal=boq_subtotal,
+            boq_prelims=boq_prelims,
+            boq_contingency=boq_contingency,
+            boq_grand_total=boq_grand_total,
+            rics_rating=rics_rating,
+            rics_headline=rics_headline,
+            rics_description=rics_description,
+            report_ref=f"RICS-{wall.slug[:8].upper()}-{datetime.now().strftime('%y%m')}",
+            survey_date=datetime.now().strftime("%Y-%m-%d"),
+            surveyor_name="Senior Chartered Building Surveyor (MRICS)"
+        )
+
+    # =========================================================================
+    # AI ARCHITECTURAL CONSERVATOR & SOCRATIC DIAGNOSTIC ASSISTANT
+    # =========================================================================
+    @app.route("/api/ai/consult", methods=["POST"])
+    def api_ai_consult():
+        data = request.get_json() or {}
+        wall_slug = data.get("wall_slug", "")
+        mode = data.get("mode", "hint")
+        box = data.get("box") or {}
+
+        wall = Wall.query.filter_by(slug=wall_slug).first()
+        defects = Defect.query.filter_by(wall_id=wall.id).all() if wall else []
+
+        matched_defect = None
+        if box and defects:
+            best_iou = 0.0
+            for d in defects:
+                iou = calculate_iou(box, {
+                    "x_min": d.x_min, "y_min": d.y_min,
+                    "x_max": d.x_max, "y_max": d.y_max
+                })
+                dist = calculate_center_distance(box, {
+                    "x_min": d.x_min, "y_min": d.y_min,
+                    "x_max": d.x_max, "y_max": d.y_max
+                })
+                if (iou >= 0.15 or dist <= 0.20) and iou >= best_iou:
+                    best_iou = iou
+                    matched_defect = d
+
+        if not matched_defect and defects:
+            matched_defect = defects[0]
+
+        target_cat = matched_defect.category if matched_defect else (box.get("category") or "joint_distress")
+        wall_type_str = wall.wall_type if wall else "historic_masonry"
+
+        SOCRATIC_HINTS = {
+            "efflorescence": "Observe the surface deposit closely: is the white crystalline deposit powdery and dry on the face, or is it spalling the stone beneath? What does that indicate about whether salts are migrating out safely or bursting the pore matrix?",
+            "spalling": "Examine the brick/stone faces: has the outer vitrified fire-skin detached from frost freeze-thaw cycles? What mortar type would you avoid so trapped moisture can escape through joints rather than stone faces?",
+            "stepped_crack": "Trace the path of the rupture: notice how it stair-steps through the bed and perpend joints following the path of least resistance. Does this diagonal stepped pattern suggest differential foundation settlement or thermal contraction?",
+            "expansion_failure": "Notice the vertical trajectory of this crack splitting through masonry units. Where are the movement joints? Could thermal expansion or lack of compressibility in the mortar have caused compressive jacking?",
+            "coping_displacement": "Look at the crest of the wall: why have the capping stones shifted or toppled? Was there sufficient weather-shedding overhang or weight to resist livestock thrust and freeze-thaw levering?",
+            "hearting_washout": "Peer between the outer faces: why has the interior core stone packing settled or emptied? What role does driving rain play when coping stones or joints fail?",
+            "lateral_bulge": "Check the plumb line of the outer wythe: has the face pushed outward away from the core? Are there through-stones binding both faces together, or has internal gravel wash forced the skins apart?",
+            "through_stone_failure": "Inspect the masonry rhythm: can you locate long stones that span the full wall thickness from front to back? What happens to double-wythe walls when through-stones are absent?",
+            "base_subsidence": "Look at the lowest foundation boulder course: has the ground beneath sheared or washed out, causing the upper wall courses to slump unevenly?",
+            "lime_washout": "Inspect the joint recesses: notice how deep the mortar has eroded away from the bedding plane. Why must you use naturally hydraulic lime (NHL) instead of Portland cement for reinstatement?",
+            "hydrostatic_bulge": "Consider the earth mass retained behind this wall: why is the masonry bulging outwards at mid-height? Where is the groundwater draining if the weep holes are clogged or missing?",
+            "flint_unseating": "Notice the nodules missing from the matrix: why do unknapped or knapped flints pop out when the lime binder degrades? How do gallet stone wedges help lock them in place?",
+            "ashlar_spall": "Observe the fine joints and dressed ashlar face: is an oxidized internal iron cramp jacking the limestone face off along its natural bedding planes?",
+            "basal_erosion": "Examine the base of the cob/earth wall: why has splashing rainwater and rising damp hollowed out the plinth? What protective apron is required?"
+        }
+
+        CLINICAL_SPECS = {
+            "efflorescence": {
+                "standard": "BS 8221-1:2000 & BRE Good Repair Guide 20",
+                "diagnosis": "Surface salt crystallization (sodium/calcium sulfates). Active moisture transport through permeable masonry.",
+                "mix": "Dry natural bristle brushing only. Do NOT power-wash. Allow wall to dry cyclically before NHL 2 pointing.",
+                "procedure": "1. Remove crystallized bloom with stiff bristle dry brush. 2. Identify and eliminate water source. 3. Monitor for recurrence over 6 months.",
+                "rate": "€45 / m² (Surface cleaning & moisture investigation)"
+            },
+            "stepped_crack": {
+                "standard": "Eurocode 6 (EN 1996-1-1) & BRE Digest 329",
+                "diagnosis": "Differential foundation settlement producing shear rupture across masonry bed and perpend joints.",
+                "mix": "St. Astier NHL 3.5 with 1:2.5 sharp sand (0-2mm). Thixotropic helical anchoring grout.",
+                "procedure": "1. Chase mortar beds to 500mm past crack both sides. 2. Insert austenitic 316-grade helical ties (6mm) at 450mm vertical centers. 3. Point flush with matching lime mortar.",
+                "rate": "€145 / lin.m (Helical crack stitching & pointing)"
+            },
+            "lateral_bulge": {
+                "standard": "Historic England Practical Conservation: Stone Masonry & BS 8221-2",
+                "diagnosis": "Out-of-plumb wythe separation caused by internal core wash and missing through-stones.",
+                "mix": "Dry stone re-bedding with through-stones at 1.0m horizontal and 0.6m vertical grid.",
+                "procedure": "1. Erect temporary timber raking shores. 2. Dismantle unstable bulged wythe course by course. 3. Rebuild with 1:6 batter using through-stones extending through both leaves.",
+                "rate": "€450 / m² (Careful dismantle & rebuild)"
+            },
+            "lime_washout": {
+                "standard": "BS 8221-2:2000 Code of Practice for Cleaning and Surface Repair",
+                "diagnosis": "Deep joint binder weathering (>20mm depth) leaving uncushioned stone contact points.",
+                "mix": "NHL 2 for soft limestone / NHL 3.5 for exposed granite. 1:2.5 coarse washed pit sand (0-3mm).",
+                "procedure": "1. Rake decayed mortar to depth equal to twice joint width. 2. Flush with clean potable water. 3. Tamp lime mortar in 10mm layers. 4. Stipple with churn brush and cure under damp hessian for 7 days.",
+                "rate": "€85 / m² (Full joint raking, flushing & lime repointing)"
+            },
+            "hydrostatic_bulge": {
+                "standard": "CIRIA Report C580 & Eurocode 7 (EN 1997-1)",
+                "diagnosis": "Unrelieved pore water pressure behind retaining structure exerting lateral overturning moments.",
+                "mix": "Perforated HDPE 65mm weep tubes with non-woven geotextile wrap and gravel backfill.",
+                "procedure": "1. Diamond core-drill 65mm weep holes at 1.5m horizontal staggered centers at base level. 2. Clear debris from rear gravel bed. 3. Install weep tubes with non-return insect flap valves.",
+                "rate": "€120 / No. (Core drilled weep hole installation)"
+            }
+        }
+
+        default_spec = {
+            "standard": "BS 8221-2 & Eurocode 6 (EN 1996)",
+            "diagnosis": f"Pathological masonry distress categorized as {target_cat.replace('_', ' ')}.",
+            "mix": "Naturally hydraulic lime NHL 2 / 3.5 matched to stone compressive strength.",
+            "procedure": "Execute localized conservation intervention following BS 8221 preservation guidelines.",
+            "rate": "€110 / m²"
+        }
+
+        spec_data = CLINICAL_SPECS.get(target_cat, default_spec)
+        hint_text = SOCRATIC_HINTS.get(target_cat, f"Examine the load paths and joint mortar along this zone of the {wall_type_str.replace('_', ' ')}. What visual symptoms distinguish active structural displacement from superficial weathering?")
+
+        return jsonify({
+            "success": True,
+            "mode": mode,
+            "target_category": target_cat,
+            "hint": hint_text,
+            "specification": {
+                "standard": spec_data["standard"],
+                "diagnosis": spec_data["diagnosis"],
+                "recommended_mortar_mix": spec_data["mix"],
+                "remedial_procedure": spec_data["procedure"],
+                "estimated_rate_euro": spec_data["rate"]
+            }
         })
 
     return app

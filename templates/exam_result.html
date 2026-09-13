@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examination Performance Scorecard - {{ attempt.student_name }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #090e1a;
+      --panel: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1080px;
+    }
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary { background: var(--card); color: var(--accent); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #334155; color: white; }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-print { background: var(--success); color: white; }
+    .btn-print:hover { background: #059669; }
+
+    /* Score Header Card */
+    .score-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .score-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.8rem;
+    }
+    .score-title h1 {
+      font-size: 1.8rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .score-title p {
+      color: var(--muted);
+      margin-top: 0.35rem;
+      font-size: 0.95rem;
+    }
+    .ref-badge {
+      font-family: monospace;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* KPI Summary Row */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(4, 1fr);
+      gap: 1.2rem;
+      margin-bottom: 1.8rem;
+    }
+    .kpi-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .kpi-box.main-score {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-color: var(--accent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .kpi-value {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1;
+      margin: 0.3rem 0;
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin-top: 0.4rem;
+    }
+    .status-passed { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #059669; }
+    .status-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #dc2626; }
+
+    /* Certificate Banner */
+    .cert-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 95, 70, 0.3));
+      border: 1.5px solid var(--success);
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cert-info h3 {
+      font-size: 1.25rem;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0.3rem;
+    }
+    .cert-info p {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+
+    /* Section Title */
+    .section-head {
+      margin: 2rem 0 1.2rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Specimen Spatial Visualizer Card */
+    .specimen-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+    .specimen-header {
+      background: #141e33;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .specimen-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .specimen-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .spatial-viewport {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      background: #020617;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .spatial-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .reticle-box {
+      position: absolute;
+      border-radius: 4px;
+      pointer-events: none;
+      box-sizing: border-box;
+      display: flex;
+      align-items: flex-start;
+      padding: 2px 4px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .box-truth {
+      border: 2px solid #ef4444;
+      background: rgba(239, 68, 68, 0.18);
+      color: #fee2e2;
+    }
+    .box-candidate {
+      border: 2px dashed #38bdf8;
+      background: rgba(56, 189, 248, 0.2);
+      color: #e0f2fe;
+    }
+    .legend-bar {
+      background: #0b1329;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+    }
+
+    /* Comparison Table */
+    .analysis-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .analysis-table th {
+      background: #141e33;
+      color: var(--muted);
+      text-align: left;
+      padding: 0.8rem 1.2rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .analysis-table td {
+      padding: 0.85rem 1.2rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      vertical-align: middle;
+    }
+    .tag-match {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .match-yes { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .match-no { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    @media print {
+      body { background: white !important; color: black !important; padding: 0 !important; }
+      .nav-bar, .action-footer { display: none !important; }
+      .score-card, .specimen-card { border: 1px solid #ccc !important; box-shadow: none !important; background: white !important; color: black !important; margin-bottom: 1cm !important; }
+      .score-title h1, .specimen-title { color: black !important; }
+      .kpi-box { background: #f8fafc !important; border-color: #cbd5e1 !important; }
+      .kpi-value, .kpi-label { color: black !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-bar">
+      <a href="/exam" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Retake Examination</a>
+      <div style="display: flex; gap: 0.8rem;">
+        <button class="btn btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Official Transcript</button>
+        <a href="/examples" class="btn btn-secondary"><i class="fa-solid fa-book-open"></i> 20 Worked Examples</a>
+      </div>
+    </div>
+
+    <!-- Candidate Score Card -->
+    <div class="score-card">
+      <div class="score-header">
+        <div class="score-title">
+          <h1><i class="fa-solid fa-clipboard-check" style="color: var(--accent);"></i> Examination Performance Scorecard</h1>
+          <p>Candidate: <strong>{{ attempt.student_name }}</strong> &bull; Cohort: <code>{{ attempt.cohort_code or 'GENERAL' }}</code> &bull; Assessed: {{ attempt.created_at.strftime('%Y-%m-%d %H:%M UTC') if attempt.created_at else '2026-09-13' }}</p>
+        </div>
+        <span class="ref-badge">TRANSCRIPT: {{ attempt.id[:8].upper() }}</span>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-box main-score">
+          <div class="kpi-label">Mastery Score</div>
+          <div class="kpi-value" style="color: {% if attempt.passed %}#10b981{% else %}#ef4444{% endif %};">
+            {{ "%.1f"|format(attempt.score_percentage) }}%
+          </div>
+          <span class="badge-status {% if attempt.passed %}status-passed{% else %}status-failed{% endif %}">
+            {% if attempt.passed %}QUALIFIED / PASSED{% else %}PROVISIONAL / REVISE{% endif %}
+          </span>
+        </div>
+
+        <div class="kpi-box">
+          <div class="kpi-label">Verified Hits (TP)</div>
+          <div class="kpi-value" style="color: #10b981;">{{ attempt.true_positives }}</div>
+          <small style="color: var(--muted); font-size: 0.7rem;">IoU &ge; 0.20 Matched</small>
+        </div>
+
+        <div class="kpi-box">
+          <div class="kpi-label">Spurious Alarms (FP)</div>
+          <div class="kpi-value" style="color: #f59e0b;">{{ attempt.false_positives }}</div>
+          <small style="color: var(--muted); font-size: 0.7rem;">Uncorrelated Boxes</small>
+        </div>
+
+        <div class="kpi-box">
+          <div class="kpi-label">Missed Defects (FN)</div>
+          <div class="kpi-value" style="color: #ef4444;">{{ attempt.false_negatives }}</div>
+          <small style="color: var(--muted); font-size: 0.7rem;">Unidentified Pathology</small>
+        </div>
+
+        <div class="kpi-box">
+          <div class="kpi-label">CPD Units</div>
+          <div class="kpi-value" style="color: #38bdf8;">+2.0</div>
+          <small style="color: var(--muted); font-size: 0.7rem;">RICS / ICOMOS Hours</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certification Award Banner (if passed) -->
+    {% if attempt.passed %}
+    <div class="cert-banner">
+      <div class="cert-info">
+        <h3><i class="fa-solid fa-award"></i> Professional Masonry Accreditation Awarded</h3>
+        <p>You have demonstrated clinical competency in identifying visual masonry defects, settlement patterns, and hydraulic lime repair schedules.</p>
+      </div>
+      <div>
+        {% if certificate %}
+          <a href="/certificate/{{ certificate.certificate_code }}" target="_blank" class="btn btn-primary" style="background: #10b981; border: none; font-size: 0.95rem; padding: 0.75rem 1.5rem;">
+            <i class="fa-solid fa-stamp"></i> Claim Credential ({{ certificate.certificate_code }}) &rarr;
+          </a>
+        {% else %}
+          <a href="/api/student/passport?name={{ attempt.student_name }}" target="_blank" class="btn btn-primary">
+            <i class="fa-solid fa-passport"></i> View Skills Passport
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Specimen-by-Specimen Spatial Visualizer -->
+    <div class="section-head">
+      <i class="fa-solid fa-cubes-stacked" style="color: var(--accent);"></i> Spatial Calibration & Defect Overlap Analysis
+    </div>
+
+    {% for spec in specimen_results %}
+    <div class="specimen-card">
+      <div class="specimen-header">
+        <div>
+          <div class="specimen-title">
+            <span>Specimen #{{ loop.index }}: {{ spec.wall.title }}</span>
+            <span style="font-size: 0.75rem; background: var(--card); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; color: var(--accent);">
+              {{ spec.wall.wall_type.replace('_', ' ').title() }}
+            </span>
+          </div>
+          <div class="specimen-meta" style="margin-top: 3px;">
+            Location: {{ spec.wall.region or 'National' }}, {{ spec.wall.country }} &bull; Specimen Score: <strong>{{ "%.1f"|format(spec.specimen_score) }}%</strong>
+          </div>
+        </div>
+        <div>
+          <a href="/survey/report/{{ spec.wall.slug }}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 5px 10px;">
+            <i class="fa-solid fa-file-pdf"></i> View RICS Survey Report
+          </a>
+        </div>
+      </div>
+
+      <!-- Photographic Spatial Viewport with candidate (cyan) vs ground truth (red) boxes -->
+      <div class="spatial-viewport" id="viewport-{{ loop.index }}">
+        <img src="{{ spec.wall.image_url }}" alt="{{ spec.wall.title }}" class="spatial-img" id="img-{{ loop.index }}">
+        
+        <!-- Ground Truth Boxes (Red Solid) -->
+        {% for d in spec.ground_truth %}
+        <div class="reticle-box box-truth"
+             style="left: {{ d.x_min * 100 }}%; top: {{ d.y_min * 100 }}%; width: {{ (d.x_max - d.x_min) * 100 }}%; height: {{ (d.y_max - d.y_min) * 100 }}%;"
+             title="Ground Truth: {{ d.title }} ({{ d.category }})">
+          <span>Truth: {{ d.category }}</span>
+        </div>
+        {% endfor %}
+
+        <!-- Candidate Submitted Markers (Cyan Dashed) -->
+        {% for m in spec.submitted_markers %}
+        <div class="reticle-box box-candidate"
+             style="left: {{ m.x_min * 100 }}%; top: {{ m.y_min * 100 }}%; width: {{ (m.x_max - m.x_min) * 100 }}%; height: {{ (m.y_max - m.y_min) * 100 }}%;"
+             title="Candidate: {{ m.category }}">
+          <span>Candidate: {{ m.category }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="legend-bar">
+        <div style="display: flex; gap: 1.5rem;">
+          <div class="legend-item">
+            <div class="legend-color" style="border: 2px dashed #38bdf8; background: rgba(56, 189, 248, 0.2);"></div>
+            <span>Candidate Identification (Cyan Dashed)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="border: 2px solid #ef4444; background: rgba(239, 68, 68, 0.18);"></div>
+            <span>Ground Truth Defect (Red Solid)</span>
+          </div>
+        </div>
+        <div>
+          <span style="color: var(--muted);">Spatial Overlap Threshold: <strong>IoU &ge; 0.20</strong></span>
+        </div>
+      </div>
+
+      <!-- Defect Breakdown Table -->
+      <table class="analysis-table">
+        <thead>
+          <tr>
+            <th style="width: 25%;">Ground Truth Defect</th>
+            <th style="width: 20%;">Severity & Scope</th>
+            <th style="width: 25%;">Prescribed Remediation</th>
+            <th style="width: 15%;">Spatial Detection</th>
+            <th style="width: 15%;">Classification</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in spec.defects_breakdown %}
+          <tr>
+            <td>
+              <strong>{{ d.title }}</strong>
+              <small style="display: block; color: var(--muted);"><code>{{ d.category }}</code></small>
+            </td>
+            <td>
+              <span style="font-weight: 600; text-transform: capitalize; color: {% if d.severity == 'critical' %}#ef4444{% elif d.severity == 'moderate' %}#f59e0b{% else %}#10b981{% endif %};">
+                {{ d.severity }}
+              </span>
+            </td>
+            <td>
+              <span style="color: #38bdf8;">{{ d.remedial_action.replace('_', ' ').title() }}</span>
+            </td>
+            <td>
+              {% if d.matched %}
+                <span class="tag-match match-yes"><i class="fa-solid fa-check"></i> Overlap IoU {{ "%.2f"|format(d.iou) }}</span>
+              {% else %}
+                <span class="tag-match match-no"><i class="fa-solid fa-xmark"></i> Unmarked (FN)</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if d.category_correct %}
+                <span class="tag-match match-yes"><i class="fa-solid fa-check"></i> Accurate</span>
+              {% else %}
+                <span class="tag-match match-no"><i class="fa-solid fa-triangle-exclamation"></i> Incorrect</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+
+    <!-- Action Footer -->
+    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 3rem;" class="action-footer">
+      <a href="/exam" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+        <i class="fa-solid fa-rotate-right"></i> Sit Another Examination
+      </a>
+      <a href="/field-guide" class="btn btn-secondary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+        <i class="fa-solid fa-file-contract"></i> Pocket Field Crib-Sheet
+      </a>
+    </div>
+  </div>
+</body>
+</html>
+

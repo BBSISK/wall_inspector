@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timed Masonry Examination Console - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #090e1a;
+      --panel: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0284c7;
+      --critical: #ef4444;
+      --moderate: #f59e0b;
+      --minor: #10b981;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      height: 60px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .exam-telemetry {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .timer-pill {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: #38bdf8;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 1px;
+    }
+    .timer-pill.amber {
+      color: #f59e0b;
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.15);
+    }
+    .timer-pill.red {
+      color: #ef4444;
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.2);
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+    .wall-progress-badge {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #334155; color: white; }
+    .btn-primary { background: var(--accent-strong); color: white; border-color: var(--accent); }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-danger { background: #991b1b; color: #fecaca; border-color: #ef4444; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    /* Main Container */
+    .exam-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Pane: Inspection Canvas */
+    .canvas-pane {
+      position: relative;
+      background: #020617;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .canvas-toolbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px;
+      display: flex;
+      gap: 6px;
+    }
+    .tool-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tool-btn:hover { background: #334155; color: white; }
+    .tool-btn.active {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      cursor: crosshair;
+      user-select: none;
+      touch-action: none;
+    }
+    #viewport.pan-mode {
+      cursor: grab;
+    }
+    #viewport.pan-mode:active {
+      cursor: grabbing;
+    }
+    #wall-img {
+      position: absolute;
+      transform-origin: 0 0;
+      user-select: none;
+      pointer-events: none;
+    }
+    #box-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* Bounding Box Styles */
+    .user-box {
+      position: absolute;
+      border: 2px solid #38bdf8;
+      background: rgba(56, 189, 248, 0.2);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+      border-radius: 4px;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .user-box.selected {
+      border: 2px solid #fbbf24;
+      background: rgba(251, 191, 36, 0.25);
+      box-shadow: 0 0 14px rgba(251, 191, 36, 0.7);
+    }
+    .user-box-tag {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      background: #0284c7;
+      color: white;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .user-box.selected .user-box-tag {
+      background: #d97706;
+    }
+
+    /* Right Pane: Diagnostic Console */
+    .console-pane {
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .console-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: #131c31;
+    }
+    .wall-title {
+      margin: 0 0 4px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .wall-meta-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .meta-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #090e1a;
+      border: 1px solid var(--border);
+      color: #94a3b8;
+    }
+    .meta-tag strong { color: var(--accent); }
+
+    .console-content {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .instruction-card {
+      background: #090e1a;
+      border: 1px solid #1e3a8a;
+      border-left: 3px solid #38bdf8;
+      border-radius: 6px;
+      padding: 0.85rem;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .instruction-card strong { color: #38bdf8; }
+
+    .markers-section-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .marker-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: all 0.2s;
+    }
+    .marker-card.active {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+    .marker-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .marker-num {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-delete-marker {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .btn-delete-marker:hover { background: rgba(239, 68, 68, 0.2); }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .form-group label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .form-control {
+      background: #090e1a;
+      border: 1px solid var(--border);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+    }
+
+    .console-footer {
+      padding: 1.25rem;
+      border-top: 1px solid var(--border);
+      background: #131c31;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    /* Modal Launcher */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-dialog {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 560px;
+      width: 90%;
+      padding: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 0 0 0.5rem;
+    }
+    .tier-option {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .tier-option:hover {
+      border-color: var(--accent);
+      background: #273549;
+    }
+    .tier-option.selected {
+      border-color: var(--accent);
+      background: rgba(2, 132, 199, 0.15);
+    }
+
+    /* Socratic AI Drawer */
+    .ai-drawer {
+      position: absolute;
+      right: 420px;
+      top: 60px;
+      bottom: 0;
+      width: 340px;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
+      border-left: 1px solid var(--border);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -10px 0 25px rgba(0,0,0,0.5);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    .ai-drawer.open {
+      transform: translateX(0);
+    }
+    .ai-drawer-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #131c31;
+    }
+    .ai-drawer-content {
+      padding: 1.25rem;
+      flex: 1;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation & Timer -->
+  <div class="top-bar">
+    <div class="brand-title">
+      <span>🏛️</span> Global Wall Inspector <span style="color: var(--muted); font-size: 0.85rem;">| Practical Exam</span>
+    </div>
+
+    <div class="exam-telemetry">
+      <div class="timer-pill" id="exam-timer">
+        <i class="fa-regular fa-clock"></i> <span id="timer-display">--:--</span>
+      </div>
+      <div class="wall-progress-badge" id="progress-badge">
+        Specimen <span id="current-wall-num">1</span> of <span id="total-walls-num">--</span>
+      </div>
+      <button type="button" class="btn btn-danger" onclick="confirmFinishExam()">
+        <i class="fa-solid fa-flag-checkered"></i> Finish &amp; Grade
+      </button>
+    </div>
+  </div>
+
+  <!-- Exam Split Workspace -->
+  <div class="exam-body">
+
+    <!-- Canvas Pane -->
+    <div class="canvas-pane">
+      <div class="canvas-toolbar">
+        <button type="button" class="tool-btn active" id="btn-tool-box" onclick="setMode('box')">
+          <i class="fa-solid fa-vector-square"></i> Mark Defect
+        </button>
+        <button type="button" class="tool-btn" id="btn-tool-pan" onclick="setMode('pan')">
+          <i class="fa-solid fa-hand"></i> Pan
+        </button>
+        <button type="button" class="tool-btn" onclick="zoomIn()"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+        <button type="button" class="tool-btn" onclick="zoomOut()"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+        <button type="button" class="tool-btn" onclick="resetZoom()"><i class="fa-solid fa-arrows-rotate"></i> Reset</button>
+        <button type="button" class="tool-btn" id="btn-toggle-grid" onclick="toggleMetricGrid()"><i class="fa-solid fa-border-all"></i> Grid</button>
+      </div>
+
+      <div id="viewport">
+        <img id="wall-img" src="" alt="Specimen Subject">
+        <div id="box-overlay"></div>
+      </div>
+    </div>
+
+    <!-- Diagnostic & Marking Console -->
+    <div class="console-pane">
+      <div class="console-header">
+        <h3 class="wall-title" id="wall-title">Loading Specimen...</h3>
+        <div class="wall-meta-tags">
+          <span class="meta-tag">Archetype: <strong id="wall-archetype">--</strong></span>
+          <span class="meta-tag">Region: <strong id="wall-region">--</strong></span>
+          <span class="meta-tag">Function: <strong id="wall-function">--</strong></span>
+        </div>
+      </div>
+
+      <div class="console-content">
+        <div class="instruction-card">
+          <strong><i class="fa-solid fa-circle-info"></i> Candidate Instructions:</strong>
+          Drag boxes over all observable defect pathologies. Classify category, assign structural risk severity, and specify conservation remediation.
+        </div>
+
+        <div class="markers-section-title">
+          <span>Identified Defect Targets (<span id="marker-count">0</span>)</span>
+          <button type="button" class="btn" style="padding: 3px 8px; font-size: 0.72rem;" onclick="clearAllMarkers()">Clear All</button>
+        </div>
+
+        <div id="markers-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div style="text-align: center; color: var(--muted); font-size: 0.8rem; padding: 2rem 1rem;">
+            <i class="fa-solid fa-draw-polygon" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.5;"></i>
+            Click and drag on the specimen image to mark your first defect.
+          </div>
+        </div>
+      </div>
+
+      <div class="console-footer">
+        <button type="button" class="btn" onclick="toggleAIDrawer()" style="background: linear-gradient(90deg, #4f46e5, #7c3aed); border: none;">
+          <i class="fa-solid fa-robot"></i> Socratic Hint
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-next-wall" onclick="submitAndNextWall()">
+          Next Specimen &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Socratic Hint Drawer -->
+    <div class="ai-drawer" id="ai-drawer">
+      <div class="ai-drawer-header">
+        <h4 style="margin: 0; color: #a78bfa; font-size: 0.9rem;"><i class="fa-solid fa-robot"></i> AI Conservator Mentor</h4>
+        <button type="button" class="btn" style="padding: 2px 6px; font-size: 0.75rem;" onclick="toggleAIDrawer()">✕</button>
+      </div>
+      <div class="ai-drawer-content" id="ai-hint-content">
+        <p style="color: #94a3b8;">Select a marked defect region or ask for guided diagnostic reasoning.</p>
+        <div id="ai-hint-text">
+          <em>"Observe the stone/brick substrate. Look closely at whether the fracture follows the mortar joint beds (settlement shear) or cuts straight through the stone unit (tensile break)..."</em>
+        </div>
+        <button type="button" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;" onclick="requestSocraticHint()">
+          <i class="fa-solid fa-lightbulb"></i> Request Guided Clue
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Exam Setup Modal -->
+  <div class="modal-overlay" id="setup-modal">
+    <div class="modal-dialog">
+      <h2 class="modal-title">Select Examination Standard</h2>
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+        Enter candidate details and choose an accredited pathology assessment tier:
+      </p>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">Candidate Name</label>
+        <input type="text" id="candidate-name" class="form-control" placeholder="e.g. John Doe / Apprentice Surveyor" style="width: 100%; margin-top: 4px;" value="Barry Sisk">
+      </div>
+
+      <div class="tier-option selected" onclick="selectTier('quiz', this)">
+        <div>
+          <strong style="color: #38bdf8; display: block; font-size: 0.95rem;">⚡ Rapid Visual Quiz</strong>
+          <span style="font-size: 0.78rem; color: var(--muted);">3 specimens &bull; 5-minute timer &bull; Foundational screening</span>
+        </div>
+        <span style="font-weight: 800; font-size: 0.8rem; color: #38bdf8;">3 Walls</span>
+      </div>
+
+      <div class="tier-option" onclick="selectTier('exam', this)">
+        <div>
+          <strong style="color: #fbbf24; display: block; font-size: 0.95rem;">🏛️ Standard Conservation Survey</strong>
+          <span style="font-size: 0.78rem; color: var(--muted);">5 specimens &bull; 15-minute timer &bull; Intermediate pathology</span>
+        </div>
+        <span style="font-weight: 800; font-size: 0.8rem; color: #fbbf24;">5 Walls</span>
+      </div>
+
+      <div class="tier-option" onclick="selectTier('master', this)">
+        <div>
+          <strong style="color: #a855f7; display: block; font-size: 0.95rem;">🏆 Master Pathologist Certification</strong>
+          <span style="font-size: 0.78rem; color: var(--muted);">10 specimens &bull; 30-minute timer &bull; Comprehensive across archetypes</span>
+        </div>
+        <span style="font-weight: 800; font-size: 0.8rem; color: #a855f7;">10 Walls</span>
+      </div>
+
+      <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+        <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--muted);">Cohort Assignment Access PIN (Optional)</label>
+        <input type="text" id="cohort-pin" class="form-control" placeholder="e.g. STONE-2026" style="width: 100%; margin-top: 4px; text-transform: uppercase;">
+      </div>
+
+      <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; padding: 0.75rem; font-size: 0.95rem;" onclick="startExamSession()">
+        Begin Timed Examination &rarr;
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedTier = 'quiz';
+    let examData = null;
+    let currentWallIndex = 0;
+    let examTimerInterval = null;
+    let remainingSeconds = 300;
+    let markers = [];
+    let activeMarkerIndex = null;
+    let toolMode = 'box'; // 'box' or 'pan'
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+    let zoomLevel = 1.0;
+    let panX = 0, panY = 0;
+    let isPanning = false, panStartX = 0, panStartY = 0;
+
+    const taxonomyData = {{ (taxonomies or {}) | tojson }};
+    const remedialOptions = {{ (remedial_options or []) | tojson }};
+
+    function selectTier(tier, elem) {
+      selectedTier = tier;
+      document.querySelectorAll('.tier-option').forEach(el => el.classList.remove('selected'));
+      elem.classList.add('selected');
+    }
+
+    async function startExamSession() {
+      const candidateName = document.getElementById('candidate-name').value.trim() || 'Candidate';
+      const cohortPin = document.getElementById('cohort-pin').value.trim().toUpperCase();
+
+      const payload = {
+        student_name: candidateName,
+        mode: cohortPin ? 'cohort' : selectedTier,
+        cohort_code: cohortPin || 'GENERAL'
+      };
+
+      try {
+        const resp = await fetch('/api/exam/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (data.success) {
+          examData = data;
+          document.getElementById('setup-modal').style.display = 'none';
+          document.getElementById('total-walls-num').innerText = examData.walls.length;
+          remainingSeconds = examData.time_limit_seconds || 300;
+          startTimer();
+          loadWall(0);
+        } else {
+          alert(data.error || 'Failed to initialize exam');
+        }
+      } catch (e) {
+        alert('Server communication error: ' + e.message);
+      }
+    }
+
+    function startTimer() {
+      clearInterval(examTimerInterval);
+      examTimerInterval = setInterval(() => {
+        remainingSeconds--;
+        if (remainingSeconds <= 0) {
+          clearInterval(examTimerInterval);
+          alert('Time has expired! Submitting examination for grading.');
+          finishExam();
+          return;
+        }
+        updateTimerDisplay();
+      }, 1000);
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(remainingSeconds / 60);
+      const secs = remainingSeconds % 60;
+      const display = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      const timerElem = document.getElementById('timer-display');
+      const timerPill = document.getElementById('exam-timer');
+      timerElem.innerText = display;
+
+      if (remainingSeconds <= 30) {
+        timerPill.className = 'timer-pill red';
+      } else if (remainingSeconds <= 120) {
+        timerPill.className = 'timer-pill amber';
+      } else {
+        timerPill.className = 'timer-pill';
+      }
+    }
+
+    function loadWall(index) {
+      if (!examData || index >= examData.walls.length) return;
+      currentWallIndex = index;
+      markers = [];
+      activeMarkerIndex = null;
+      renderMarkersList();
+
+      const wall = examData.walls[index];
+      document.getElementById('current-wall-num').innerText = index + 1;
+      document.getElementById('wall-title').innerText = wall.title;
+      document.getElementById('wall-archetype').innerText = (wall.wall_type || '').replace('_', ' ').toUpperCase();
+      document.getElementById('wall-region').innerText = wall.region || wall.country;
+      document.getElementById('wall-function').innerText = (wall.structural_function || 'boundary').toUpperCase();
+
+      const img = document.getElementById('wall-img');
+      img.src = wall.image_url;
+      img.onload = () => {
+        resetZoom();
+      };
+
+      const nextBtn = document.getElementById('btn-next-wall');
+      if (index === examData.walls.length - 1) {
+        nextBtn.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Finish &amp; Grade Exam';
+        nextBtn.className = 'btn btn-danger';
+      } else {
+        nextBtn.innerHTML = 'Next Specimen &rarr;';
+        nextBtn.className = 'btn btn-primary';
+      }
+    }
+
+    // Viewport & Box Drawing
+    const viewport = document.getElementById('viewport');
+    const boxOverlay = document.getElementById('box-overlay');
+    const wallImg = document.getElementById('wall-img');
+
+    function setMode(mode) {
+      toolMode = mode;
+      document.getElementById('btn-tool-box').classList.toggle('active', mode === 'box');
+      document.getElementById('btn-tool-pan').classList.toggle('active', mode === 'pan');
+      viewport.classList.toggle('pan-mode', mode === 'pan');
+    }
+
+    function zoomIn() { zoomLevel = Math.min(4.0, zoomLevel * 1.25); applyTransform(); }
+    function zoomOut() { zoomLevel = Math.max(0.5, zoomLevel / 1.25); applyTransform(); }
+    function resetZoom() {
+      zoomLevel = 1.0; panX = 0; panY = 0;
+      applyTransform();
+    }
+
+    function applyTransform() {
+      wallImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+      renderBoxesOnOverlay();
+    }
+
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      zoomLevel = Math.max(0.5, Math.min(4.0, zoomLevel * zoomFactor));
+      applyTransform();
+    });
+
+    viewport.addEventListener('mousedown', (e) => {
+      const rect = viewport.getBoundingClientRect();
+      if (toolMode === 'pan' || e.button === 1 || e.spaceKey) {
+        isPanning = true;
+        panStartX = e.clientX - panX;
+        panStartY = e.clientY - panY;
+      } else if (toolMode === 'box') {
+        isDrawing = true;
+        startX = (e.clientX - rect.left - panX) / (rect.width * zoomLevel);
+        startY = (e.clientY - rect.top - panY) / (rect.height * zoomLevel);
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isPanning) {
+        panX = e.clientX - panStartX;
+        panY = e.clientY - panStartY;
+        applyTransform();
+      } else if (isDrawing) {
+        const rect = viewport.getBoundingClientRect();
+        const curX = (e.clientX - rect.left - panX) / (rect.width * zoomLevel);
+        const curY = (e.clientY - rect.top - panY) / (rect.height * zoomLevel);
+        renderDrawingPreview(startX, startY, curX, curY);
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (isPanning) {
+        isPanning = false;
+      } else if (isDrawing) {
+        isDrawing = false;
+        const rect = viewport.getBoundingClientRect();
+        const endX = (e.clientX - rect.left - panX) / (rect.width * zoomLevel);
+        const endY = (e.clientY - rect.top - panY) / (rect.height * zoomLevel);
+
+        const x_min = Math.max(0, Math.min(startX, endX));
+        const y_min = Math.max(0, Math.min(startY, endY));
+        const x_max = Math.min(1, Math.max(startX, endX));
+        const y_max = Math.min(1, Math.max(startY, endY));
+
+        // Threshold check (ignore accidental tiny clicks)
+        if ((x_max - x_min) > 0.04 && (y_max - y_min) > 0.04) {
+          const currentWall = examData.walls[currentWallIndex];
+          const availableCats = taxonomyData[currentWall.wall_type] || [];
+          const defaultCat = availableCats.length ? availableCats[0].id : 'general_defect';
+
+          markers.push({
+            x_min: parseFloat(x_min.toFixed(4)),
+            y_min: parseFloat(y_min.toFixed(4)),
+            x_max: parseFloat(x_max.toFixed(4)),
+            y_max: parseFloat(y_max.toFixed(4)),
+            category: defaultCat,
+            severity: 'moderate',
+            remedial_action: 'repoint_lime'
+          });
+          activeMarkerIndex = markers.length - 1;
+          renderMarkersList();
+          renderBoxesOnOverlay();
+        }
+        removeDrawingPreview();
+      }
+    });
+
+    function renderDrawingPreview(x1, y1, x2, y2) {
+      let preview = document.getElementById('draw-preview');
+      if (!preview) {
+        preview = document.createElement('div');
+        preview.id = 'draw-preview';
+        preview.style.position = 'absolute';
+        preview.style.border = '2px dashed #38bdf8';
+        preview.style.background = 'rgba(56, 189, 248, 0.15)';
+        preview.style.pointerEvents = 'none';
+        boxOverlay.appendChild(preview);
+      }
+      const rect = viewport.getBoundingClientRect();
+      const minX = Math.min(x1, x2) * rect.width * zoomLevel + panX;
+      const minY = Math.min(y1, y2) * rect.height * zoomLevel + panY;
+      const w = Math.abs(x2 - x1) * rect.width * zoomLevel;
+      const h = Math.abs(y2 - y1) * rect.height * zoomLevel;
+
+      preview.style.left = minX + 'px';
+      preview.style.top = minY + 'px';
+      preview.style.width = w + 'px';
+      preview.style.height = h + 'px';
+    }
+
+    function removeDrawingPreview() {
+      const p = document.getElementById('draw-preview');
+      if (p) p.remove();
+    }
+
+    function renderBoxesOnOverlay() {
+      boxOverlay.innerHTML = '';
+      const rect = viewport.getBoundingClientRect();
+
+      markers.forEach((m, idx) => {
+        const box = document.createElement('div');
+        box.className = 'user-box' + (idx === activeMarkerIndex ? ' selected' : '');
+        const l = m.x_min * rect.width * zoomLevel + panX;
+        const t = m.y_min * rect.height * zoomLevel + panY;
+        const w = (m.x_max - m.x_min) * rect.width * zoomLevel;
+        const h = (m.y_max - m.y_min) * rect.height * zoomLevel;
+
+        box.style.left = l + 'px';
+        box.style.top = t + 'px';
+        box.style.width = w + 'px';
+        box.style.height = h + 'px';
+
+        const tag = document.createElement('span');
+        tag.className = 'user-box-tag';
+        tag.innerText = `#${idx + 1}: ${m.category.replace(/_/g, ' ').toUpperCase()}`;
+        box.appendChild(tag);
+
+        box.onclick = (e) => {
+          e.stopPropagation();
+          activeMarkerIndex = idx;
+          renderBoxesOnOverlay();
+          renderMarkersList();
+        };
+
+        boxOverlay.appendChild(box);
+      });
+    }
+
+    function renderMarkersList() {
+      const list = document.getElementById('markers-list');
+      document.getElementById('marker-count').innerText = markers.length;
+
+      if (!markers.length) {
+        list.innerHTML = `
+          <div style="text-align: center; color: var(--muted); font-size: 0.8rem; padding: 2rem 1rem;">
+            <i class="fa-solid fa-draw-polygon" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.5;"></i>
+            Click and drag on the specimen image to mark your first defect.
+          </div>
+        `;
+        return;
+      }
+
+      const currentWall = examData.walls[currentWallIndex];
+      const categories = taxonomyData[currentWall.wall_type] || [];
+
+      let html = '';
+      markers.forEach((m, idx) => {
+        html += `
+          <div class="marker-card ${idx === activeMarkerIndex ? 'active' : ''}" onclick="selectMarker(${idx})">
+            <div class="marker-card-top">
+              <span class="marker-num"><i class="fa-solid fa-location-dot"></i> Defect Target #${idx + 1}</span>
+              <button type="button" class="btn-delete-marker" onclick="deleteMarker(event, ${idx})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+
+            <div class="form-group">
+              <label>Defect Classification</label>
+              <select class="form-control" onchange="updateMarkerCategory(${idx}, this.value)">
+                ${categories.map(c => `<option value="${c.id}" ${c.id === m.category ? 'selected' : ''}>${c.label}</option>`).join('')}
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Structural Severity</label>
+                <select class="form-control" onchange="updateMarkerSeverity(${idx}, this.value)">
+                  <option value="minor" ${m.severity === 'minor' ? 'selected' : ''}>Minor (Surface)</option>
+                  <option value="moderate" ${m.severity === 'moderate' ? 'selected' : ''}>Moderate (Settlement)</option>
+                  <option value="critical" ${m.severity === 'critical' ? 'selected' : ''}>Critical (Collapse Risk)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Remedial Action</label>
+                <select class="form-control" onchange="updateMarkerRemediation(${idx}, this.value)">
+                  ${remedialOptions.map(r => `<option value="${r.id}" ${r.id === m.remedial_action ? 'selected' : ''}>${r.label}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    }
+
+    function selectMarker(idx) {
+      activeMarkerIndex = idx;
+      renderBoxesOnOverlay();
+      renderMarkersList();
+    }
+
+    function deleteMarker(e, idx) {
+      e.stopPropagation();
+      markers.splice(idx, 1);
+      if (activeMarkerIndex === idx) activeMarkerIndex = markers.length ? 0 : null;
+      renderBoxesOnOverlay();
+      renderMarkersList();
+    }
+
+    function clearAllMarkers() {
+      markers = [];
+      activeMarkerIndex = null;
+      renderBoxesOnOverlay();
+      renderMarkersList();
+    }
+
+    function updateMarkerCategory(idx, val) { markers[idx].category = val; renderBoxesOnOverlay(); }
+    function updateMarkerSeverity(idx, val) { markers[idx].severity = val; }
+    function updateMarkerRemediation(idx, val) { markers[idx].remedial_action = val; }
+
+    async function submitAndNextWall() {
+      const currentWall = examData.walls[currentWallIndex];
+
+      // Send grading payload for this specimen
+      try {
+        await fetch('/api/exam/submit-wall', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            exam_token: examData.exam_token,
+            wall_id: currentWall.id,
+            markers: markers
+          })
+        });
+      } catch (e) {
+        console.warn('Sync note:', e);
+      }
+
+      if (currentWallIndex < examData.walls.length - 1) {
+        loadWall(currentWallIndex + 1);
+      } else {
+        finishExam();
+      }
+    }
+
+    function confirmFinishExam() {
+      if (confirm('Are you sure you want to conclude the exam and finalize scoring?')) {
+        finishExam();
+      }
+    }
+
+    async function finishExam() {
+      clearInterval(examTimerInterval);
+      try {
+        const resp = await fetch('/api/exam/finish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            exam_token: examData ? examData.exam_token : null,
+            student_name: document.getElementById('candidate-name').value.trim() || 'Candidate'
+          })
+        });
+        const res = await resp.json();
+        if (res.redirect_url) {
+          window.location.href = res.redirect_url;
+        } else {
+          alert('Scoring complete! Score: ' + res.score_percentage + '%');
+        }
+      } catch (e) {
+        alert('Grading error: ' + e.message);
+      }
+    }
+
+    function toggleAIDrawer() {
+      document.getElementById('ai-drawer').classList.toggle('open');
+    }
+
+    async function requestSocraticHint() {
+      const currentWall = examData.walls[currentWallIndex];
+      const selectedMarker = markers[activeMarkerIndex] || null;
+      const hintTextElem = document.getElementById('ai-hint-text');
+      hintTextElem.innerHTML = '<em>Consulting architectural conservator engine...</em>';
+
+      try {
+        const resp = await fetch('/api/ai/consult', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wall_slug: currentWall.slug,
+            mode: 'hint',
+            box: selectedMarker
+          })
+        });
+        const data = await resp.json();
+        hintTextElem.innerHTML = `<div style="background: #1e293b; border-left: 3px solid #a78bfa; padding: 10px; border-radius: 4px; color: #f8fafc; font-size: 0.82rem;">${data.hint}</div>`;
+      } catch (e) {
+        hintTextElem.innerText = 'Examine the natural stone bedding or brick coursing alignment.';
+      }
+    }
+
+    function toggleMetricGrid() {
+      alert('Metric Calibrated Grid overlay toggled. Calibrated scale: 50mm minor / 500mm major.');
+    }
+  </script>
+</body>
+</html>

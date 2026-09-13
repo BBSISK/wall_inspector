@@ -53,6 +53,7 @@
       <p>Structural defect identification, diagnostics, and masonry assessment platform.</p>
     </div>
     <div class="nav-actions">
+      <a href="/exam" class="btn-action" style="background: #e11d48; color: white; font-weight: 700; border: 1px solid #fb7185;">⏱️ Timed Exam</a>
       <button type="button" class="btn-action" onclick="openMobileAppsModal()" style="background: #0284c7; color: white; border: none; cursor: pointer;">📲 Mobile Apps (QR)</button>
       <a href="/map" class="btn-action" style="background: #0284c7; color: white;">🗺️ Map Atlas</a>
       <a href="/compare" class="btn-action" style="background: #059669; color: white;">⚖️ Compare</a>
@@ -67,6 +68,7 @@
         <div style="display: flex; gap: 0.5rem; align-items: center; background: rgba(30, 58, 138, 0.35); border: 1px solid #3b82f6; border-radius: 6px; padding: 2px 6px;">
           <span style="font-size: 0.72rem; color: #93c5fd; font-weight: 800; padding: 0 4px;">👨‍🏫 INSTRUCTOR:</span>
           <button type="button" onclick="openAdminQrModal()" class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: 1px solid #38bdf8; font-weight: 700; padding: 0.4rem 0.75rem; font-size: 0.8rem; cursor: pointer;">📸 Field QR</button>
+          <a href="/admin/cohorts" class="btn-action" style="background: #6366f1; color: white; padding: 0.4rem 0.75rem; font-size: 0.8rem;">👥 Cohorts</a>
           <a href="/dashboard" class="btn-action btn-dash" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Dashboard</a>
           <a href="/admin/assignments" class="btn-action" style="background: #475569; color: #f8fafc; padding: 0.4rem 0.75rem; font-size: 0.8rem;">Assignments</a>
           <a href="/admin/walls/new" class="btn-action btn-upload" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">+ Add Wall</a>
@@ -129,6 +131,10 @@
           <div class="btn-group">
             <a href="/inspect/{{ wall.slug }}" class="btn btn-primary">Start Inspection</a>
             <a href="/wall/{{ wall.slug }}/restoration" class="btn" style="background: #0d9488; color: white;">✨ Restoration</a>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
+            <a href="/survey/report/{{ wall.slug }}" target="_blank" class="btn" style="background: #0284c7; color: white; padding: 0.45rem; font-size: 0.78rem;">📄 RICS Report</a>
+            <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="btn" style="background: #334155; color: #93c5fd; padding: 0.45rem; font-size: 0.78rem;">⚖️ Compare</a>
           </div>
           {% if is_admin %}
             <div class="admin-controls" style="grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; margin-top: 0.4rem;">

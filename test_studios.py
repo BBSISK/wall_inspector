@@ -10,6 +10,15 @@ class TestStudiosAndAuth(unittest.TestCase):
         res = self.client.get('/cards')
         self.assertEqual(res.status_code, 200)
         self.assertIn(b'Masonry Pathology Flashcard', res.data)
+        # Verify server hydration & zero empty image src
+        self.assertNotIn(b'src=""', res.data)
+        self.assertIn(b'ALL_CARDS =', res.data)
+
+        # Verify archetype query filtering pre-hydrates matching cards
+        res_ds = self.client.get('/cards?archetype=dry_stone')
+        self.assertEqual(res_ds.status_code, 200)
+        self.assertNotIn(b'src=""', res_ds.data)
+        self.assertIn(b'Dry Stone', res_ds.data)
 
         # Deck API
         res_deck = self.client.get('/api/cards/deck')
@@ -19,10 +28,13 @@ class TestStudiosAndAuth(unittest.TestCase):
         deck = data.get('deck', [])
         self.assertGreaterEqual(len(deck), 35)
 
-        # Currency test: ensure all rates use Euro symbol
+        # Currency test & valid image test
         for card in deck:
             rate = card.get('euro_cost_rate', '')
             self.assertIn('€', rate, f"Card {card.get('id')} cost rate '{rate}' missing Euro symbol")
+            img = card.get('image_url', '')
+            self.assertTrue(img and len(img) > 0, f"Card {card.get('id')} has empty image URL")
+            self.assertTrue(img.startswith('/static/img/walls/') or img.startswith('http'), f"Card {card.get('id')} invalid image: {img}")
 
     def test_compare_studio(self):
         """Test Dual-Wall Comparative Analysis Studio."""
@@ -117,5 +129,127 @@ class TestStudiosAndAuth(unittest.TestCase):
             res = self.client.get(ep, follow_redirects=False)
             self.assertEqual(res.status_code, 302, f"Endpoint {ep} not protected by auth redirect")
 
+    def test_timed_examination_and_grading_pipeline(self):
+        """Test Timed Student Examination console, submission, IoU grading, and scorecard."""
+        # 1. Exam Console View
+        res = self.client.get('/exam')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'Timed Masonry Examination Console', res.data)
+
+        # 2. Start Exam Session API
+        start_payload = {
+            "student_name": "Test Candidate",
+            "mode": "exam",
+            "cohort_code": "GENERAL"
+        }
+        res_start = self.client.post('/api/exam/start', json=start_payload)
+        self.assertEqual(res_start.status_code, 200)
+        start_data = res_start.get_json()
+        self.assertTrue(start_data.get('success'))
+        exam_token = start_data.get('exam_token')
+        self.assertTrue(bool(exam_token))
+        walls = start_data.get('walls', [])
+        self.assertEqual(len(walls), 5)
+
+        # 3. Submit Wall Attempt
+        first_wall = walls[0]
+        submit_payload = {
+            "exam_token": exam_token,
+            "wall_id": first_wall['id'],
+            "markers": [
+                {
+                    "x_min": 0.25,
+                    "y_min": 0.30,
+                    "x_max": 0.45,
+                    "y_max": 0.60,
+                    "category": "stepped_crack",
+                    "severity": "critical",
+                    "remedial_action": "helical_stitch"
+                }
+            ]
+        }
+        res_sub = self.client.post('/api/exam/submit-wall', json=submit_payload)
+        self.assertEqual(res_sub.status_code, 200)
+        self.assertTrue(res_sub.get_json().get('success'))
+
+        # 4. Conclude Exam Session
+        finish_payload = {
+            "exam_token": exam_token,
+            "student_name": "Test Candidate"
+        }
+        res_fin = self.client.post('/api/exam/finish', json=finish_payload)
+        self.assertEqual(res_fin.status_code, 200)
+        fin_data = res_fin.get_json()
+        self.assertTrue(fin_data.get('success'))
+        attempt_id = fin_data.get('attempt_id')
+        self.assertTrue(bool(attempt_id))
+
+        # 5. View Performance Scorecard
+        res_card = self.client.get(f'/exam/result/{attempt_id}')
+        self.assertEqual(res_card.status_code, 200)
+        self.assertIn(b'Examination Performance Scorecard', res_card.data)
+        self.assertIn(b'Test Candidate', res_card.data)
+        self.assertIn(b'Spatial Calibration & Defect Overlap Analysis', res_card.data)
+
+    def test_instructor_cohort_management_and_diagnostics(self):
+        """Test instructor cohort dashboard, error heatmap, diagnostics API, and CSV export."""
+        # 1. Cohorts Console
+        res = self.client.get('/admin/cohorts')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'Instructor Cohort Management & Class Diagnostics', res.data)
+        self.assertIn(b'Defect Blind Spot & Error Heatmap', res.data)
+
+        # 2. Cohort Diagnostics API
+        res_diag = self.client.get('/api/admin/cohorts/GENERAL/diagnostics')
+        self.assertEqual(res_diag.status_code, 200)
+        diag_data = res_diag.get_json()
+        self.assertTrue(diag_data.get('success'))
+        self.assertEqual(diag_data.get('cohort_code'), 'GENERAL')
+
+        # 3. SIS Gradebook CSV Export
+        res_csv = self.client.get('/api/admin/cohorts/GENERAL/csv')
+        self.assertEqual(res_csv.status_code, 200)
+        self.assertEqual(res_csv.mimetype, 'text/csv')
+        csv_text = res_csv.data.decode('utf-8')
+        self.assertIn('Candidate Name', csv_text)
+        self.assertIn('Cohort PIN', csv_text)
+        self.assertIn('CPD Hours', csv_text)
+
+    def test_rics_survey_report_generator(self):
+        """Test standalone RICS-format condition survey report with Euro BoQ."""
+        res = self.client.get('/survey/report/ultratech-stone-continuous-joints')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'RICS Structural Masonry Condition Survey', res.data)
+        self.assertIn(b'Condition Rating', res.data)
+        self.assertIn(b'Itemized Conservation Bill of Quantities', res.data)
+        self.assertIn('€'.encode('utf-8'), res.data)
+
+    def test_ai_conservator_socratic_and_expert(self):
+        """Test AI Conservator endpoint in both Socratic Hint and Clinical Specification modes."""
+        # 1. Socratic Hint Mode
+        res_hint = self.client.post('/api/ai/consult', json={
+            "wall_slug": "ultratech-stone-continuous-joints",
+            "mode": "hint",
+            "box": {"x_min": 0.3, "y_min": 0.2, "x_max": 0.5, "y_max": 0.6, "category": "continuous_vertical_joint"}
+        })
+        self.assertEqual(res_hint.status_code, 200)
+        hint_data = res_hint.get_json()
+        self.assertTrue(hint_data.get('success'))
+        self.assertTrue(bool(hint_data.get('hint')))
+
+        # 2. Clinical Specification Mode
+        res_spec = self.client.post('/api/ai/consult', json={
+            "wall_slug": "ultratech-stone-continuous-joints",
+            "mode": "expert",
+            "box": {"x_min": 0.3, "y_min": 0.2, "x_max": 0.5, "y_max": 0.6, "category": "lime_washout"}
+        })
+        self.assertEqual(res_spec.status_code, 200)
+        spec_data = res_spec.get_json()
+        self.assertTrue(spec_data.get('success'))
+        spec = spec_data.get('specification', {})
+        self.assertIn('BS 8221', spec.get('standard', ''))
+        self.assertIn('€', spec.get('estimated_rate_euro', ''))
+
 if __name__ == '__main__':
     unittest.main()
+

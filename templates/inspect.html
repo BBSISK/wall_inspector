@@ -97,6 +97,8 @@
         <button type="button" class="btn-hint" id="btn-hint" onclick="showSurveyorHint()">💡 Senior Hint</button>
       {% endif %}
 
+      <button type="button" class="btn-guide" onclick="openAIConservatorModal()" style="background: #7c3aed; color: white;">🤖 AI Conservator</button>
+      <a href="/survey/report/{{ wall.slug }}" target="_blank" class="btn-guide" style="background: #0284c7; color: white; text-decoration: none;">📄 RICS Report</a>
       <button type="button" class="btn-guide" id="btn-toggle-guide">📖 Field Guide</button>
       <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem; margin-left: 0.5rem;">&larr; Exit</a>
     </div>
@@ -115,9 +117,11 @@
         <button type="button" class="zoom-btn" id="tool-hammer">Sounding Hammer</button>
         <button type="button" class="zoom-btn" id="tool-thermal">🌡️ Thermal IR</button>
         <button type="button" class="zoom-btn" id="tool-metrology">📏 Metric Caliper</button>
+        <button type="button" class="zoom-btn" id="tool-ai-conservator" onclick="openAIConservatorModal()" style="background: linear-gradient(90deg, #7c3aed, #4f46e5); color: white; border: none; font-weight: 700;">🤖 AI Conservator</button>
         <button type="button" class="zoom-btn" id="tool-remediation" onclick="openRemediationModal()" style="background: linear-gradient(90deg, #0284c7, #10b981); color: white; border: none; font-weight: 700;">🎚️ Remediation Slider</button>
         <button type="button" class="zoom-btn" id="tool-timeline" onclick="openDeteriorationModal()" style="background: linear-gradient(90deg, #d97706, #dc2626); color: white; border: none; font-weight: 700;">⏳ Lifecycle (€) Forecaster</button>
         <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="zoom-btn" style="background: #059669; color: white; text-decoration: none; border: none; font-weight: 700; display: inline-flex; align-items: center;">⚖️ Compare Specimen</a>
+        <a href="/survey/report/{{ wall.slug }}" target="_blank" class="zoom-btn" style="background: #0284c7; color: white; text-decoration: none; border: none; font-weight: 700; display: inline-flex; align-items: center;">📄 RICS Report</a>
       </div>
 
       <div id="pan-zoom-container">
@@ -496,6 +500,67 @@
         </div>
         <div style="background: white; color: #064e3b; font-weight: 800; font-size: 0.85rem; padding: 4px 12px; border-radius: 20px;">
           ROI: <span id="roi-pct">4,760%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Architectural Conservator Diagnostic Modal -->
+  <div id="ai-conservator-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); z-index: 130; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #1e293b; border: 1.5px solid #a78bfa; border-radius: 14px; max-width: 780px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.8rem; display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.85);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #334155; padding-bottom: 0.75rem;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.3rem; color: #c4b5fd; display: flex; align-items: center; gap: 10px;">
+            <span>🤖 AI Architectural Conservator & Diagnostic Assistant</span>
+          </h3>
+          <p style="margin: 0.3rem 0 0; font-size: 0.85rem; color: #94a3b8;">
+            Socratic inquiry for learners & BS 8221 / Eurocode 6 conservation specifications for practitioners.
+          </p>
+        </div>
+        <button onclick="closeAIConservatorModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.8rem; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <div style="display: flex; gap: 0.5rem; background: #0f172a; padding: 4px; border-radius: 8px; border: 1px solid #334155;">
+        <button type="button" id="tab-ai-hint" onclick="setAIConsultMode('hint')" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; background: #7c3aed; color: white;">
+          💡 Socratic Hint Mode
+        </button>
+        <button type="button" id="tab-ai-expert" onclick="setAIConsultMode('expert')" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; background: transparent; color: #94a3b8;">
+          📐 Clinical Specification (BS 8221)
+        </button>
+      </div>
+
+      <!-- Target Pathology Zone Selector -->
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <label style="margin: 0; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Target Defect Zone</label>
+          <span id="ai-active-marker-info" style="font-size: 0.75rem; color: #38bdf8; font-family: monospace;">Using Subject Specimen Ground Truth</span>
+        </div>
+        <select id="ai-category-select" style="width: 100%; background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 0.6rem; border-radius: 6px; font-size: 0.88rem;">
+          <option value="">-- Automatically detect from specimen defects --</option>
+          <option value="efflorescence">Efflorescence (Salt Leaching)</option>
+          <option value="spalling">Spalling (Frost-Thaw Burst Face)</option>
+          <option value="stepped_crack">Stepped Settlement Shear Crack</option>
+          <option value="expansion_failure">Vertical Expansion Fracture</option>
+          <option value="coping_displacement">Coping Stone Dislodgement</option>
+          <option value="lateral_bulge">Lateral Out-of-Plumb Bulge</option>
+          <option value="through_stone_failure">Missing / Fractured Through-Stone</option>
+          <option value="lime_washout">Deep Joint Lime Washout</option>
+          <option value="hydrostatic_bulge">Hydrostatic Retaining Bulge</option>
+          <option value="flint_unseating">Knapped Flint Unseating</option>
+          <option value="ashlar_spall">Ashlar Stone Delamination / Cramp Jacking</option>
+          <option value="basal_erosion">Basal Splash Undercutting (Cob / Earth)</option>
+        </select>
+      </div>
+
+      <button type="button" onclick="runAIConsultation()" id="btn-run-consult" style="background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fa-solid fa-sparkles"></i> Consult AI Conservator Engine
+      </button>
+
+      <!-- Response Area -->
+      <div id="ai-response-area" style="background: #0b1329; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
+        <div style="text-align: center; color: #64748b; font-size: 0.85rem;">
+          Select a mode and click "Consult AI Conservator Engine" to receive intelligent Socratic guidance or clinical restoration specifications.
         </div>
       </div>
     </div>
@@ -1789,6 +1854,106 @@
       }
     }
 
+    // AI Conservator Handlers
+    let aiConsultMode = 'hint';
+
+    function openAIConservatorModal() {
+      const modal = document.getElementById('ai-conservator-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        const activeMarkerInfo = document.getElementById('ai-active-marker-info');
+        if (typeof markers !== 'undefined' && markers && markers.length > 0) {
+          activeMarkerInfo.innerText = `Active Candidate Marker: ${markers[markers.length - 1].category || 'Pin'}`;
+        }
+      }
+    }
+
+    function closeAIConservatorModal() {
+      const modal = document.getElementById('ai-conservator-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function setAIConsultMode(mode) {
+      aiConsultMode = mode;
+      const tabHint = document.getElementById('tab-ai-hint');
+      const tabExpert = document.getElementById('tab-ai-expert');
+      if (mode === 'hint') {
+        tabHint.style.background = '#7c3aed';
+        tabHint.style.color = 'white';
+        tabExpert.style.background = 'transparent';
+        tabExpert.style.color = '#94a3b8';
+      } else {
+        tabExpert.style.background = '#0284c7';
+        tabExpert.style.color = 'white';
+        tabHint.style.background = 'transparent';
+        tabHint.style.color = '#94a3b8';
+      }
+    }
+
+    async function runAIConsultation() {
+      const responseArea = document.getElementById('ai-response-area');
+      const catSelect = document.getElementById('ai-category-select');
+      const selectedCat = catSelect.value;
+      const lastMarker = (typeof markers !== 'undefined' && markers && markers.length > 0) ? markers[markers.length - 1] : null;
+
+      responseArea.innerHTML = '<div style="text-align: center; color: #a78bfa; padding: 1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Consulting Architectural Conservator Knowledge Base...</div>';
+
+      const boxPayload = lastMarker ? Object.assign({}, lastMarker) : {};
+      if (selectedCat) {
+        boxPayload.category = selectedCat;
+      }
+
+      try {
+        const resp = await fetch('/api/ai/consult', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wall_slug: SLUG,
+            mode: aiConsultMode,
+            box: boxPayload
+          })
+        });
+        const data = await resp.json();
+
+        if (aiConsultMode === 'hint') {
+          responseArea.innerHTML = `
+            <div style="background: rgba(124, 58, 237, 0.15); border-left: 4px solid #a78bfa; padding: 1rem; border-radius: 4px;">
+              <strong style="color: #c4b5fd; display: block; margin-bottom: 0.4rem;">💡 Socratic Diagnostic Inquiry:</strong>
+              <p style="color: #f1f5f9; font-size: 0.9rem; line-height: 1.5; margin: 0;">${data.hint}</p>
+            </div>
+          `;
+        } else {
+          const spec = data.specification || {};
+          responseArea.innerHTML = `
+            <div style="background: rgba(2, 132, 199, 0.15); border-left: 4px solid #38bdf8; padding: 1.2rem; border-radius: 4px; display: flex; flex-direction: column; gap: 0.75rem;">
+              <div>
+                <strong style="color: #7dd3fc; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px;">Applicable Standard</strong>
+                <div style="color: #ffffff; font-weight: 700; font-size: 0.95rem;">${spec.standard || 'BS 8221 / Eurocode 6'}</div>
+              </div>
+              <div>
+                <strong style="color: #7dd3fc; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px;">Pathological Diagnosis</strong>
+                <div style="color: #cbd5e1; font-size: 0.85rem;">${spec.diagnosis || ''}</div>
+              </div>
+              <div>
+                <strong style="color: #7dd3fc; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px;">Hydraulic Lime Mortar Mix Design</strong>
+                <div style="color: #34d399; font-weight: 600; font-size: 0.85rem;">${spec.recommended_mortar_mix || ''}</div>
+              </div>
+              <div>
+                <strong style="color: #7dd3fc; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px;">Prescribed Conservation Procedure</strong>
+                <div style="color: #e2e8f0; font-size: 0.82rem; line-height: 1.4;">${spec.remedial_procedure || ''}</div>
+              </div>
+              <div style="border-top: 1px solid #334155; padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.75rem; color: #94a3b8;">Benchmark Heritage Rate:</span>
+                <span style="color: #38bdf8; font-weight: 800; font-size: 0.95rem;">${spec.estimated_rate_euro || ''}</span>
+              </div>
+            </div>
+          `;
+        }
+      } catch (e) {
+        responseArea.innerHTML = `<div style="color: #ef4444;">Diagnostic engine error: ${e.message}</div>`;
+      }
+    }
+
     // Initialize listeners on DOM load
     document.addEventListener('DOMContentLoaded', () => {
       initSplitSlider();
@@ -1805,12 +1970,20 @@
           if (e.target === detModal) closeDeteriorationModal();
         });
       }
+
+      const aiModal = document.getElementById('ai-conservator-modal');
+      if (aiModal) {
+        aiModal.addEventListener('click', (e) => {
+          if (e.target === aiModal) closeAIConservatorModal();
+        });
+      }
     });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeRemediationModal();
         closeDeteriorationModal();
+        closeAIConservatorModal();
       }
     });
   </script>

@@ -371,9 +371,9 @@
     <div class="filter-group">
       <label>Archetype Filter:</label>
       <select id="archetype-select" onchange="loadDeck()">
-        <option value="all">All 11 Archetypes (Entire Bank)</option>
+        <option value="all" {% if selected_archetype == 'all' or not selected_archetype %}selected{% endif %}>All 11 Archetypes (Entire Bank)</option>
         {% for t in wall_types %}
-          <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+          <option value="{{ t }}" {% if selected_archetype == t %}selected{% endif %}>{{ t.replace('_', ' ').title() }}</option>
         {% endfor %}
       </select>
     </div>
@@ -393,13 +393,17 @@
       <div class="card-face card-front">
         <div>
           <div class="face-header">
-            <span id="front-archetype" class="archetype-badge">BRICK CAVITY</span>
-            <span id="card-progress" class="progress-pill">Card 1 of 25</span>
+            <span id="front-archetype" class="archetype-badge">{% if initial_deck %}{{ initial_deck[0].archetype_label }}{% else %}BRICK CAVITY{% endif %}</span>
+            <span id="card-progress" class="progress-pill">{% if initial_deck %}Card 1 of {{ initial_deck|length }}{% else %}Card 1 of 1{% endif %}</span>
           </div>
 
           <div class="image-viewport">
-            <img id="front-image" src="" alt="Defect specimen">
-            <div id="target-reticle" class="target-reticle" style="display: none;"></div>
+            <img id="front-image"
+                 src="{% if initial_deck %}{{ initial_deck[0].image_url }}{% else %}/static/img/walls/brick_efflorescence_01.jpg{% endif %}"
+                 alt="{% if initial_deck %}{{ initial_deck[0].defect_title }}{% else %}Defect specimen{% endif %}"
+                 onerror="this.onerror=null;this.src='/static/img/walls/brick_efflorescence_01.jpg';">
+            <div id="target-reticle" class="target-reticle"
+                 style="{% if initial_deck and initial_deck[0].crop_box %}display: block; left: {{ initial_deck[0].crop_box.x_min * 100 }}%; top: {{ initial_deck[0].crop_box.y_min * 100 }}%; width: {{ (initial_deck[0].crop_box.x_max - initial_deck[0].crop_box.x_min) * 100 }}%; height: {{ (initial_deck[0].crop_box.y_max - initial_deck[0].crop_box.y_min) * 100 }}%;{% else %}display: none;{% endif %}"></div>
           </div>
         </div>
 
@@ -415,31 +419,33 @@
         <div>
           <div class="face-header">
             <div>
-              <h2 id="back-title" class="back-defect-title">Defect Title</h2>
-              <span id="back-severity" class="severity-pill sev-critical">CRITICAL TOLERANCE</span>
+              <h2 id="back-title" class="back-defect-title">{% if initial_deck %}{{ initial_deck[0].defect_title }}{% else %}Defect Title{% endif %}</h2>
+              <span id="back-severity" class="severity-pill sev-{% if initial_deck %}{{ initial_deck[0].severity|lower }}{% else %}critical{% endif %}">
+                {% if initial_deck %}{{ initial_deck[0].severity|upper }} RISK{% else %}CRITICAL RISK{% endif %}
+              </span>
             </div>
-            <span id="back-progress" class="progress-pill">Card 1 of 25</span>
+            <span id="back-progress" class="progress-pill">{% if initial_deck %}Card 1 of {{ initial_deck|length }}{% else %}Card 1 of 1{% endif %}</span>
           </div>
 
           <div class="detail-grid">
             <div class="detail-item" style="border-left-color: #38bdf8;">
               <strong>🔬 Clinical Pathology & Mechanics</strong>
-              <p id="back-explanation">Detailed explanation of the degradation mechanism.</p>
+              <p id="back-explanation">{% if initial_deck %}{{ initial_deck[0].explanation }}{% else %}Detailed explanation of the degradation mechanism.{% endif %}</p>
             </div>
 
             <div class="detail-item" style="border-left-color: #fbbf24;">
               <strong>⚠️ Structural Failure Mechanism</strong>
-              <p id="back-mechanics">Mechanical failure mode.</p>
+              <p id="back-mechanics">{% if initial_deck %}{{ initial_deck[0].mechanics }}{% else %}Mechanical failure mode.{% endif %}</p>
             </div>
 
             <div class="detail-item" style="border-left-color: #10b981;">
               <strong>🛠️ Conservation Remedial Specification</strong>
-              <p id="back-remedial">Hydraulic lime repointing, stainless helical tie stitches.</p>
+              <p id="back-remedial">{% if initial_deck %}{{ initial_deck[0].remedial_label }}{% else %}Hydraulic lime repointing, stainless helical tie stitches.{% endif %}</p>
             </div>
 
             <div class="detail-item" style="border-left-color: #f59e0b; background: #172033;">
               <strong>💶 Euro (€) Remedial Benchmark Rate</strong>
-              <p id="back-cost" style="font-weight: 700; color: #fbbf24;">€85 - €160 / linear meter</p>
+              <p id="back-cost" style="font-weight: 700; color: #fbbf24;">{% if initial_deck %}{{ initial_deck[0].euro_cost_rate }}{% else %}€85 - €160 / linear meter{% endif %}</p>
             </div>
           </div>
         </div>
@@ -478,16 +484,35 @@
   </div>
 
   <script>
-    let currentDeck = [];
+    // Server-hydrated full deck and selected archetype
+    const ALL_CARDS = {{ (all_cards or initial_deck or []) | tojson }};
+    const INITIAL_ARCHETYPE = {{ (selected_archetype or "all") | tojson }};
+
+    let currentDeck = {{ (initial_deck or []) | tojson }};
+    if (!currentDeck || currentDeck.length === 0) {
+      currentDeck = ALL_CARDS.slice();
+    }
     let currentIndex = 0;
     let isFlipped = false;
     let sessionStats = { total: 0, correct: 0, streak: 1 };
 
     async function loadDeck() {
       const archetype = document.getElementById('archetype-select').value;
-      const res = await fetch(`/api/cards/deck?archetype=${encodeURIComponent(archetype)}`);
-      const data = await res.json();
-      currentDeck = data.deck || [];
+      if (ALL_CARDS && ALL_CARDS.length > 0) {
+        if (archetype === 'all') {
+          currentDeck = ALL_CARDS.slice();
+        } else {
+          currentDeck = ALL_CARDS.filter(c => c.archetype === archetype);
+        }
+      } else {
+        try {
+          const res = await fetch(`/api/cards/deck?archetype=${encodeURIComponent(archetype)}`);
+          const data = await res.json();
+          currentDeck = data.deck || [];
+        } catch (err) {
+          console.error("Deck fetch fallback failed:", err);
+        }
+      }
       currentIndex = 0;
       isFlipped = false;
       document.getElementById('flashcard').classList.remove('flipped');
@@ -496,10 +521,16 @@
     }
 
     function renderCurrentCard() {
-      if (currentDeck.length === 0) {
+      if (!currentDeck || currentDeck.length === 0) {
         document.getElementById('front-challenge-title').innerText = "No flashcards found.";
+        document.getElementById('front-archetype').innerText = "EMPTY";
+        document.getElementById('card-progress').innerText = "Card 0 of 0";
+        document.getElementById('target-reticle').style.display = 'none';
         return;
       }
+
+      // Always restore default challenge title when card exists
+      document.getElementById('front-challenge-title').innerText = "Diagnostic Visual Pathology";
 
       const card = currentDeck[currentIndex];
       isFlipped = false;
@@ -508,7 +539,14 @@
       // Front
       document.getElementById('front-archetype').innerText = card.archetype_label;
       document.getElementById('card-progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
-      document.getElementById('front-image').src = card.image_url;
+      
+      const imgEl = document.getElementById('front-image');
+      imgEl.onerror = function() {
+        this.onerror = null;
+        this.src = '/static/img/walls/brick_efflorescence_01.jpg';
+      };
+      imgEl.src = card.image_url || '/static/img/walls/brick_efflorescence_01.jpg';
+      imgEl.alt = card.defect_title || 'Defect specimen';
 
       // Crop box reticle
       const reticle = document.getElementById('target-reticle');
@@ -526,13 +564,13 @@
       document.getElementById('back-title').innerText = card.defect_title;
       document.getElementById('back-progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
       const sevEl = document.getElementById('back-severity');
-      sevEl.innerText = `${card.severity.toUpperCase()} RISK`;
-      sevEl.className = `severity-pill sev-${card.severity.toLowerCase()}`;
+      sevEl.innerText = `${(card.severity || 'MODERATE').toUpperCase()} RISK`;
+      sevEl.className = `severity-pill sev-${(card.severity || 'moderate').toLowerCase()}`;
 
-      document.getElementById('back-explanation').innerText = card.explanation;
-      document.getElementById('back-mechanics').innerText = card.mechanics;
-      document.getElementById('back-remedial').innerText = card.remedial_label;
-      document.getElementById('back-cost').innerText = card.euro_cost_rate;
+      document.getElementById('back-explanation').innerText = card.explanation || '';
+      document.getElementById('back-mechanics').innerText = card.mechanics || '';
+      document.getElementById('back-remedial').innerText = card.remedial_label || '';
+      document.getElementById('back-cost').innerText = card.euro_cost_rate || '';
     }
 
     function flipCard() {
@@ -548,7 +586,10 @@
     }
 
     function rateCard(rating) {
+      if (!currentDeck || currentDeck.length === 0) return;
       const card = currentDeck[currentIndex];
+      if (!card) return;
+
       sessionStats.total++;
 
       // Spaced Repetition Scoring
@@ -586,14 +627,19 @@
     function updateKpis() {
       const srsData = JSON.parse(localStorage.getItem('GWI_SRS_CARDS') || '{}');
       const masteredCount = Object.values(srsData).filter(c => c.level >= 3).length;
-      document.getElementById('kpi-mastered').innerText = masteredCount;
+      const masteredEl = document.getElementById('kpi-mastered');
+      if (masteredEl) masteredEl.innerText = masteredCount;
 
       const acc = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 100;
-      document.getElementById('kpi-accuracy').innerText = `${acc}%`;
-      document.getElementById('kpi-streak').innerText = `${sessionStats.streak}🔥`;
+      const accEl = document.getElementById('kpi-accuracy');
+      if (accEl) accEl.innerText = `${acc}%`;
+
+      const streakEl = document.getElementById('kpi-streak');
+      if (streakEl) streakEl.innerText = `${sessionStats.streak}🔥`;
     }
 
     function nextCard() {
+      if (!currentDeck || currentDeck.length === 0) return;
       if (currentIndex < currentDeck.length - 1) {
         currentIndex++;
       } else {
@@ -603,6 +649,7 @@
     }
 
     function prevCard() {
+      if (!currentDeck || currentDeck.length === 0) return;
       if (currentIndex > 0) {
         currentIndex--;
       } else {
@@ -628,9 +675,16 @@
       }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadDeck();
-    });
+    function init() {
+      updateKpis();
+      renderCurrentCard();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
   </script>
 </body>
 </html>

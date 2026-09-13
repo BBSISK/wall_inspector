@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Structural Survey Report: {{ wall.title }} - {{ attempt.student_name }}</title>
+  <title>RICS Masonry Condition Survey: {{ wall.title }} - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -18,7 +19,7 @@
     }
     .action-bar {
       width: 100%;
-      max-width: 960px;
+      max-width: 980px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -32,6 +33,9 @@
       text-decoration: none;
       border: none;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .btn-back { background: #334155; color: #93c5fd; }
     .btn-back:hover { background: #475569; }
@@ -41,18 +45,18 @@
     /* Report Sheet */
     .report-sheet {
       width: 100%;
-      max-width: 960px;
+      max-width: 980px;
       background: #ffffff;
       border-radius: 8px;
-      padding: 3rem;
+      padding: 3.5rem;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
       color: #1e293b;
     }
 
     .report-header {
-      border-bottom: 2px solid #0f172a;
+      border-bottom: 3px solid #0f172a;
       padding-bottom: 1.25rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.8rem;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -60,7 +64,7 @@
     .report-header h1 {
       margin: 0;
       font-size: 1.8rem;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       color: #0f172a;
       text-transform: uppercase;
     }
@@ -75,9 +79,10 @@
       font-size: 0.85rem;
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
-      padding: 4px 8px;
+      padding: 5px 10px;
       border-radius: 4px;
       font-weight: bold;
+      color: #0f172a;
     }
 
     /* Meta Grid */
@@ -89,7 +94,7 @@
       border: 1px solid #e2e8f0;
       border-radius: 6px;
       padding: 1.25rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.8rem;
     }
     .meta-item label {
       display: block;
@@ -106,24 +111,48 @@
       color: #0f172a;
     }
 
-    /* Executive Risk Card */
-    .risk-banner {
+    /* RICS Condition Rating Card */
+    .rics-rating-card {
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.8rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.25rem 1.5rem;
-      border-radius: 6px;
-      margin-bottom: 2rem;
+      border: 2px solid;
     }
-    .risk-high { background: #fef2f2; border: 1.5px solid #ef4444; color: #991b1b; }
-    .risk-moderate { background: #fffbeb; border: 1.5px solid #f59e0b; color: #92400e; }
-    .risk-low { background: #f0fdf4; border: 1.5px solid #10b981; color: #166534; }
+    .rating-3 {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #991b1b;
+    }
+    .rating-2 {
+      background: #fffbeb;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+    .rating-1 {
+      background: #f0fdf4;
+      border-color: #10b981;
+      color: #166534;
+    }
+    .rics-badge {
+      font-size: 1.5rem;
+      font-weight: 900;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .rating-3 .rics-badge { background: #ef4444; color: white; }
+    .rating-2 .rics-badge { background: #f59e0b; color: white; }
+    .rating-1 .rics-badge { background: #10b981; color: white; }
 
     /* Photo Plate with Pins */
     .plate-container {
       position: relative;
       width: 100%;
-      height: 380px;
+      height: 400px;
       background: #0f172a;
       border-radius: 6px;
       overflow: hidden;
@@ -155,11 +184,21 @@
       transform: translate(-50%, -50%);
     }
 
-    /* Schedule Table */
+    /* Tables */
+    h3 {
+      margin: 1.8rem 0 0.8rem;
+      font-size: 1.1rem;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
       font-size: 0.88rem;
     }
     th {
@@ -188,13 +227,23 @@
     .badge-moderate { background: #fef3c7; color: #92400e; }
     .badge-minor { background: #dcfce7; color: #166534; }
 
+    /* Bill of Quantities Styling */
+    .boq-table th { background: #1e3a8a; }
+    .boq-total-row {
+      background: #f8fafc;
+      font-weight: 800;
+      font-size: 0.95rem;
+      border-top: 2px solid #0f172a;
+    }
+
     /* Sign-off */
     .signoff-section {
       display: grid;
       grid-template-columns: 2fr 1fr;
       gap: 2rem;
-      border-top: 1.5px solid #cbd5e1;
-      padding-top: 1.5rem;
+      border-top: 2px solid #cbd5e1;
+      padding-top: 1.8rem;
+      margin-top: 2rem;
       align-items: center;
     }
     .sig-block {
@@ -204,39 +253,50 @@
     }
     .sig-name {
       font-family: 'Brush Script MT', 'Dancing Script', cursive;
-      font-size: 2rem;
+      font-size: 2.2rem;
       color: #1e3a8a;
       margin-top: 0.5rem;
     }
 
     @media print {
-      body { background: #ffffff !important; padding: 0 !important; }
+      body { background: #ffffff !important; padding: 0 !important; color: #000 !important; }
       .action-bar { display: none !important; }
-      .report-sheet { box-shadow: none !important; padding: 1.5cm !important; max-width: 100% !important; }
+      .report-sheet { box-shadow: none !important; padding: 1cm !important; max-width: 100% !important; border: none !important; }
+      .plate-container { height: 320px !important; }
     }
   </style>
 </head>
 <body>
   <div class="action-bar">
-    <a href="javascript:history.back()" class="btn btn-back">&larr; Return to Debrief</a>
+    <a href="javascript:history.back()" class="btn btn-back">&larr; Return</a>
     <div style="display: flex; gap: 0.6rem;">
-      <a href="/wall/{{ wall.slug }}/restoration" target="_blank" class="btn" style="background: #0d9488; color: white;">✨ Restoration Simulation</a>
-      <button class="btn btn-print" onclick="window.print()">Print / Save PDF Report</button>
+      <a href="/wall/{{ wall.slug }}/restoration" target="_blank" class="btn" style="background: #0d9488; color: white;">
+        ✨ Restoration Simulation
+      </a>
+      <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="btn" style="background: #1e3a8a; color: white;">
+        ⚖️ Compare Specimen
+      </a>
+      <button class="btn btn-print" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> Print / Save RICS PDF
+      </button>
     </div>
   </div>
 
   <div class="report-sheet">
     <div class="report-header">
       <div>
-        <h1>Masonry Structural Condition Survey</h1>
-        <p>Diagnostic Defect Identification & Conservation Schedule</p>
+        <h1>RICS Structural Masonry Condition Survey</h1>
+        <p>Comprehensive Pathology Appraisal, Dilapidations Schedule & Remedial Bill of Quantities</p>
       </div>
       <div style="text-align: right;">
-        <span class="badge-ref">REF: {{ attempt.id[:8].upper() }}</span>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;">Issued: {{ attempt.created_at.strftime('%Y-%m-%d %H:%M UTC') if attempt.created_at else '2026-09-12' }}</div>
+        <span class="badge-ref">REF: {{ report_ref }}</span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;">
+          Survey Date: {{ survey_date }}
+        </div>
       </div>
     </div>
 
+    <!-- Meta Information Grid -->
     <div class="meta-grid">
       <div class="meta-item">
         <label>Subject Asset</label>
@@ -247,7 +307,7 @@
         <span>{{ wall.wall_type.replace('_', ' ').title() }}</span>
       </div>
       <div class="meta-item">
-        <label>Location / Country</label>
+        <label>Location / Region</label>
         <span>{{ wall.region or 'National' }}, {{ wall.country }}</span>
       </div>
       <div class="meta-item">
@@ -256,37 +316,41 @@
       </div>
       <div class="meta-item">
         <label>Lead Surveyor</label>
-        <span>{{ attempt.student_name }}</span>
+        <span>{{ surveyor_name }}</span>
       </div>
       <div class="meta-item">
-        <label>Cohort / PIN</label>
-        <span>{{ attempt.assignment_code or attempt.cohort_code or 'GENERAL' }}</span>
+        <label>Protocol / Framework</label>
+        <span>RICS Home Survey Standard / BS 8221</span>
       </div>
       <div class="meta-item">
-        <label>Diagnostic Precision</label>
-        <span style="color: {% if attempt.passed %}#059669{% else %}#dc2626{% endif %}; font-weight: bold;">
-          {{ attempt.score_percentage }}% ({% if attempt.passed %}QUALIFIED{% else %}REVISE{% endif %})
-        </span>
+        <label>Survey Methodology</label>
+        <span>High-Resolution Calibrated Visual Pathology</span>
       </div>
       <div class="meta-item">
-        <label>Recorded Hits / Alarms</label>
-        <span>{{ attempt.true_positives }} Verified &bull; {{ attempt.false_positives }} False</span>
+        <label>Inspection Currency</label>
+        <span style="font-weight: 700; color: #0f172a;">Euro (€ Standardized)</span>
       </div>
     </div>
 
-    <!-- Executive Risk Classification -->
-    <div class="risk-banner risk-{{ risk_level }}">
+    <!-- RICS Official 3-Tier Condition Rating Banner -->
+    <div class="rics-rating-card rating-{{ rics_rating }}">
       <div>
-        <strong style="font-size: 1.1rem; display: block;">Executive Structural Risk: {{ risk_title }}</strong>
-        <p style="margin: 0.25rem 0 0; font-size: 0.85rem;">{{ risk_summary }}</p>
+        <div style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.3rem;">
+          {{ rics_headline }}
+        </div>
+        <div style="font-size: 0.88rem; line-height: 1.4;">
+          {{ rics_description }}
+        </div>
       </div>
-      <div style="font-size: 1.4rem; font-weight: 800; text-transform: uppercase;">
-        {{ risk_level }}
+      <div>
+        <div class="rics-badge">
+          Condition Rating {{ rics_rating }}
+        </div>
       </div>
     </div>
 
     <!-- Photographic Plate with Callout Pins -->
-    <h3 style="margin: 0 0 0.75rem; font-size: 1.1rem; color: #0f172a; text-transform: uppercase;">Figure 1: Photographic Plate with Defect Callouts</h3>
+    <h3><i class="fa-solid fa-camera"></i> Figure 1: Photographic Plate with Defect Callouts</h3>
     <div class="plate-container">
       <img src="{{ wall.image_url }}" alt="{{ wall.title }}" class="plate-img">
       {% for item in defect_items %}
@@ -297,14 +361,14 @@
     </div>
 
     <!-- Formal Schedule of Dilapidations Table -->
-    <h3 style="margin: 0 0 0.75rem; font-size: 1.1rem; color: #0f172a; text-transform: uppercase;">Schedule of Dilapidations & Remedial Prescriptions</h3>
+    <h3><i class="fa-solid fa-list-check"></i> Formal Schedule of Dilapidations & Conservation Prescriptions</h3>
     <table>
       <thead>
         <tr>
           <th style="width: 45px;">Ref</th>
           <th style="width: 180px;">Defect Pathology</th>
           <th style="width: 100px;">Severity</th>
-          <th style="width: 120px;">Crack Width / Scope</th>
+          <th style="width: 120px;">Scope / Zone</th>
           <th>Prescribed Conservation Intervention</th>
           <th style="width: 130px;">Remedial Window</th>
         </tr>
@@ -321,7 +385,7 @@
               <span class="badge-sev badge-{{ item.severity }}">{{ item.severity }}</span>
             </td>
             <td>
-              <span>{{ item.crack_width or 'Surface Zone' }}</span>
+              <span>{{ item.scope or item.crack_width or 'Calibrated Zone' }}</span>
             </td>
             <td>
               <strong style="color: #059669; display: block;">{{ item.remedial_label }}</strong>
@@ -330,34 +394,75 @@
             <td>
               <span style="font-weight: 600; color: {% if item.severity == 'critical' %}#dc2626{% elif item.severity == 'moderate' %}#d97706{% else %}#4b5563{% endif %};">
                 {% if item.severity == 'critical' %}
-                  Immediate (30 Days)
+                  Immediate (&lt; 30 Days)
                 {% elif item.severity == 'moderate' %}
                   3 to 6 Months
                 {% else %}
-                  Routine Maintenance
+                  Routine Cyclical
                 {% endif %}
               </span>
             </td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="6" style="text-align: center; color: #64748b; padding: 2rem;">No defect markers recorded for this subject.</td>
+            <td colspan="6" style="text-align: center; color: #64748b; padding: 2rem;">No defects recorded. Asset is structurally sound.</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
 
-    <!-- Prognostic Restoration & Conservation Section -->
-    <div style="background: #f8fafc; border: 1.5px solid #0d9488; border-radius: 8px; padding: 1.25rem 1.5rem; margin: 2rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-      <div>
-        <strong style="color: #0f766e; font-size: 1rem; display: block;">✨ Prognostic Conservation Simulation Available</strong>
-        <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
-          Simulate the post-remediation appearance of this masonry subject with repointed hydraulic lime joints and concealed stainless helical stitching.
-        </p>
-      </div>
-      <a href="/wall/{{ wall.slug }}/restoration" target="_blank" class="btn" style="background: #0d9488; color: white; padding: 0.6rem 1.2rem; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem;">
-        Launch Restoration Slider &rarr;
-      </a>
+    <!-- Itemized Bill of Quantities (BoQ) in Euros (€) -->
+    <h3><i class="fa-solid fa-calculator"></i> Itemized Conservation Bill of Quantities (BoQ - Euro €)</h3>
+    <table class="boq-table">
+      <thead>
+        <tr>
+          <th style="width: 45px;">Item</th>
+          <th>Remedial Conservation Work Description</th>
+          <th style="width: 90px; text-align: right;">Unit Qty</th>
+          <th style="width: 110px; text-align: right;">Unit Rate (€)</th>
+          <th style="width: 120px; text-align: right;">Total (€)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for boq in boq_items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <strong>{{ boq.description }}</strong>
+            <small style="display: block; color: #64748b;">Specification: {{ boq.specification }}</small>
+          </td>
+          <td style="text-align: right;">{{ boq.quantity }}</td>
+          <td style="text-align: right;">€{{ "%.2f"|format(boq.rate) }}</td>
+          <td style="text-align: right; font-weight: 700; color: #0f172a;">€{{ "%.2f"|format(boq.total) }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="boq-total-row">
+          <td colspan="4" style="text-align: right; text-transform: uppercase;">Subtotal Remedial Works:</td>
+          <td style="text-align: right;">€{{ "%.2f"|format(boq_subtotal) }}</td>
+        </tr>
+        <tr class="boq-total-row" style="background: #ffffff; font-weight: normal; font-size: 0.88rem;">
+          <td colspan="4" style="text-align: right;">Preliminaries, Safety Access & Scaffolding:</td>
+          <td style="text-align: right;">€{{ "%.2f"|format(boq_prelims) }}</td>
+        </tr>
+        <tr class="boq-total-row" style="background: #ffffff; font-weight: normal; font-size: 0.88rem;">
+          <td colspan="4" style="text-align: right;">Contingency Reserve (15% Heritage Allowance):</td>
+          <td style="text-align: right;">€{{ "%.2f"|format(boq_contingency) }}</td>
+        </tr>
+        <tr class="boq-total-row" style="background: #0f172a; color: white; font-size: 1.05rem;">
+          <td colspan="4" style="text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Estimated Remedial Project Total:</td>
+          <td style="text-align: right; color: #38bdf8;">€{{ "%.2f"|format(boq_grand_total) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Conservation Standards Specification Notes -->
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+      <strong style="color: #0f172a; font-size: 0.95rem; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-scroll" style="color: #0284c7;"></i> Conservation Engineering Protocol (BS 8221 & Eurocode 6)
+      </strong>
+      <p style="margin: 0.4rem 0 0; font-size: 0.82rem; color: #475569; line-height: 1.5;">
+        All specified pointing mortars must utilize naturally hydraulic lime (NHL 2 or NHL 3.5 conforming to EN 459-1) matched to the compressive strength and vapor permeability of the host masonry. Under no circumstances should impermeable Ordinary Portland Cement (OPC) or polymer sealants be applied to historic bedding planes. Stainless helical crack stitches must be austenitic grade 316 (1.4401) grouted with shrink-compensated thixotropic grout.
+      </p>
     </div>
 
     <!-- Assessor Endorsement & Sign-Off -->
@@ -365,14 +470,14 @@
       <div class="sig-block">
         <label style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Surveyor Endorsement & Statement of Competence</label>
         <p style="margin: 0.3rem 0; font-size: 0.8rem; color: #475569; line-height: 1.4;">
-          I hereby confirm that this survey assessment was conducted under the standardized diagnostic protocols of the Global Wall Inspector framework, encompassing visual pathology, joint condition analysis, and remedial intervention scheduling.
+          This condition report was produced under the standardized diagnostic protocols of the Global Wall Inspector framework in compliance with RICS Home Survey guidelines and Historic Building Conservation directives.
         </p>
-        <div class="sig-name">{{ attempt.student_name }}</div>
-        <small style="color: #64748b;">Accredited Structural Masonry Surveyor Candidate</small>
+        <div class="sig-name">{{ surveyor_name }}</div>
+        <small style="color: #64748b;">Accredited Structural Masonry Surveyor & Pathologist</small>
       </div>
 
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
-        <img id="report-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://wall-inspector.onrender.com/report/{{ attempt.id }}" alt="Verification QR" style="width: 76px; height: 76px; border: 1px solid #cbd5e1; padding: 3px; background: white; border-radius: 4px;">
+        <img id="report-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://wall-inspector.onrender.com/survey/report/{{ wall.slug }}" alt="Verification QR" style="width: 80px; height: 80px; border: 1px solid #cbd5e1; padding: 3px; background: white; border-radius: 4px;">
         <small style="font-size: 0.7rem; color: #64748b; margin-top: 0.3rem; font-weight: 600;">Scan to Authenticate Report</small>
       </div>
     </div>
@@ -388,4 +493,3 @@
   </script>
 </body>
 </html>
-

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instructor Cohort Management & Class Diagnostics - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --card: #090e1a;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header p {
+      color: var(--muted);
+      margin-top: 0.3rem;
+      font-size: 0.95rem;
+    }
+    .btn {
+      padding: 0.55rem 1.1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary { background: var(--border); color: #cbd5e1; }
+    .btn-secondary:hover { background: #475569; color: white; }
+    .btn-primary { background: var(--accent-hover); color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-export { background: var(--success); color: white; }
+    .btn-export:hover { background: #059669; }
+
+    /* KPI Row */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .kpi-num {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* Main Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .panel-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Forms */
+    label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin: 1rem 0 0.35rem;
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      background: #0b1329;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.65rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Heatmap styling */
+    .heatmap-card {
+      background: #0b1329;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    .heatmap-item {
+      margin-bottom: 1rem;
+    }
+    .heatmap-item:last-child { margin-bottom: 0; }
+    .heatmap-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 0.4rem;
+    }
+    .bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+
+    /* Gradebook table */
+    .gradebook-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      gap: 1rem;
+    }
+    .search-input {
+      max-width: 260px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #0b1329;
+      color: var(--muted);
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      vertical-align: middle;
+    }
+    tr:hover { background: rgba(15, 23, 42, 0.4); }
+    .badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .code-tag {
+      font-family: monospace;
+      background: #0b1329;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1><i class="fa-solid fa-chalkboard-user" style="color: var(--accent);"></i> Instructor Cohort Management & Class Diagnostics</h1>
+        <p>Monitor real-time student spatial accuracy, defect confusion heatmaps, and exam gradebooks.</p>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="/exam" target="_blank" class="btn btn-primary"><i class="fa-solid fa-stopwatch"></i> Launch Exam Console</a>
+        <a href="/admin/assignments" class="btn btn-secondary"><i class="fa-solid fa-list-check"></i> Assignments</a>
+        <a href="/dashboard" class="btn btn-secondary"><i class="fa-solid fa-chart-pie"></i> Admin Dashboard</a>
+        <a href="/" class="btn btn-secondary"><i class="fa-solid fa-home"></i> Catalog</a>
+      </div>
+    </div>
+
+    <!-- KPI Summary Row -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+          <i class="fa-solid fa-users-rectangle"></i>
+        </div>
+        <div>
+          <div class="kpi-num">{{ cohorts|length }}</div>
+          <div class="kpi-label">Active Cohorts</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+          <i class="fa-solid fa-file-signature"></i>
+        </div>
+        <div>
+          <div class="kpi-num">{{ total_attempts }}</div>
+          <div class="kpi-label">Total Examinations</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+          <i class="fa-solid fa-award"></i>
+        </div>
+        <div>
+          <div class="kpi-num">{{ "%.1f"|format(class_pass_rate) }}%</div>
+          <div class="kpi-label">Class Pass Rate</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(167, 139, 250, 0.15); color: #a78bfa;">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+        <div>
+          <div class="kpi-num">{{ "%.1f"|format(class_avg_score) }}%</div>
+          <div class="kpi-label">Mean Defect Accuracy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- Left: Cohort Creation & Switcher -->
+      <div>
+        <div class="panel" style="margin-bottom: 1.5rem;">
+          <div class="panel-title"><i class="fa-solid fa-plus-circle" style="color: var(--accent);"></i> Register New Cohort</div>
+          <form method="POST" action="/admin/cohorts/create">
+            <label>Cohort Code / PIN</label>
+            <input type="text" name="cohort_code" placeholder="e.g. UCL-2026, CORK-ARCH-1" style="text-transform: uppercase;" required>
+
+            <label>Cohort Title / Course</label>
+            <input type="text" name="title" placeholder="e.g. Historic Masonry Surveying Spring 2026" required>
+
+            <label>Institution / Faculty</label>
+            <input type="text" name="institution" placeholder="e.g. University College Cork, Dept of Architecture">
+
+            <label>Examination Mode</label>
+            <select name="exam_tier">
+              <option value="exam">Standard 5-Wall Exam (300s)</option>
+              <option value="quiz">Speed 3-Wall Quiz (180s)</option>
+              <option value="master">Comprehensive 10-Wall Master (600s)</option>
+            </select>
+
+            <label>Minimum Qualification Mark (%)</label>
+            <input type="number" name="pass_mark" value="70" min="50" max="100">
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; justify-content: center;">
+              <i class="fa-solid fa-flag"></i> Initialize Cohort PIN
+            </button>
+          </form>
+        </div>
+
+        <!-- Cohort Switcher Selector -->
+        <div class="panel">
+          <div class="panel-title"><i class="fa-solid fa-filter" style="color: var(--accent);"></i> Filter by Cohort</div>
+          <select id="cohort-selector" onchange="filterCohort(this.value)">
+            <option value="ALL" {% if selected_cohort == 'ALL' %}selected{% endif %}>All Cohorts Combined</option>
+            {% for c in cohorts %}
+              <option value="{{ c }}" {% if selected_cohort == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+          <div style="margin-top: 1rem;">
+            <a id="export-csv-btn" href="/api/admin/cohorts/{{ selected_cohort or 'ALL' }}/csv" class="btn btn-export" style="width: 100%; justify-content: center;">
+              <i class="fa-solid fa-file-csv"></i> Export SIS Gradebook CSV
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Defect Heatmap & Gradebook Table -->
+      <div>
+        <!-- Defect Error Heatmap -->
+        <div class="panel" style="margin-bottom: 2rem;">
+          <div class="panel-title" style="justify-content: space-between;">
+            <span><i class="fa-solid fa-fire" style="color: var(--danger);"></i> Defect Blind Spot & Error Heatmap (Cohort Diagnostics)</span>
+            <span style="font-size: 0.75rem; color: var(--muted); font-weight: normal;">Defects most frequently missed (False Negatives)</span>
+          </div>
+
+          <div class="heatmap-card">
+            {% for item in error_heatmap %}
+            <div class="heatmap-item">
+              <div class="heatmap-header">
+                <div>
+                  <strong>{{ item.title }}</strong>
+                  <span style="color: var(--muted); font-size: 0.75rem; margin-left: 6px;">(Code: <code>{{ item.category }}</code>)</span>
+                </div>
+                <div style="font-weight: 700; color: {% if item.miss_rate >= 50 %}#ef4444{% elif item.miss_rate >= 30 %}#f59e0b{% else %}#10b981{% endif %};">
+                  {{ "%.1f"|format(item.miss_rate) }}% Miss Rate ({{ item.miss_count }}/{{ item.total_tested }})
+                </div>
+              </div>
+              <div class="bar-bg">
+                <div class="bar-fill" style="width: {{ item.miss_rate }}%; background: {% if item.miss_rate >= 50 %}#ef4444{% elif item.miss_rate >= 30 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--muted); margin-top: 3px;">
+                💡 <em>Key Recommendation: {{ item.teaching_tip }}</em>
+              </div>
+            </div>
+            {% else %}
+            <div style="text-align: center; color: var(--muted); padding: 1.5rem;">
+              No examination defect telemetry recorded yet for this cohort.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Student Gradebook Table -->
+        <div class="panel">
+          <div class="panel-title" style="justify-content: space-between;">
+            <span><i class="fa-solid fa-graduation-cap" style="color: var(--accent);"></i> Student Examination Gradebook</span>
+            <span class="code-tag">{{ attempts|length }} Attempts Logged</span>
+          </div>
+
+          <div class="gradebook-toolbar">
+            <input type="text" id="student-search" class="search-input" placeholder="Search candidate name..." onkeyup="searchStudents()">
+            <div style="font-size: 0.8rem; color: var(--muted);">
+              Grading Scheme: Pass &ge; 70% IoU Matching
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table id="gradebook-table">
+              <thead>
+                <tr>
+                  <th>Candidate Name</th>
+                  <th>Cohort PIN</th>
+                  <th>Date & Time</th>
+                  <th>Hits / Misses</th>
+                  <th>Accuracy</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for att in attempts %}
+                <tr>
+                  <td>
+                    <strong>{{ att.student_name }}</strong>
+                    <small style="display: block; color: var(--muted); font-family: monospace;">ID: {{ att.id[:8].upper() }}</small>
+                  </td>
+                  <td><span class="code-tag">{{ att.cohort_code or 'GENERAL' }}</span></td>
+                  <td>{{ att.created_at.strftime('%Y-%m-%d %H:%M') if att.created_at else 'Recent' }}</td>
+                  <td>
+                    <span style="color: #10b981; font-weight: bold;">{{ att.true_positives }} Hits</span> &bull; 
+                    <span style="color: #ef4444;">{{ att.false_negatives }} Misses</span>
+                  </td>
+                  <td>
+                    <strong style="font-size: 1rem; color: {% if att.passed %}#10b981{% else %}#ef4444{% endif %};">
+                      {{ "%.1f"|format(att.score_percentage) }}%
+                    </strong>
+                  </td>
+                  <td>
+                    <span class="badge {% if att.passed %}badge-pass{% else %}badge-fail{% endif %}">
+                      {% if att.passed %}QUALIFIED{% else %}REVISE{% endif %}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <a href="/exam/result/{{ att.id }}" target="_blank" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;">
+                      <i class="fa-solid fa-eye"></i> Scorecard
+                    </a>
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--muted); padding: 2rem;">
+                    No candidates have submitted examinations under this cohort filter yet.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function filterCohort(code) {
+      window.location.href = `/admin/cohorts?cohort=${encodeURIComponent(code)}`;
+    }
+
+    function searchStudents() {
+      const q = document.getElementById('student-search').value.toLowerCase();
+      const rows = document.querySelectorAll('#gradebook-table tbody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
+
