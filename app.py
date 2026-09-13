@@ -362,6 +362,36 @@ def create_app(config_class=Config):
                 "image_filename": None,
                 "image_url_direct": "https://placehold.co/800x600/1e293b/38bdf8?text=Granite+Quoins",
                 "defects": []
+            },
+            {
+                "slug": "traditional-irish-dry-stone",
+                "title": "Traditional Irish Dry Stone Field Boundary",
+                "description": "Double-faced dry stone limestone wall constructed without mortar, featuring coping stones, hearting infill, and through-stone ties.",
+                "country": "Ireland",
+                "region": "Galway (Aran Islands)",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "drystone_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.15, "y_min": 0.08, "x_max": 0.45, "y_max": 0.32,
+                        "category": "coping_displacement", "severity": "moderate",
+                        "remedial_action": "rebuild_section",
+                        "title": "Coping Stone Dislodgement",
+                        "explanation": "Top coping stones unseated by livestock or frost, exposing inner core hearting."
+                    },
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.40, "y_min": 0.35, "x_max": 0.78, "y_max": 0.75,
+                        "category": "lateral_bulge", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Out-of-Plumb Lateral Wythe Bulge",
+                        "explanation": "Core settlement forcing face stones outward beyond safe frictional equilibrium."
+                    }
+                ]
             }
         ]
 
@@ -1256,6 +1286,549 @@ def create_app(config_class=Config):
         random.shuffle(questions)
         return jsonify({"questions": questions[:limit]})
 
+    # ==========================================
+    # 1. Defect Flashcard Trainer (Cards)
+    # ==========================================
+    @app.route("/cards")
+    def flashcards():
+        wall_types = list(TAXONOMY_BY_WALL_TYPE.keys())
+        return render_template("flashcards.html", wall_types=wall_types)
+
+    @app.route("/api/cards/deck")
+    def api_cards_deck():
+        archetype_filter = request.args.get("archetype", "all").strip()
+
+        REMEDIAL_COSTS_EURO = {
+            "repoint_lime": "€45 - €75 / linear meter",
+            "helical_stitch": "€85 - €160 / linear meter",
+            "grout_injection": "€120 - €240 / cubic meter void",
+            "rebuild_section": "€280 - €550 / square meter",
+            "drainage_relief": "€65 - €110 / weep station",
+            "biocide_root": "€25 - €45 / square meter",
+            "underpin_base": "€750 - €1,400 / linear meter",
+            "monitor_gauge": "€35 - €60 / station"
+        }
+
+        REMEDIAL_LABELS = {
+            "repoint_lime": "Hydraulic Lime Repointing (NHL 2 / 3.5)",
+            "helical_stitch": "Helical Stainless Steel Stitching (6mm ties)",
+            "grout_injection": "Internal Core Void Grout Injection",
+            "rebuild_section": "Localized Stone Dismantling & Rebuild Plumb",
+            "drainage_relief": "Weep Hole Core-Drilling & Hydrostatic Relief",
+            "biocide_root": "Controlled Biocide & Woody Root Extraction",
+            "underpin_base": "Differential Foundation Underpinning",
+            "monitor_gauge": "Calibrated Tell-Tale Crack Gauge Monitoring"
+        }
+
+        ARCHETYPE_LABELS = {
+            "brick_cavity": "Brick Cavity",
+            "dry_stone": "Dry Stone",
+            "lime_mortar": "Historic Lime",
+            "ashlar": "Ashlar Stone",
+            "retaining_wall": "Retaining Wall",
+            "cob_earth": "Cob & Earth",
+            "flint_knapped": "Knapped Flint",
+            "terracotta_faience": "Terracotta & Faience",
+            "concrete_block": "Concrete Block",
+            "boulder_fieldstone": "Field Boulder",
+            "granite_quoin": "Granite Quoin"
+        }
+
+        DEFECT_DETAILS = {
+            "efflorescence": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Soluble salts dissolve in migrating ground or rain water and crystallize on the masonry face as moisture evaporates. Causes surface powdering and indicates ongoing moisture ingress.",
+                "mechanics": "Capillary moisture transport + surface salt evaporation (subflorescence / crypto-efflorescence)."
+            },
+            "spalling": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Trapped pore water expands by 9% upon freezing, exerting tensile hydraulic pressure that shears the outer brick or stone skin.",
+                "mechanics": "Freeze-thaw hydraulic burst exceeding masonry tensile capacity."
+            },
+            "mortar_erosion": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Wind-driven rain, acidic rainfall, and wind scour dissolve hydraulic lime binder, recessing joint profiles and exposing arrises.",
+                "mechanics": "Chemical dissolution of calcium carbonate + mechanical scouring."
+            },
+            "stepped_crack": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Diagonal stepped fracture tracing perpendicular head and bed joints, indicating differential foundation subsidence or lateral shear.",
+                "mechanics": "Diagonal tension failure along weakest shear plane (joint matrix)."
+            },
+            "expansion_failure": {
+                "severity": "moderate", "action": "helical_stitch",
+                "explanation": "Continuous long masonry runs lack movement expansion joints, generating compressive thermal stress that buckles brickwork.",
+                "mechanics": "Unaccommodated thermal/moisture irreversible expansion."
+            },
+            "coping_displacement": {
+                "severity": "moderate", "action": "rebuild_section",
+                "explanation": "Top capstone dislodged by wind, livestock, or frost heave, allowing water to penetrate directly into the dry stone hearting.",
+                "mechanics": "Gravity unseating + exposure of inner core rubble."
+            },
+            "hearting_washout": {
+                "severity": "critical", "action": "grout_injection",
+                "explanation": "Loss of smaller core packing stones within a double-faced wall, leaving large internal voids that trigger inward structural collapse.",
+                "mechanics": "Core cavity voiding and loss of frictional interlock."
+            },
+            "lateral_bulge": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Outward barrel displacement of the wall face under internal core settlement or hydrostatic back pressure.",
+                "mechanics": "Buckling of slender outer wythe under vertical and lateral load."
+            },
+            "through_stone_failure": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Long tie-stones spanning the entire wall thickness have fractured or washed out, allowing independent wythe separation.",
+                "mechanics": "Loss of transverse structural tie between opposing faces."
+            },
+            "base_subsidence": {
+                "severity": "critical", "action": "underpin_base",
+                "explanation": "Differential settlement of foundation subsoil under rain softening or sub-base washout.",
+                "mechanics": "Soil bearing failure causing vertical angular distortion."
+            },
+            "vegetation_roots": {
+                "severity": "moderate", "action": "biocide_root",
+                "explanation": "Woody roots penetrate unmortared joints; secondary root thickening exerts hydraulic mechanical splitting force.",
+                "mechanics": "Biological wedge expansion displacing adjacent stone units."
+            },
+            "lime_washout": {
+                "severity": "critical", "action": "repoint_lime",
+                "explanation": "Free calcium hydroxide in non-hydraulic or weak hydraulic lime leached away by water passage.",
+                "mechanics": "Binder matrix exhaustion leading to crumbly joint collapse."
+            },
+            "render_delamination": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "External lime render loses adhesive bond with substrate masonry due to salt crystallization or moisture freezing at the interface.",
+                "mechanics": "Interfacial shear failure producing hollow acoustic response."
+            },
+            "ivy_penetration": {
+                "severity": "moderate", "action": "biocide_root",
+                "explanation": "Hedera helix aerial rootlets embed into lime joints, dissolving lime binder with organic acids and displacing core rubble.",
+                "mechanics": "Acidic biochemical degradation + mechanical joint disruption."
+            },
+            "rubble_voiding": {
+                "severity": "critical", "action": "grout_injection",
+                "explanation": "Disappearance of core lime mortar leaving cavernous voids between random rubble packing.",
+                "mechanics": "Subsurface matrix collapse threatening total wall settlement."
+            },
+            "ashlar_spall": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Face delamination parallel to bedding plane; often caused by face-bedded stone installation or moisture crystallization.",
+                "mechanics": "Delamination along natural sedimentary foliation planes."
+            },
+            "joint_separation": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Fine precision 2mm-3mm arrises separating under thermal expansion and foundation movement.",
+                "mechanics": "Tensional arris separation admitting wind-driven rain."
+            },
+            "iron_cramp_burst": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Concealed ferrous iron ties oxidize when exposed to moisture; rust oxide expands up to 7x original volume, splitting massive ashlar blocks.",
+                "mechanics": "Rust jacking / oxidation expansive bursting pressure."
+            },
+            "hydrostatic_bulge": {
+                "severity": "critical", "action": "drainage_relief",
+                "explanation": "Trapped groundwater behind a retaining structure generates lateral hydrostatic thrust that pushes facing stones outward.",
+                "mechanics": "Lateral soil/water surcharge exceeding wall frictional resistance."
+            },
+            "weep_blockage": {
+                "severity": "moderate", "action": "drainage_relief",
+                "explanation": "Silt, mineral salts, and biological growth clog drainage weep tubes, trapping water behind the wall.",
+                "mechanics": "Drainage failure causing immediate rise in pore water pressure."
+            },
+            "shear_slip": {
+                "severity": "critical", "action": "underpin_base",
+                "explanation": "Base course sliding horizontally on foundation bedrock under excessive lateral slope load.",
+                "mechanics": "Base shear failure along wet interface."
+            },
+            "basal_erosion": {
+                "severity": "critical", "action": "repoint_lime",
+                "explanation": "Rain splashing from ground level erodes the unprotected lower 600mm of mass cob earth walls.",
+                "mechanics": "Slaking and dissolution of clay-silt binder matrix."
+            },
+            "shrinkage_fissure": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Dry spells induce clay shrinkage in cob walls, creating vertical stress relief fissures.",
+                "mechanics": "Desiccation volumetric contraction."
+            },
+            "compressive_slump": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Moisture saturation plasticizes the clay-earth binder, causing outward bulging under roof gravity loads.",
+                "mechanics": "Plastic shear slump under vertical compressive stress."
+            },
+            "flint_unseating": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Smooth vitreous flint nodules pop out of weathered lime-chalk bedding mortar.",
+                "mechanics": "Loss of mechanical keying between non-porous flint and mortar."
+            },
+            "matrix_washout": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Chalk-lime matrix holding knapped flint flakes dissolves under driving coastal rain.",
+                "mechanics": "Erosion of sacrificial lime matrix exposing nodule perimeters."
+            },
+            "gallet_loss": {
+                "severity": "minor", "action": "repoint_lime",
+                "explanation": "Small flint chips (gallets) wedged into wide joints dislodge, accelerating moisture access to the core.",
+                "mechanics": "Loss of protective secondary packing dressing."
+            },
+            "glaze_crazing": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Micro-network of fine hairline fractures in vitreous faience glaze due to differential thermal expansion between glaze and terracotta body.",
+                "mechanics": "Thermal expansion coefficient mismatch."
+            },
+            "iron_bracket_heave": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Hidden wrought iron anchors securing hollow faience blocks to structural frame corrode and heave the skin outward.",
+                "mechanics": "Expansive iron oxide jacking of hollow architectural ceramics."
+            },
+            "web_shear": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Internal ceramic structural webs of hollow blocks fracture under seismic or frame settlement loads.",
+                "mechanics": "Diagonal shear across hollow ceramic core."
+            },
+            "block_bed_crack": {
+                "severity": "moderate", "action": "helical_stitch",
+                "explanation": "Horizontal fracture along bed joints of concrete block wall caused by foundation movement or drying shrinkage.",
+                "mechanics": "Tensile rupture along weakest horizontal bond line."
+            },
+            "sulfate_crumble": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Tricalcium aluminate in cement reacts with ground sulfates to form expansive ettringite, turning solid block into crumbly paste.",
+                "mechanics": "Expansive chemical sulfate attack degrading binder cohesion."
+            },
+            "face_shell_spall": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Outer face shell of hollow concrete unit shears away from internal cross webs.",
+                "mechanics": "Frost wedging in core voids forcing face shell off."
+            },
+            "roll_out": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Rounded basal glacial boulder slides out of alignment under slope creep or missing pin chinking.",
+                "mechanics": "Loss of frictional equilibrium in unmortared boulder base."
+            },
+            "core_void": {
+                "severity": "moderate", "action": "grout_injection",
+                "explanation": "Small wedge chinking stones wash away from boulder interstices, allowing large boulders to shift.",
+                "mechanics": "Interstice chinking loss destabilizing gravity packing."
+            },
+            "frost_heave": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Subsoil moisture freezing beneath glacial boulders lifts and displaces foundation alignment.",
+                "mechanics": "Cryogenic frost lens heave."
+            },
+            "arment_crushing": {
+                "severity": "critical", "action": "rebuild_section",
+                "explanation": "Extreme vertical compressive point loading at dressed corner arrises causing spalling and diagonal fracture.",
+                "mechanics": "Compressive stress concentration exceeding granite compressive yield."
+            },
+            "lead_plug_heave": {
+                "severity": "moderate", "action": "repoint_lime",
+                "explanation": "Molten lead dowels securing vertical quoins expand under thermal cycling or trapped water ice, splitting stone socket.",
+                "mechanics": "Dowel socket hydraulic bursting."
+            },
+            "relief_shear": {
+                "severity": "critical", "action": "helical_stitch",
+                "explanation": "Vertical shear displacement between heavy dressed quoin stones and adjacent rubble or brick panel.",
+                "mechanics": "Differential settlement between rigid quoin tower and flexible panel."
+            }
+        }
+
+        walls = Wall.query.filter_by(is_published=True).all()
+        wall_by_type = {w.wall_type: w for w in walls}
+        defects = Defect.query.all()
+        defects_by_cat = {d.category: d for d in defects}
+
+        deck = []
+        archetypes = [archetype_filter] if archetype_filter != "all" and archetype_filter in TAXONOMY_BY_WALL_TYPE else list(TAXONOMY_BY_WALL_TYPE.keys())
+
+        for atype in archetypes:
+            items = TAXONOMY_BY_WALL_TYPE.get(atype, [])
+            wall = wall_by_type.get(atype) or (walls[0] if walls else None)
+            wall_dict = wall.to_dict() if wall else {}
+            wall_img = wall_dict.get("image_url", "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=1200&q=80")
+
+            for item in items:
+                cat_id = item["id"]
+                detail = DEFECT_DETAILS.get(cat_id, {
+                    "severity": "moderate",
+                    "action": "repoint_lime",
+                    "explanation": f"Characteristic diagnostic defect observed on {atype.replace('_', ' ')} masonry.",
+                    "mechanics": "Environmental weathering and loss of structural cohesion."
+                })
+
+                gt_defect = defects_by_cat.get(cat_id)
+                crop_box = None
+                img_url = wall_img
+                if gt_defect:
+                    crop_box = {
+                        "x_min": gt_defect.x_min,
+                        "y_min": gt_defect.y_min,
+                        "x_max": gt_defect.x_max,
+                        "y_max": gt_defect.y_max
+                    }
+                    w_gt = db.session.get(Wall, gt_defect.wall_id)
+                    if w_gt:
+                        img_url = w_gt.to_dict()["image_url"]
+
+                action_key = detail.get("action", "repoint_lime")
+                deck.append({
+                    "id": f"card-{atype}-{cat_id}",
+                    "archetype": atype,
+                    "archetype_label": ARCHETYPE_LABELS.get(atype, atype.replace("_", " ").title()),
+                    "defect_id": cat_id,
+                    "defect_title": item["label"],
+                    "severity": detail.get("severity", "moderate"),
+                    "image_url": img_url,
+                    "crop_box": crop_box,
+                    "explanation": detail.get("explanation"),
+                    "mechanics": detail.get("mechanics"),
+                    "remedial_action": action_key,
+                    "remedial_label": REMEDIAL_LABELS.get(action_key, action_key.replace("_", " ").title()),
+                    "euro_cost_rate": REMEDIAL_COSTS_EURO.get(action_key, "€45 - €90 / unit")
+                })
+
+        return jsonify({"success": True, "count": len(deck), "deck": deck})
+
+    # ==========================================
+    # 2. Dual-Wall Comparative Analysis Studio
+    # ==========================================
+    @app.route("/compare")
+    def compare_studio():
+        walls = Wall.query.filter_by(is_published=True).order_by(Wall.title).all()
+        wall_a_slug = request.args.get("wall_a", walls[0].slug if walls else "")
+        wall_b_slug = request.args.get("wall_b", walls[1].slug if len(walls) > 1 else (walls[0].slug if walls else ""))
+        return render_template("compare.html", walls=walls, initial_a=wall_a_slug, initial_b=wall_b_slug)
+
+    @app.route("/api/walls/compare")
+    def api_walls_compare():
+        a_param = request.args.get("wall_a", "").strip()
+        b_param = request.args.get("wall_b", "").strip()
+
+        wall_a = Wall.query.filter((Wall.slug == a_param) | (Wall.id == a_param)).first()
+        wall_b = Wall.query.filter((Wall.slug == b_param) | (Wall.id == b_param)).first()
+
+        walls = Wall.query.filter_by(is_published=True).all()
+        if not wall_a:
+            wall_a = walls[0] if walls else None
+        if not wall_b:
+            wall_b = walls[1] if len(walls) > 1 else wall_a
+
+        def build_telemetry(wall):
+            if not wall:
+                return {}
+            w_dict = wall.to_dict()
+            defects = Defect.query.filter_by(wall_id=wall.id).all()
+
+            critical = sum(1 for d in defects if d.severity == "critical")
+            moderate = sum(1 for d in defects if d.severity == "moderate")
+            minor = len(defects) - critical - moderate
+
+            GEOLOGY_MAP = {
+                "brick_cavity": "Carboniferous Coal Measures Fired Clay wythes with cavity ties",
+                "dry_stone": "Carboniferous Karst Limestone fieldstone (unmortared)",
+                "lime_mortar": "Calcareous Sandstone & Random Rubble in hydraulic lime NHL 2.0",
+                "ashlar": "Precision-dressed Portland & Bath Freestone Limestone arrises",
+                "retaining_wall": "Granite & Basalt igneous gravity retention boulders",
+                "cob_earth": "Subsoil clay, sand, straw and uncalcined lime mass-earth",
+                "flint_knapped": "Cretaceous Upper Chalk nodules & knapped silica glass",
+                "terracotta_faience": "Hollow vitrified fireclay with glazed slip surface",
+                "concrete_block": "Aggregated dense concrete CMU with sand-cement mortar",
+                "boulder_fieldstone": "Glacial granitic erratics & metamorphic chinking stones",
+                "granite_quoin": "Dressed Leinster Granite return angle blocks"
+            }
+
+            TOLERANCE_MAP = {
+                "brick_cavity": "Bed joint: 10mm ± 2mm | Max shear crack: 2.0mm",
+                "dry_stone": "Batter ratio: 1:6 | Lateral bulge tolerance: <15mm",
+                "lime_mortar": "Joint raking: 25mm depth | Core void limit: <10%",
+                "ashlar": "Joint arris: 2.5mm ± 0.5mm | Out-of-plane step: <1.0mm",
+                "retaining_wall": "Out-of-plumb batter: <25mm/m | Hydrostatic head: 0mm",
+                "cob_earth": "Basal undercut limit: <40mm | Vertical fissure: <3mm",
+                "flint_knapped": "Matrix recession: <8mm | Nodule pull-out: 0 units",
+                "terracotta_faience": "Glaze craze width: <0.2mm | Anchor jacking: 0mm",
+                "concrete_block": "Longitudinal bed crack: <1.5mm | Web shear: 0mm",
+                "boulder_fieldstone": "Pin stone loss: <5% | Basal slide displacement: <5mm",
+                "granite_quoin": "Arris compressive crushing: 0mm | Dowel heave: <1.0mm"
+            }
+
+            BINDER_MAP = {
+                "brick_cavity": "Hydraulic Lime NHL 3.5 (1:2.5 sharp sand) - vapor permeable",
+                "dry_stone": "No Binder (Dry Gravity Interlock with tightly pinned chinking)",
+                "lime_mortar": "Hydraulic Lime NHL 2.0 (1:2.5 coarse sand + 5% crushed brick pozzolan)",
+                "ashlar": "Non-hydraulic Fat Lime Putty (CL90) with fine stone dust (1:1.5)",
+                "retaining_wall": "Unmortared dry backing with free-draining granular drainage aggregate",
+                "cob_earth": "Sacrificial hydraulic lime wash (NHL 2.0) with tallow & animal hair",
+                "flint_knapped": "Fat lime chalk putty mortar NHL 2.0 with chalk aggregate fines",
+                "terracotta_faience": "Non-staining pure lime grout injection with thixotropic modifier",
+                "concrete_block": "Sulfate-resisting hydraulic mortar Class M4",
+                "boulder_fieldstone": "Dry gravity interlock; lime grout hearting consolidation where voided",
+                "granite_quoin": "Coarse hydraulic lime NHL 3.5 with crushed granite grit fines"
+            }
+
+            COST_PROFILES = {
+                "brick_cavity": {"yr0": "€340", "yr5": "€2,850", "yr20": "€16,200", "roi": "47.6x"},
+                "dry_stone": {"yr0": "€220", "yr5": "€1,950", "yr20": "€11,800", "roi": "53.6x"},
+                "lime_mortar": {"yr0": "€380", "yr5": "€3,400", "yr20": "€18,500", "roi": "48.7x"},
+                "ashlar": {"yr0": "€650", "yr5": "€5,200", "yr20": "€29,400", "roi": "45.2x"},
+                "retaining_wall": {"yr0": "€480", "yr5": "€4,600", "yr20": "€26,000", "roi": "54.2x"},
+                "cob_earth": {"yr0": "€280", "yr5": "€2,900", "yr20": "€15,200", "roi": "54.3x"},
+                "flint_knapped": {"yr0": "€420", "yr5": "€3,600", "yr20": "€19,800", "roi": "47.1x"},
+                "terracotta_faience": {"yr0": "€580", "yr5": "€4,900", "yr20": "€27,500", "roi": "47.4x"},
+                "concrete_block": {"yr0": "€190", "yr5": "€1,650", "yr20": "€9,400", "roi": "49.5x"},
+                "boulder_fieldstone": {"yr0": "€260", "yr5": "€2,400", "yr20": "€13,600", "roi": "52.3x"},
+                "granite_quoin": {"yr0": "€510", "yr5": "€4,100", "yr20": "€22,900", "roi": "44.9x"}
+            }
+
+            cost = COST_PROFILES.get(wall.wall_type, {"yr0": "€340", "yr5": "€2,850", "yr20": "€16,200", "roi": "47.6x"})
+
+            return {
+                "id": wall.id,
+                "slug": wall.slug,
+                "title": wall.title,
+                "wall_type": wall.wall_type,
+                "wall_type_label": wall.wall_type.replace("_", " ").title(),
+                "country": wall.country,
+                "region": wall.region or "Regional",
+                "difficulty": wall.difficulty,
+                "image_url": w_dict["image_url"],
+                "defects_count": len(defects),
+                "critical_count": critical,
+                "moderate_count": moderate,
+                "minor_count": minor,
+                "bedrock_geology": GEOLOGY_MAP.get(wall.wall_type, "Sedimentary & Metamorphic Bedrock"),
+                "tolerance": TOLERANCE_MAP.get(wall.wall_type, "Aperture < 2mm | Bulge < 15mm"),
+                "binder": BINDER_MAP.get(wall.wall_type, "Hydraulic Lime NHL 2.0 / NHL 3.5"),
+                "costs": cost,
+                "ground_truth": [d.to_dict() for d in defects]
+            }
+
+        return jsonify({
+            "success": True,
+            "specimen_a": build_telemetry(wall_a),
+            "specimen_b": build_telemetry(wall_b)
+        })
+
+    # ==========================================
+    # 3. Interactive Geospatial Masonry Atlas
+    # ==========================================
+    @app.route("/map")
+    def map_atlas():
+        return render_template("map.html")
+
+    @app.route("/api/map/walls")
+    def api_map_walls():
+        walls = Wall.query.filter_by(is_published=True).all()
+
+        GEOLOGY_AND_GEO_COORDS = {
+            "industrial-brick-efflorescence": {
+                "lat": 53.4808, "lng": -2.2426,
+                "geology": "Coal Measures Carboniferous Mudstone (Fired Clay)",
+                "rainfall": "Severe (880 mm/yr)",
+                "freeze_thaw": "44 cycles / yr",
+                "salt_spray": "Inland Industrial / Acidic SO2"
+            },
+            "historic-lime-mortar-rubble": {
+                "lat": 52.9800, "lng": -6.0400,
+                "geology": "Ordovician Slate, Schist & Calcareous Sandstone",
+                "rainfall": "Very Severe (1,250 mm/yr)",
+                "freeze_thaw": "52 cycles / yr",
+                "salt_spray": "High Coastal Moist Atlantic"
+            },
+            "ashlar-dressed-limestone-facade": {
+                "lat": 53.3498, "lng": -6.2603,
+                "geology": "Carboniferous Calp Limestone & Leinster Granite",
+                "rainfall": "Moderate (730 mm/yr)",
+                "freeze_thaw": "36 cycles / yr",
+                "salt_spray": "Urban Maritime Estuary"
+            },
+            "granite-retaining-wall-failure": {
+                "lat": 53.2707, "lng": -9.0568,
+                "geology": "Galway Porphyritic Igneous Granite Dyke",
+                "rainfall": "Severe Atlantic (1,150 mm/yr)",
+                "freeze_thaw": "41 cycles / yr",
+                "salt_spray": "Extreme Marine Bay Aerosol"
+            },
+            "historic-cob-earth-structure": {
+                "lat": 52.3369, "lng": -6.4633,
+                "geology": "Cambrian Greywacke Bedrock & Glacial Marine Marl Clay",
+                "rainfall": "Moderate-High (890 mm/yr)",
+                "freeze_thaw": "28 cycles / yr",
+                "salt_spray": "South-East Coastal Maritime"
+            },
+            "knapped-flint-lime-facade": {
+                "lat": 52.6309, "lng": 1.2974,
+                "geology": "Cretaceous Upper White Chalk & Cryptocrystalline Silica Flint",
+                "rainfall": "Low-Moderate (640 mm/yr)",
+                "freeze_thaw": "39 cycles / yr",
+                "salt_spray": "North Sea Maritime Winds"
+            },
+            "glazed-architectural-terracotta": {
+                "lat": 52.4862, "lng": -1.8904,
+                "geology": "Triassic Mercia Mudstone & Etruria Marl Fireclay",
+                "rainfall": "Moderate (720 mm/yr)",
+                "freeze_thaw": "38 cycles / yr",
+                "salt_spray": "Inland Urban Atmospheric Particulate"
+            },
+            "hollow-concrete-blockwork-pier": {
+                "lat": 51.8985, "lng": -8.4756,
+                "geology": "Devonian Old Red Sandstone & Carboniferous Limestone aggregate",
+                "rainfall": "High (1,020 mm/yr)",
+                "freeze_thaw": "32 cycles / yr",
+                "salt_spray": "River Lee Estuary & Marine Mist"
+            },
+            "cyclopean-boulder-fieldstone-wall": {
+                "lat": 54.6549, "lng": -8.1100,
+                "geology": "Dalradian Gneiss & Glacial Plutonic Granite Erratics",
+                "rainfall": "Extreme Hyper-Atlantic (1,450 mm/yr)",
+                "freeze_thaw": "56 cycles / yr",
+                "salt_spray": "Severe Atlantic Gale Salt Spray"
+            },
+            "granite-quoin-dressed-corner": {
+                "lat": 53.3440, "lng": -6.2550,
+                "geology": "Coarse-Grained Leinster Igneous Granite Arris Blocks",
+                "rainfall": "Moderate (740 mm/yr)",
+                "freeze_thaw": "35 cycles / yr",
+                "salt_spray": "Urban Coastal Temperate"
+            },
+            "traditional-irish-dry-stone": {
+                "lat": 53.1250, "lng": -9.6667,
+                "geology": "Karst Carboniferous Limestone Pavements & Crag",
+                "rainfall": "Very Severe (1,200 mm/yr)",
+                "freeze_thaw": "46 cycles / yr",
+                "salt_spray": "Extreme Ocean Sea Spray (Atlantic Edge)"
+            }
+        }
+
+        results = []
+        for w in walls:
+            geo = GEOLOGY_AND_GEO_COORDS.get(w.slug, {
+                "lat": 53.35, "lng": -6.26,
+                "geology": "Regional Geological Bedrock Substrate",
+                "rainfall": "Moderate (800 mm/yr)",
+                "freeze_thaw": "40 cycles / yr",
+                "salt_spray": "Temperate Exposure"
+            })
+            d_count = Defect.query.filter_by(wall_id=w.id).count()
+            results.append({
+                "id": w.id,
+                "slug": w.slug,
+                "title": w.title,
+                "wall_type": w.wall_type,
+                "wall_type_label": w.wall_type.replace("_", " ").title(),
+                "country": w.country,
+                "region": w.region or "Regional",
+                "difficulty": w.difficulty,
+                "image_url": w.to_dict()["image_url"],
+                "lat": geo["lat"],
+                "lng": geo["lng"],
+                "geology": geo["geology"],
+                "rainfall": geo["rainfall"],
+                "freeze_thaw": geo["freeze_thaw"],
+                "salt_spray": geo["salt_spray"],
+                "defects_count": d_count,
+                "inspect_url": f"/inspect/{w.slug}"
+            })
+
+        return jsonify({"success": True, "count": len(results), "walls": results})
 
     @app.route("/admin/export/attempts.csv")
     @admin_required

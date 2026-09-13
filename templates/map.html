@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geospatial Masonry Atlas & Regional Geology Map - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #070d1e;
+      color: #f8fafc;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .top-nav {
+      height: 54px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1.25rem;
+      z-index: 1000;
+      flex-shrink: 0;
+    }
+    .top-nav h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #38bdf8;
+    }
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .nav-btn {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: #334155;
+      color: #f8fafc;
+    }
+    .nav-btn.active {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
+
+    /* Main Container */
+    .atlas-container {
+      flex: 1;
+      position: relative;
+      display: flex;
+      width: 100%;
+      height: calc(100vh - 54px);
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #0b1329;
+      z-index: 1;
+    }
+
+    /* Floating Left Sidebar / Drawer */
+    .atlas-sidebar {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      bottom: 1rem;
+      width: 380px;
+      max-width: calc(100vw - 2rem);
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 1.25rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.7);
+      transition: transform 0.3s ease;
+    }
+    .atlas-sidebar.collapsed {
+      transform: translateX(calc(-100% - 1.5rem));
+    }
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 1rem;
+      right: -42px;
+      width: 36px;
+      height: 36px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .search-box input {
+      width: 100%;
+      background: #0b1329;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 0.6rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .search-box input:focus {
+      border-color: #38bdf8;
+    }
+
+    .filter-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .filter-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+    .chips-wrap {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      max-height: 85px;
+      overflow-y: auto;
+    }
+    .chip {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover {
+      color: white;
+      border-color: #38bdf8;
+    }
+    .chip.active {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
+
+    /* Scrollable Wall List Cards */
+    .wall-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding-right: 4px;
+    }
+    .wall-card-item {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.65rem;
+      display: flex;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .wall-card-item:hover {
+      border-color: #38bdf8;
+      background: #25334d;
+      transform: translateY(-1px);
+    }
+    .wall-card-item.active {
+      border-color: #10b981;
+      background: #193838;
+    }
+    .wall-thumb {
+      width: 65px;
+      height: 65px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .wall-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .wall-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .wall-sub {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .wall-geo-tag {
+      font-size: 0.68rem;
+      background: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* Custom Map Marker & Popup */
+    .custom-map-marker {
+      background: #0284c7;
+      border: 2px solid #ffffff;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: 0 0 15px rgba(2, 132, 199, 0.8);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .custom-map-marker:hover {
+      transform: scale(1.15);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+      border: 1.5px solid #0284c7 !important;
+      border-radius: 12px !important;
+      padding: 0 !important;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.8) !important;
+      overflow: hidden !important;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      width: 290px !important;
+    }
+    .leaflet-popup-tip {
+      background: #1e293b !important;
+    }
+    .popup-img-wrap {
+      position: relative;
+      width: 100%;
+      height: 140px;
+      background: #0f172a;
+    }
+    .popup-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .popup-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(2, 132, 199, 0.9);
+      color: white;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .popup-body {
+      padding: 0.85rem;
+    }
+    .popup-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0 0 0.25rem;
+      color: #f8fafc;
+    }
+    .popup-geo {
+      font-size: 0.75rem;
+      color: #38bdf8;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .popup-stress-grid {
+      background: #0f172a;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 0.75rem;
+    }
+    .popup-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .popup-btn {
+      flex: 1;
+      text-align: center;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: block;
+    }
+    .popup-btn-primary {
+      background: #0284c7;
+      color: white;
+    }
+    .popup-btn-compare {
+      background: #059669;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <div class="top-nav">
+    <h1><span>🗺️</span> Geospatial Masonry Atlas & Geology Map</h1>
+    <div class="nav-links">
+      <a href="/" class="nav-btn">&larr; Catalog</a>
+      <a href="/cards" class="nav-btn">📇 Flashcards</a>
+      <a href="/compare" class="nav-btn">⚖️ Compare Studio</a>
+      <a href="/quiz" class="nav-btn">⚡ Reflex Quiz</a>
+      <a href="/portal" class="nav-btn">🎓 Skills Passport</a>
+    </div>
+  </div>
+
+  <!-- Map + Floating Sidebar Container -->
+  <div class="atlas-container">
+
+    <!-- Left Floating Drawer -->
+    <div id="atlas-sidebar" class="atlas-sidebar">
+      <button type="button" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Drawer">
+        ◀
+      </button>
+
+      <div>
+        <strong style="color: #f8fafc; font-size: 1rem; display: block;">Geological Exploration</strong>
+        <p style="margin: 2px 0 0; color: #94a3b8; font-size: 0.75rem;">
+          Filter by bedrock geology and environmental stress index.
+        </p>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="atlas-search" placeholder="Search wall, town, or bedrock..." oninput="filterWalls()">
+      </div>
+
+      <!-- Archetype Filter Chips -->
+      <div class="filter-section">
+        <span class="filter-title">Masonry Archetypes</span>
+        <div class="chips-wrap" id="archetype-chips">
+          <button class="chip active" onclick="setArchetypeFilter('all', this)">All Archetypes</button>
+          <button class="chip" onclick="setArchetypeFilter('brick_cavity', this)">Brick Cavity</button>
+          <button class="chip" onclick="setArchetypeFilter('dry_stone', this)">Dry Stone</button>
+          <button class="chip" onclick="setArchetypeFilter('lime_mortar', this)">Historic Lime</button>
+          <button class="chip" onclick="setArchetypeFilter('ashlar', this)">Ashlar Stone</button>
+          <button class="chip" onclick="setArchetypeFilter('retaining_wall', this)">Retaining Dyke</button>
+          <button class="chip" onclick="setArchetypeFilter('cob_earth', this)">Cob Earth</button>
+          <button class="chip" onclick="setArchetypeFilter('flint_knapped', this)">Knapped Flint</button>
+          <button class="chip" onclick="setArchetypeFilter('terracotta_faience', this)">Terracotta</button>
+          <button class="chip" onclick="setArchetypeFilter('concrete_block', this)">Concrete Block</button>
+          <button class="chip" onclick="setArchetypeFilter('boulder_fieldstone', this)">Boulder Wall</button>
+          <button class="chip" onclick="setArchetypeFilter('granite_quoin', this)">Granite Quoin</button>
+        </div>
+      </div>
+
+      <!-- Environmental Stress Filter Chips -->
+      <div class="filter-section">
+        <span class="filter-title">Environmental Exposure Tier</span>
+        <div class="chips-wrap" id="climate-chips">
+          <button class="chip active" onclick="setClimateFilter('all', this)">All Climates</button>
+          <button class="chip" onclick="setClimateFilter('rain', this)">🌧️ Severe Rain</button>
+          <button class="chip" onclick="setClimateFilter('freeze', this)">❄️ High Freeze-Thaw</button>
+          <button class="chip" onclick="setClimateFilter('marine', this)">🌊 Marine Aerosol</button>
+        </div>
+      </div>
+
+      <!-- Filtered Specimens List -->
+      <div class="wall-list" id="sidebar-wall-list">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+
+    <!-- Leaflet Map Canvas -->
+    <div id="map"></div>
+
+  </div>
+
+  <script>
+    let map = null;
+    let allWalls = [];
+    let markersLayer = null;
+    let activeArchetype = 'all';
+    let activeClimate = 'all';
+
+    const ARCHETYPE_ICONS = {
+      brick_cavity: '🧱',
+      dry_stone: '🪨',
+      lime_mortar: '🏛️',
+      ashlar: '📐',
+      retaining_wall: '🛡️',
+      cob_earth: '🌾',
+      flint_knapped: '💎',
+      terracotta_faience: '🏺',
+      concrete_block: '⬛',
+      boulder_fieldstone: '⛰️',
+      granite_quoin: '🏗️'
+    };
+
+    const ARCHETYPE_COLORS = {
+      brick_cavity: '#d97706',
+      dry_stone: '#059669',
+      lime_mortar: '#0284c7',
+      ashlar: '#6366f1',
+      retaining_wall: '#7c3aed',
+      cob_earth: '#b45309',
+      flint_knapped: '#06b6d4',
+      terracotta_faience: '#e11d48',
+      concrete_block: '#64748b',
+      boulder_fieldstone: '#10b981',
+      granite_quoin: '#3b82f6'
+    };
+
+    function initMap() {
+      // Centered on Ireland / UK Atlantic region
+      map = L.map('map', {
+        zoomControl: false
+      }).setView([53.5, -5.5], 6);
+
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      // CartoDB Dark Matter tile layer (No token required, zero rate limit)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; OpenStreetMap contributors',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+      fetchWalls();
+    }
+
+    async function fetchWalls() {
+      try {
+        const res = await fetch('/api/map/walls');
+        const data = await res.json();
+        if (data.success) {
+          allWalls = data.walls || [];
+          renderMarkers();
+          renderSidebarList();
+        }
+      } catch (err) {
+        console.error("Failed to load map walls:", err);
+      }
+    }
+
+    function renderMarkers() {
+      if (!markersLayer) return;
+      markersLayer.clearLayers();
+
+      const filtered = getFilteredWalls();
+
+      filtered.forEach(w => {
+        const iconSymbol = ARCHETYPE_ICONS[w.wall_type] || '🧱';
+        const color = ARCHETYPE_COLORS[w.wall_type] || '#0284c7';
+
+        const customIcon = L.divIcon({
+          className: 'custom-leaflet-pin',
+          html: `<div class="custom-map-marker" style="background: ${color}; box-shadow: 0 0 16px ${color};">${iconSymbol}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([w.lat, w.lng], { icon: customIcon });
+
+        const popupHtml = `
+          <div class="popup-img-wrap">
+            <img src="${w.image_url}" alt="${w.title}">
+            <span class="popup-badge" style="background: ${color};">${w.wall_type_label}</span>
+          </div>
+          <div class="popup-body">
+            <h4 class="popup-title">${w.title}</h4>
+            <span class="popup-geo">📍 ${w.region}, ${w.country} &bull; ${w.geology}</span>
+            <div class="popup-stress-grid">
+              <div>🌧️ <strong>Rainfall:</strong> ${w.rainfall}</div>
+              <div>❄️ <strong>Freeze-Thaw:</strong> ${w.freeze_thaw}</div>
+              <div>🌊 <strong>Aerosol:</strong> ${w.salt_spray}</div>
+            </div>
+            <div class="popup-actions">
+              <a href="${w.inspect_url}" class="popup-btn popup-btn-primary">Inspect Wall &rarr;</a>
+              <a href="/compare?wall_a=${w.slug}" class="popup-btn popup-btn-compare">Compare &rarr;</a>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml);
+        markersLayer.addLayer(marker);
+      });
+    }
+
+    function renderSidebarList() {
+      const listEl = document.getElementById('sidebar-wall-list');
+      const filtered = getFilteredWalls();
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div style="text-align: center; color: #64748b; padding: 2rem;">No specimens match current filters.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(w => `
+        <div class="wall-card-item" onclick="flyToWall(${w.lat}, ${w.lng})">
+          <img src="${w.image_url}" class="wall-thumb" alt="${w.title}">
+          <div class="wall-info">
+            <div class="wall-name">${w.title}</div>
+            <span class="wall-sub">${w.region}, ${w.country}</span>
+            <span class="wall-geo-tag">🪨 ${w.geology.split('&')[0].trim()}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getFilteredWalls() {
+      const searchVal = document.getElementById('atlas-search').value.toLowerCase().trim();
+
+      return allWalls.filter(w => {
+        // Search filter
+        if (searchVal) {
+          const matchTitle = w.title.toLowerCase().includes(searchVal);
+          const matchRegion = (w.region || '').toLowerCase().includes(searchVal);
+          const matchCountry = w.country.toLowerCase().includes(searchVal);
+          const matchGeo = (w.geology || '').toLowerCase().includes(searchVal);
+          if (!matchTitle && !matchRegion && !matchCountry && !matchGeo) return false;
+        }
+
+        // Archetype filter
+        if (activeArchetype !== 'all' && w.wall_type !== activeArchetype) {
+          return false;
+        }
+
+        // Climate filter
+        if (activeClimate === 'rain' && !w.rainfall.toLowerCase().includes('severe')) {
+          return false;
+        }
+        if (activeClimate === 'freeze' && !w.freeze_thaw.includes('5') && !w.freeze_thaw.includes('4')) {
+          return false;
+        }
+        if (activeClimate === 'marine' && !w.salt_spray.toLowerCase().includes('marine') && !w.salt_spray.toLowerCase().includes('atlantic')) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    function setArchetypeFilter(atype, btn) {
+      activeArchetype = atype;
+      document.querySelectorAll('#archetype-chips .chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      renderMarkers();
+      renderSidebarList();
+    }
+
+    function setClimateFilter(climate, btn) {
+      activeClimate = climate;
+      document.querySelectorAll('#climate-chips .chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      renderMarkers();
+      renderSidebarList();
+    }
+
+    function filterWalls() {
+      renderMarkers();
+      renderSidebarList();
+    }
+
+    function flyToWall(lat, lng) {
+      if (map) {
+        map.flyTo([lat, lng], 12, { duration: 1.5 });
+      }
+    }
+
+    function toggleSidebar() {
+      const sb = document.getElementById('atlas-sidebar');
+      sb.classList.toggle('collapsed');
+      const btn = sb.querySelector('.sidebar-toggle-btn');
+      btn.innerText = sb.classList.contains('collapsed') ? '▶' : '◀';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+    });
+  </script>
+</body>
+</html>
