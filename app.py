@@ -611,6 +611,204 @@ def create_app(config_class=Config):
                         "explanation": "Core settlement forcing face stones outward beyond safe frictional equilibrium."
                     }
                 ]
+            },
+            {
+                "slug": "modern-brick-settlement-shear",
+                "title": "Edwardian Semi-Detached Flank Wall",
+                "description": "Flank elevation adjacent to corner bay exhibiting diagonal stepped settlement shear fracture through mortar bed and perpendicular joints from differential foundation subsidence.",
+                "country": "United Kingdom",
+                "region": "London",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": "modern_brick_damage_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.28, "y_min": 0.12, "x_max": 0.74, "y_max": 0.87,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Diagonal Stepped Settlement Shear Fracture",
+                        "explanation": "Foundation rotation from seasonal subsoil desiccation generates diagonal principal tensile stresses, propagating stepped fractures through bed and perpend joints."
+                    }
+                ]
+            },
+            {
+                "slug": "commercial-brick-thermal-expansion",
+                "title": "Commercial Brickwork Gable Wall",
+                "description": "Continuous unrestrained brick masonry gable elevation constructed without vertical movement control joints, exhibiting vertical thermal expansion fissures.",
+                "country": "United Kingdom",
+                "region": "Leeds",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "intermediate",
+                "image_filename": "brick_thermal_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.40, "y_min": 0.05, "x_max": 0.64, "y_max": 0.95,
+                        "category": "expansion_failure", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Vertical Thermal Expansion Movement Fissure",
+                        "explanation": "Continuous 16-meter brick panel built without expansion joints undergoes irreversible thermal expansion under solar exposure, cracking near restrained returns."
+                    }
+                ]
+            },
+            {
+                "slug": "industrial-fired-brick-spalling",
+                "title": "Industrial Fired Brick Pier",
+                "description": "Exposed solid brick pier constructed of underburned, porous Victorian common bricks suffering severe cryo-hydraulic frost spalling and face shell detachment.",
+                "country": "United Kingdom",
+                "region": "Birmingham",
+                "wall_type": "brick_cavity",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "old_brick_decay_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.22, "y_min": 0.28, "x_max": 0.78, "y_max": 0.78,
+                        "category": "spalling", "severity": "critical",
+                        "remedial_action": "rebuild_section",
+                        "title": "Severe Cryo-Hydraulic Frost Spalling",
+                        "explanation": "High open porosity underburned bricks saturated by driving rain experience 9% volumetric water-to-ice expansion, shearing off vitreous face shells."
+                    }
+                ]
+            },
+            {
+                "slug": "historic-sandstone-contour-scaling",
+                "title": "Historic Sandstone: Contour Scaling",
+                "description": "Carboniferous quartzose sandstone ashlar masonry exhibiting thick indurated crust detachment and planar contour scaling cutting across natural quarry bedding planes.",
+                "country": "United Kingdom",
+                "region": "West Yorkshire",
+                "wall_type": "ashlar",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "ultratech_stone_pores_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.18, "y_min": 0.22, "x_max": 0.82, "y_max": 0.78,
+                        "category": "contour_scaling", "severity": "critical",
+                        "remedial_action": "indent_stone",
+                        "title": "Contour Scaling in Sandstone",
+                        "explanation": "Pores blocked with atmospheric sulfates create differential hygrothermal movement stresses between indurated crust and core, shearing a 15-30mm shell away parallel to surface contours."
+                    }
+                ]
+            },
+            {
+                "slug": "sheltered-limestone-gypsum-cavitation",
+                "title": "Sheltered Limestone: Black Gypsum Crust & Cavitation",
+                "description": "Oolitic limestone classical facade featuring rain-sheltered overhangs coated in impermeable black gypsum crusts with deep sub-crust cavernous cavitation (alveolar decay).",
+                "country": "United Kingdom",
+                "region": "London",
+                "wall_type": "ashlar",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "ashlar_cracking_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.22, "y_min": 0.18, "x_max": 0.80, "y_max": 0.76,
+                        "category": "gypsum_crust_cavitation", "severity": "critical",
+                        "remedial_action": "poultice_desalt",
+                        "title": "Sheltered Gypsum Crust & Cavitation (Alveolar Decay)",
+                        "explanation": "Atmospheric SO2 reacts with limestone in unwashed sheltered zones to form impermeable gypsum skins; sub-surface crypto-efflorescence hollows out cavernous honeycombs beneath."
+                    }
+                ]
+            },
+            {
+                "slug": "rubble-wall-ribbon-pointing-trap",
+                "title": "Rubble Wall: Inappropriate Ribbon Pointing",
+                "description": "Historic fieldstone rubble masonry subjected to dense 1:3 Portland cement ribbon pointing standing proud of the wall, trapping moisture and accelerating stone crumbling.",
+                "country": "United Kingdom",
+                "region": "Wales",
+                "wall_type": "lime_mortar",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "stone_rubble_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.16, "y_min": 0.20, "x_max": 0.82, "y_max": 0.80,
+                        "category": "ribbon_pointing_failure", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Impermeable Ribbon Pointing & Cement Trap Decay",
+                        "explanation": "Impermeable Portland cement ribbon joints trap capillary water behind proud mortar fillets, blocking evaporation and diverting moisture into softer stone arrises."
+                    }
+                ]
+            },
+            {
+                "slug": "historic-masonry-cryptogamic-lichen",
+                "title": "Historic Masonry: Biogenic Cryptogamic Colonization",
+                "description": "Historic lime-coursed sandstone masonry displaying crustose lichen thalli and thick bryophyte moss cushions secreting chelating acids and harboring destructive pore moisture.",
+                "country": "United Kingdom",
+                "region": "Devon",
+                "wall_type": "lime_mortar",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "lime_coursed_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.20, "y_min": 0.20, "x_max": 0.80, "y_max": 0.75,
+                        "category": "cryptogamic_lichen_attack", "severity": "moderate",
+                        "remedial_action": "biocide_steam",
+                        "title": "Biogenic Cryptogamic Colonization & Acid Etching",
+                        "explanation": "Crustose lichens exude chelating oxalic acids that pit calcareous binders, while moss cushions maintain 100% saturation, triggering winter freeze-thaw shatter."
+                    }
+                ]
+            },
+            {
+                "slug": "faunal-mason-bee-boring-guano",
+                "title": "Faunal Biodeterioration: Mason Bee Boring & Guano",
+                "description": "Historic lime boundary wall honeycombed by solitary mason bee nesting tunnels in mortar perpends, accompanied by avian guano acid attack on coping stones.",
+                "country": "United Kingdom",
+                "region": "Cotswolds",
+                "wall_type": "lime_mortar",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "drystone_02.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.22, "y_min": 0.24, "x_max": 0.78, "y_max": 0.76,
+                        "category": "faunal_mason_bee_boring", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Faunal Mason Bee Boring & Avian Guano Dissolution",
+                        "explanation": "Solitary mason bees bore 6-10mm nesting galleries into soft lime joints, while bird guano releases uric and phosphoric acids that dissolve carbonate binders."
+                    }
+                ]
+            },
+            {
+                "slug": "victorian-plinth-impermeable-coating",
+                "title": "Victorian Plinth: Impermeable Coating & Sealant Spalling",
+                "description": "Victorian dressed sandstone bay plinth treated with silicone water repellent and oil paint, trapping ground damp and generating explosive sub-film spalling.",
+                "country": "United Kingdom",
+                "region": "Edinburgh",
+                "wall_type": "ashlar",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "ultratech_stone_frost_01.jpg",
+                "image_url_direct": None,
+                "defects": [
+                    {
+                        "target_type": "bounding_box",
+                        "x_min": 0.18, "y_min": 0.20, "x_max": 0.82, "y_max": 0.80,
+                        "category": "impermeable_coating_blister", "severity": "critical",
+                        "remedial_action": "coating_removal",
+                        "title": "Impermeable Synthetic Coating & Sealant Spalling",
+                        "explanation": "Vapor-impermeable synthetic sealant traps rising damp and salts; sub-film crypto-efflorescence crystallization pressure shears outer stone skins off in explosive sheets."
+                    }
+                ]
             }
         ]
 
@@ -2388,6 +2586,111 @@ def create_app(config_class=Config):
                 "rainfall": "Very Severe (1,200 mm/yr)",
                 "freeze_thaw": "46 cycles / yr",
                 "salt_spray": "Extreme Ocean Sea Spray (Atlantic Edge)"
+            },
+            "ultratech-stone-continuous-joints": {
+                "lat": 26.9124, "lng": 75.7873,
+                "geology": "Vindhyan Supergroup Sandstone & Lime Rubble",
+                "rainfall": "Monsoonal (650 mm/yr)",
+                "freeze_thaw": "0 cycles / yr (Intense Thermal Shock)",
+                "salt_spray": "Inland Arid Calcite/Sulfate Dust"
+            },
+            "ultratech-stone-improper-bedding": {
+                "lat": 23.2599, "lng": 77.4126,
+                "geology": "Bhander Stratified Sedimentary Sandstone",
+                "rainfall": "High Monsoonal (1,100 mm/yr)",
+                "freeze_thaw": "0 cycles / yr (Extreme Diurnal Expansion)",
+                "salt_spray": "Sub-tropical Continental"
+            },
+            "ultratech-stone-lime-runoff": {
+                "lat": 12.9716, "lng": 77.5946,
+                "geology": "Peninsular Gneiss & Fieldstone Rubble",
+                "rainfall": "Tropical High (970 mm/yr)",
+                "freeze_thaw": "0 cycles / yr (High Leaching Factor)",
+                "salt_spray": "Plateau Rainwash Calcite Leaching"
+            },
+            "ultratech-stone-frost-attack": {
+                "lat": 31.1048, "lng": 77.1734,
+                "geology": "Himalayan Quartzite & Porous Metamorphic Sandstone",
+                "rainfall": "Severe Montane (1,500 mm/yr)",
+                "freeze_thaw": "78 cycles / yr (Extreme Alpine)",
+                "salt_spray": "Periglacial Freeze Wedging"
+            },
+            "ultratech-stone-through-stone-defect": {
+                "lat": 19.0760, "lng": 72.8777,
+                "geology": "Deccan Trap Igneous Basalt Rubble",
+                "rainfall": "Severe Monsoonal (2,200 mm/yr)",
+                "freeze_thaw": "0 cycles / yr (Surcharge Pore Pressure)",
+                "salt_spray": "Arabian Sea Saline Humidity"
+            },
+            "ultratech-stone-macroporous-decay": {
+                "lat": 17.3850, "lng": 78.4867,
+                "geology": "Macroporous Volcanic Ashlar & Granitoid",
+                "rainfall": "Moderate-High (820 mm/yr)",
+                "freeze_thaw": "0 cycles / yr (Rapid Capillary Evaporation)",
+                "salt_spray": "Semi-arid Interior Cryptoflorescence"
+            },
+            "modern-brick-settlement-shear": {
+                "lat": 51.5074, "lng": -0.1278,
+                "geology": "London Clay Shrinkable Formation & Fired Clay Brickwork",
+                "rainfall": "Moderate (650 mm/yr)",
+                "freeze_thaw": "32 cycles / yr",
+                "salt_spray": "Urban Low-Saline Acid Rain"
+            },
+            "commercial-brick-thermal-expansion": {
+                "lat": 53.8008, "lng": -1.5491,
+                "geology": "Pennine Coal Measures Mudstone & Wirecut Brick",
+                "rainfall": "Moderate-High (780 mm/yr)",
+                "freeze_thaw": "42 cycles / yr",
+                "salt_spray": "Inland Industrial Rain"
+            },
+            "industrial-fired-brick-spalling": {
+                "lat": 52.4862, "lng": -1.8904,
+                "geology": "Mercia Mudstone & Low-Fired Victorian Common Brick",
+                "rainfall": "Moderate (730 mm/yr)",
+                "freeze_thaw": "48 cycles / yr",
+                "salt_spray": "Industrial Urban Cryo-Hydraulic"
+            },
+            "historic-sandstone-contour-scaling": {
+                "lat": 53.7997, "lng": -1.7564,
+                "geology": "Millstone Grit Carboniferous Quartzose Sandstone",
+                "rainfall": "High (920 mm/yr)",
+                "freeze_thaw": "50 cycles / yr",
+                "salt_spray": "Pennine Industrial Sulfate Deposition"
+            },
+            "sheltered-limestone-gypsum-cavitation": {
+                "lat": 51.5033, "lng": -0.1195,
+                "geology": "Portland / Bath Jurassic Oolitic Limestone",
+                "rainfall": "Moderate (640 mm/yr sheltered)",
+                "freeze_thaw": "30 cycles / yr",
+                "salt_spray": "Urban SO2 Gypsum Crust Encrustation"
+            },
+            "rubble-wall-ribbon-pointing-trap": {
+                "lat": 51.4816, "lng": -3.1791,
+                "geology": "Old Red Sandstone Rubble & Hard OPC Ribbon Mortar",
+                "rainfall": "Severe (1,150 mm/yr)",
+                "freeze_thaw": "38 cycles / yr",
+                "salt_spray": "Severn Estuary Marine Mist"
+            },
+            "historic-masonry-cryptogamic-lichen": {
+                "lat": 50.7184, "lng": -3.5339,
+                "geology": "Permian Breccia / Sandstone & Calcareous Lime Matrix",
+                "rainfall": "High (940 mm/yr)",
+                "freeze_thaw": "26 cycles / yr",
+                "salt_spray": "South-West Oceanic Moisture & Cryptogamic Sponge"
+            },
+            "faunal-mason-bee-boring-guano": {
+                "lat": 51.7169, "lng": -1.7588,
+                "geology": "Cotswold Oolitic Freestone & Non-Hydraulic Lime Mortar",
+                "rainfall": "Moderate (760 mm/yr)",
+                "freeze_thaw": "36 cycles / yr",
+                "salt_spray": "Rural Organic Faunal Uric Acid Pitting"
+            },
+            "victorian-plinth-impermeable-coating": {
+                "lat": 55.9533, "lng": -3.1883,
+                "geology": "Craigleith Lower Carboniferous Sandstone with Synthetic Polymer Seal",
+                "rainfall": "Severe Maritime (810 mm/yr)",
+                "freeze_thaw": "54 cycles / yr",
+                "salt_spray": "Firth of Forth Salt Wind & Sub-Film Cryo-Burst"
             }
         }
 

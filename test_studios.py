@@ -118,6 +118,20 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertEqual(res_bedding.status_code, 200)
         self.assertIn(b'Face-Bedding', res_bedding.data)
 
+        # 3. Verify total 26 wall instances in DB
+        from models import Wall
+        with app.app_context():
+            self.assertEqual(Wall.query.count(), 26)
+
+        # 4. Verify Designing Buildings Wiki stonework inspection endpoints
+        res_contour = self.client.get('/inspect/historic-sandstone-contour-scaling')
+        self.assertEqual(res_contour.status_code, 200)
+        self.assertIn(b'Contour Scaling', res_contour.data)
+
+        res_gypsum = self.client.get('/inspect/sheltered-limestone-gypsum-cavitation')
+        self.assertEqual(res_gypsum.status_code, 200)
+        self.assertIn(b'Gypsum Crust', res_gypsum.data)
+
     def test_admin_auth_protection(self):
         """Ensure admin routes are strictly inaccessible without authentication."""
         protected_endpoints = [
