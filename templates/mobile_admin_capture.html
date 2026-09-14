@@ -548,9 +548,9 @@
           document.getElementById("link-inspect").href = `/inspect/${data.wall.slug}`;
           document.getElementById("success-modal").style.display = "flex";
         } else {
-          alert("Upload failed: " + (data.error || "Server error"));
+          alert("Upload issue: " + (data.error || "Server error") + "\n\nPlease tap 'Retry Upload & Publish' to try again.");
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = `<span>🚀 Upload & Publish Wall</span>`;
+          btnSubmit.innerHTML = `<span>🔄 Retry Upload & Publish</span>`;
         }
       } catch (err) {
         // Offer offline fallback if network drop occurred

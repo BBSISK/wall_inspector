@@ -16,8 +16,8 @@ class Wall(db.Model):
     wall_type = db.Column(db.String(50), nullable=False)
     structural_function = db.Column(db.String(50), default="boundary")
     difficulty = db.Column(db.String(20), default="beginner")
-    image_filename = db.Column(db.String(255))
-    image_url_direct = db.Column(db.String(500))
+    image_filename = db.Column(db.String(255), nullable=True)
+    image_url_direct = db.Column(db.String(500), nullable=True)
     is_published = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 

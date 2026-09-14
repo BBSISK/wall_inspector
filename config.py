@@ -8,5 +8,12 @@ class Config:
     SQLALCHEMY_DATABASE_URI = db_uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Prevent stale connection drops on cloud PostgreSQL (Render / Supabase / AWS)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+        "pool_timeout": 20,
+    }
+
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "stonecraft2026")
     ADMIN_PIN = os.getenv("ADMIN_PIN", "2026")

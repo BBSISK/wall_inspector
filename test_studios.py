@@ -1,5 +1,5 @@
 import unittest
-from app import app
+from app import app, db, Wall
 
 class TestStudiosAndAuth(unittest.TestCase):
     def setUp(self):
@@ -304,6 +304,48 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertIn(b'thrust-modal', res.data)
         self.assertIn(b'telltale-telemetry-panel', res.data)
         self.assertIn(b'voice-transcript-box', res.data)
+
+    def test_upload_pipeline_and_connection_resilience(self):
+        """Verify image upload pipeline creates valid Wall records with local fallback and non-null filename."""
+        import io
+        with self.client.session_transaction() as sess:
+            sess['is_admin'] = True
+
+        test_img = (io.BytesIO(b'fake_image_data_bytes_12345'), 'test_wall.jpg')
+        res = self.client.post(
+            '/mobile/admin/upload',
+            data={
+                'wall_image': test_img,
+                'title': 'Unit Test Barry Wall',
+                'description': 'Resilient upload test',
+                'country': 'Ireland',
+                'region': 'Dublin',
+                'wall_type': 'brick_cavity',
+                'structural_function': 'facade',
+                'difficulty': 'beginner'
+            },
+            content_type='multipart/form-data'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['wall']['title'], 'Unit Test Barry Wall')
+        self.assertIsNotNone(data['wall']['image_filename'])
+        self.assertTrue(data['wall']['image_filename'].endswith('.jpg'))
+
+        # Verify record exists in database and cleanup
+        with app.app_context():
+            saved_wall = Wall.query.filter_by(title='Unit Test Barry Wall').first()
+            self.assertIsNotNone(saved_wall)
+            self.assertIsNotNone(saved_wall.image_filename)
+            fn = saved_wall.image_filename
+            db.session.delete(saved_wall)
+            db.session.commit()
+            import os
+            fp = os.path.join(app.config["UPLOAD_FOLDER"], fn)
+            if os.path.exists(fp):
+                os.remove(fp)
+
 
 if __name__ == '__main__':
     unittest.main()

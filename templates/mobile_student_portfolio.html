@@ -739,9 +739,9 @@
           loadIdentity();
           switchTab("feed");
         } else {
-          alert("Upload error: " + (data.error || "Failed"));
+          alert("Upload issue: " + (data.error || "Failed") + "\n\nPlease tap 'Retry Upload' to try again.");
           btnUpload.disabled = false;
-          btnUpload.innerHTML = `<span>📤 Upload to My Personal Portfolio</span>`;
+          btnUpload.innerHTML = `<span>🔄 Retry Upload</span>`;
         }
       } catch (err) {
         // Offer offline fallback if connection dropped

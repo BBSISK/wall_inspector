@@ -165,6 +165,14 @@ def create_app(config_class=Config):
                     conn.execute(text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
                     conn.commit()
 
+            if db.engine.dialect.name == "postgresql":
+                with db.engine.connect() as conn:
+                    try:
+                        conn.execute(text("ALTER TABLE walls ALTER COLUMN image_filename DROP NOT NULL;"))
+                        conn.commit()
+                    except Exception as relax_err:
+                        pass
+
             defect_cols = [c["name"] for c in inspector.get_columns("defects")]
             if "remedial_action" not in defect_cols:
                 with db.engine.connect() as conn:
@@ -997,6 +1005,26 @@ def create_app(config_class=Config):
                     db.session.add(gt)
             db.session.commit()
 
+    def commit_with_retry(entity=None, max_retries=2):
+        """
+        Safely commits session with auto-retry and connection health recovery.
+        Guards against cloud host idle TCP disconnects (Render PostgreSQL OperationalError).
+        """
+        for attempt in range(max_retries):
+            try:
+                if entity and entity not in db.session:
+                    db.session.add(entity)
+                db.session.commit()
+                return True
+            except Exception as err:
+                db.session.rollback()
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(0.3)
+                    continue
+                raise err
+
+
     def admin_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -1225,33 +1253,37 @@ def create_app(config_class=Config):
             file = request.files.get("wall_image")
             if file and file.filename:
                 slug = wall.slug
+                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+                filename = f"{slug}{ext}"
+                file_bytes = file.read()
+
+                local_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+                with open(local_path, "wb") as f_out:
+                    f_out.write(file_bytes)
+                wall.image_filename = filename
+
+                db.session.remove()
+
                 c_url = os.getenv("CLOUDINARY_URL", "").strip()
                 if c_url:
                     try:
+                        import io
                         upload_result = cloudinary.uploader.upload(
-                            file,
+                            io.BytesIO(file_bytes),
                             folder="wall_inspector",
                             public_id=slug,
                             overwrite=True,
-                            resource_type="image"
+                            resource_type="image",
+                            access_mode="public"
                         )
                         wall.image_url_direct = upload_result.get("secure_url")
                     except Exception as cloud_err:
-                        print(f"Cloudinary upload error in edit: {cloud_err}")
-                        file.seek(0)
-                        ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                        filename = f"{slug}{ext}"
-                        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                        wall.image_filename = filename
+                        print(f"Cloudinary upload error in edit (using local file): {cloud_err}")
                         wall.image_url_direct = None
                 else:
-                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                    filename = f"{slug}{ext}"
-                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                    wall.image_filename = filename
                     wall.image_url_direct = None
 
-            db.session.commit()
+            commit_with_retry(wall)
             return redirect(url_for("index"))
         except Exception as e:
             db.session.rollback()
@@ -1345,30 +1377,34 @@ def create_app(config_class=Config):
 
             title = request.form.get("title", "Untitled Wall").strip()
             slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
-            image_url_direct = None
-            filename = None
+            ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+            filename = f"{slug}{ext}"
+            file_bytes = file.read()
 
+            # Always save local fallback copy on disk so image_filename is guaranteed valid
+            local_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            with open(local_path, "wb") as f_out:
+                f_out.write(file_bytes)
+
+            # Prevent stale connection: detach any open DB session during external cloud upload
+            db.session.remove()
+
+            image_url_direct = None
             c_url = os.getenv("CLOUDINARY_URL", "").strip()
             if c_url:
                 try:
+                    import io
                     upload_result = cloudinary.uploader.upload(
-                        file,
+                        io.BytesIO(file_bytes),
                         folder="wall_inspector",
                         public_id=slug,
                         overwrite=True,
-                        resource_type="image"
+                        resource_type="image",
+                        access_mode="public"
                     )
                     image_url_direct = upload_result.get("secure_url")
                 except Exception as cloud_err:
-                    print(f"Cloudinary upload error, fallback to local: {cloud_err}")
-                    file.seek(0)
-                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                    filename = f"{slug}{ext}"
-                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            else:
-                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                filename = f"{slug}{ext}"
-                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                    print(f"Cloudinary upload notice in admin create (using local file): {cloud_err}")
 
             wall = Wall(
                 slug=slug,
@@ -1383,8 +1419,7 @@ def create_app(config_class=Config):
                 image_url_direct=image_url_direct,
                 is_published=True
             )
-            db.session.add(wall)
-            db.session.commit()
+            commit_with_retry(wall)
             return redirect(url_for("admin_tagger", wall_id=wall.id))
         except Exception as e:
             db.session.rollback()
@@ -3084,30 +3119,34 @@ def create_app(config_class=Config):
 
             title = request.form.get("title", "Field Wall Specimen").strip()
             slug = secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
-            image_url_direct = None
-            filename = None
+            ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+            filename = f"{slug}{ext}"
+            file_bytes = file.read()
 
+            # Always save local fallback copy on disk so image_filename is guaranteed valid
+            local_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            with open(local_path, "wb") as f_out:
+                f_out.write(file_bytes)
+
+            # Prevent stale connection: detach any open DB session during external cloud upload
+            db.session.remove()
+
+            image_url_direct = None
             c_url = os.getenv("CLOUDINARY_URL", "").strip()
             if c_url:
                 try:
+                    import io
                     upload_result = cloudinary.uploader.upload(
-                        file,
+                        io.BytesIO(file_bytes),
                         folder="wall_inspector",
                         public_id=slug,
                         overwrite=True,
-                        resource_type="image"
+                        resource_type="image",
+                        access_mode="public"
                     )
                     image_url_direct = upload_result.get("secure_url")
                 except Exception as cloud_err:
-                    print(f"Cloudinary mobile upload fallback to local: {cloud_err}")
-                    file.seek(0)
-                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                    filename = f"{slug}{ext}"
-                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            else:
-                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                filename = f"{slug}{ext}"
-                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                    print(f"Cloudinary mobile upload notice (using local file): {cloud_err}")
 
             wall = Wall(
                 slug=slug,
@@ -3122,12 +3161,12 @@ def create_app(config_class=Config):
                 image_url_direct=image_url_direct,
                 is_published=True
             )
-            db.session.add(wall)
-            db.session.commit()
+            commit_with_retry(wall)
             return jsonify({"success": True, "wall": wall.to_dict()})
         except Exception as e:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(e)}), 500
+            print(f"Error in mobile_admin_upload: {e}")
+            return jsonify({"success": False, "error": f"Database save error ({type(e).__name__}): please tap Retry"}), 500
 
     # Mobile Practical Portfolio & Self-Critique (Student)
     @app.route("/mobile/student")
@@ -3156,30 +3195,34 @@ def create_app(config_class=Config):
                 rubric_scores = {}
 
             sub_slug = f"student-{student_identifier.lower()}-{uuid.uuid4().hex[:6]}"
-            image_url_direct = None
-            filename = None
+            ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+            filename = f"{sub_slug}{ext}"
+            file_bytes = file.read()
 
+            # Always save local fallback copy on disk so image_filename is guaranteed valid
+            local_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            with open(local_path, "wb") as f_out:
+                f_out.write(file_bytes)
+
+            # Prevent stale connection: detach any open DB session during external cloud upload
+            db.session.remove()
+
+            image_url_direct = None
             c_url = os.getenv("CLOUDINARY_URL", "").strip()
             if c_url:
                 try:
+                    import io
                     upload_result = cloudinary.uploader.upload(
-                        file,
+                        io.BytesIO(file_bytes),
                         folder=f"wall_inspector/students/{student_identifier}",
                         public_id=sub_slug,
                         overwrite=True,
-                        resource_type="image"
+                        resource_type="image",
+                        access_mode="public"
                     )
                     image_url_direct = upload_result.get("secure_url")
                 except Exception as cloud_err:
-                    print(f"Cloudinary student upload fallback: {cloud_err}")
-                    file.seek(0)
-                    ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                    filename = f"{sub_slug}{ext}"
-                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            else:
-                ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
-                filename = f"{sub_slug}{ext}"
-                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                    print(f"Cloudinary student upload notice (using local file): {cloud_err}")
 
             raw_tilt = request.form.get("tilt_angle")
             try:
@@ -3199,12 +3242,12 @@ def create_app(config_class=Config):
                 self_critique=self_critique,
                 tilt_angle=tilt_angle
             )
-            db.session.add(submission)
-            db.session.commit()
+            commit_with_retry(submission)
             return jsonify({"success": True, "submission": submission.to_dict()})
         except Exception as e:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(e)}), 500
+            print(f"Error in mobile_student_upload: {e}")
+            return jsonify({"success": False, "error": f"Database save error ({type(e).__name__}): please tap Retry"}), 500
 
     @app.route("/api/student/submission/<sub_id>/review", methods=["POST"])
     @admin_required
@@ -3238,7 +3281,8 @@ def create_app(config_class=Config):
                                 voice_file,
                                 folder="wall_inspector/voice_critiques",
                                 public_id=os.path.splitext(voice_filename)[0],
-                                resource_type="auto"
+                                resource_type="auto",
+                                access_mode="public"
                             )
                             voice_url = cloud_res.get("secure_url")
                         except Exception as ce:
@@ -3260,7 +3304,7 @@ def create_app(config_class=Config):
             if voice_url:
                 submission.instructor_voice_url = voice_url
 
-            db.session.commit()
+            commit_with_retry(submission)
             return jsonify({"success": True, "submission": submission.to_dict()})
         except Exception as e:
             db.session.rollback()
