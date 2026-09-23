@@ -238,6 +238,12 @@ SKILL_DEFECT_MODES = [
         "label": "Vegetation & Woody Root Jacking",
         "category": "biological",
         "hint": "Invasive woody roots (ivy, elder, buddleja) expanding within joints and dislodging blocks."
+    },
+    {
+        "id": "iron_staining",
+        "label": "Ferrous Mineral Oxidation / Rust Staining",
+        "category": "chemical",
+        "hint": "Oxidation of pyrite or iron-bearing minerals within stone units leaching rust-coloured ferrous hydroxide stains across the face."
     }
 ]
 
@@ -1441,6 +1447,251 @@ def create_app(config_class=Config):
                         "explanation": "Capillary suction from unsealed ground level leading to mineral crystallization and joint degradation."
                     }
                 ]
+            },
+            {
+                "slug": "skill-limestone-galleted-leveling-band",
+                "title": "Coursed Limestone Rubble: Galleted Leveling Band & Ferrous Oxidation",
+                "description": "Historic lime-pointed limestone rubble wall featuring an articulated galleted leveling course. Exhibiting localized iron mineral staining, gallet stone loss, and joint mortar recession.",
+                "country": "Ireland",
+                "region": "Co. Clare (Burren Lowlands)",
+                "wall_type": "lime_mortar",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_06.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "iron_staining", "label": "Ferrous Mineral Oxidation / Rust Staining"},
+                    {"id": "mortar_erosion", "label": "Mortar Erosion / Joint Washout"},
+                    {"id": "pinning_loss", "label": "Pinning Stone Loss / Gallet Dislodgement"},
+                    {"id": "delamination_exfoliation", "label": "Delamination / Exfoliation / Contour Scaling"},
+                    {"id": "stepped_crack", "label": "Stepped Bed Joint Fracture / Shear Crack"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.42, "y_min": 0.54, "x_max": 0.42, "y_max": 0.54,
+                        "tolerance_radius": 0.08,
+                        "category": "iron_staining", "severity": "minor",
+                        "remedial_action": "monitor",
+                        "title": "Ferrous Pyrite Oxidation & Ochre Staining",
+                        "explanation": "Subsurface iron pyrite inclusions within limestone reacting with atmospheric moisture, leaching orange ferrous hydroxide stains across stone face."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.58, "y_min": 0.46, "x_max": 0.58, "y_max": 0.46,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Bed Joint Lime Mortar Washout",
+                        "explanation": "Recession of historic non-hydraulic lime mortar along the thin leveling band, exposing vulnerable stone arrises to frost action."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.88, "y_min": 0.22, "x_max": 0.88, "y_max": 0.22,
+                        "tolerance_radius": 0.08,
+                        "category": "pinning_loss", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Loss of Galleting & Wedging Pinners",
+                        "explanation": "Dislodged small stone chinking flakes permitting concentrated joint water pooling and micro-movement."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-drystone-boulder-crustose-lichen",
+                "title": "Dry-Stone Field Wall: Extensive Crustose Lichen & Void Cavitation",
+                "description": "Glacial limestone dry-stone boundary wall characterized by heavy crustose lichen biome colonization, loss of interstitial pinning stones, and bedding void cavitation.",
+                "country": "Ireland",
+                "region": "Co. Galway (Connemara)",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "beginner",
+                "image_filename": "skill_specimen_07.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "core_voiding", "label": "Core Voids / Cavitation"},
+                    {"id": "biological_colonisation", "label": "Biological Colonisation (Lichen / Moss / Macroflora)"},
+                    {"id": "bed_joint_slump", "label": "Bed Joint Slump / Structural Settlement"},
+                    {"id": "pinning_loss", "label": "Pinning Stone Loss / Gallet Dislodgement"},
+                    {"id": "lateral_bulge", "label": "Lateral Bulge / Wythe Separation"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.38, "x_max": 0.52, "y_max": 0.38,
+                        "tolerance_radius": 0.08,
+                        "category": "core_voiding", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Bedding Void & Missing Chinking Pinners",
+                        "explanation": "Absence of tight pinning stones creates unconstrained cantilever gap under massive upper course boulder."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.30, "y_min": 0.44, "x_max": 0.30, "y_max": 0.44,
+                        "tolerance_radius": 0.08,
+                        "category": "biological_colonisation", "severity": "minor",
+                        "remedial_action": "monitor",
+                        "title": "Extensive Crustose Lichen Colonization",
+                        "explanation": "Dense biogenic lichen encrustation secreting chelating organic acids, gradually etching the limestone matrix."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.58, "y_min": 0.68, "x_max": 0.58, "y_max": 0.68,
+                        "tolerance_radius": 0.08,
+                        "category": "bed_joint_slump", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Bedding Slump & Irregular Bearing Contact",
+                        "explanation": "Uneven boulder point contacts concentrating loads and inducing localized rotational slump."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-drystone-stacked-rubble-vertical-seam",
+                "title": "Stacked Limestone Dry Wall: Vertical Alignment & Chink Loss",
+                "description": "Weathered fieldstone dry wall exhibiting continuous vertical joint alignment, unpinned bedding voids, and progressive weathering of sedimentary lamina.",
+                "country": "Ireland",
+                "region": "Co. Mayo",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_08.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "expansion_failure", "label": "Continuous Vertical Joint Shear / Expansion Rupture"},
+                    {"id": "delamination_exfoliation", "label": "Delamination / Exfoliation / Contour Scaling"},
+                    {"id": "core_voiding", "label": "Core Voids / Cavitation"},
+                    {"id": "pinning_loss", "label": "Pinning Stone Loss / Gallet Dislodgement"},
+                    {"id": "biological_colonisation", "label": "Biological Colonisation (Lichen / Moss / Macroflora)"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.56, "x_max": 0.52, "y_max": 0.56,
+                        "tolerance_radius": 0.08,
+                        "category": "expansion_failure", "severity": "critical",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Continuous Vertical Joint Alignment",
+                        "explanation": "Vertical joint run across multiple courses forming an unbonded shear boundary prone to outward separation."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.34, "y_min": 0.54, "x_max": 0.34, "y_max": 0.54,
+                        "tolerance_radius": 0.08,
+                        "category": "delamination_exfoliation", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Laminar Stone Weathering & Bed Joint Gap",
+                        "explanation": "Exfoliation along stone sedimentary bedding planes accompanied by loss of supporting wedge pinners."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.54, "y_min": 0.28, "x_max": 0.54, "y_max": 0.28,
+                        "tolerance_radius": 0.08,
+                        "category": "core_voiding", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Interstitial Core Voiding",
+                        "explanation": "Hollow cavity between facing stones indicating interior hearting stone settlement."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-limestone-cyclopean-shear-fracture",
+                "title": "Cyclopean Limestone Blockwork: Horizontal Shear & Arris Spall",
+                "description": "Massive coursed carboniferous limestone block masonry showing structural horizontal joint shear, arris spalling, and basal moisture-driven moss growth.",
+                "country": "Ireland",
+                "region": "Co. Tipperary",
+                "wall_type": "ashlar_stone",
+                "structural_function": "retaining",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_09.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Stepped Bed Joint Fracture / Shear Crack"},
+                    {"id": "spalling", "label": "Arris Fretting / Surface Spalling"},
+                    {"id": "rising_damp_salt", "label": "Basal Moisture Ingress / Salt Efflorescence"},
+                    {"id": "mortar_erosion", "label": "Mortar Erosion / Joint Washout"},
+                    {"id": "lateral_bulge", "label": "Lateral Bulge / Wythe Separation"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.50, "y_min": 0.48, "x_max": 0.50, "y_max": 0.48,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Horizontal Bed Joint Shear Fracture",
+                        "explanation": "Lateral earth pressure or differential base settlement causing horizontal shear displacement along the central bedding plane."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.68, "y_min": 0.38, "x_max": 0.68, "y_max": 0.38,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Compressive Arris Spall & Corner Cleavage",
+                        "explanation": "Point loading concentration causing tensile corner flake loss on dense carbonaceous limestone block."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.48, "y_min": 0.92, "x_max": 0.48, "y_max": 0.92,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Basal Capillary Damp & Bryophyte Growth",
+                        "explanation": "Continuous moisture migration from soil line sustaining moss and bryophyte carpet, accelerating joint dissolution."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-drystone-coping-course-exfoliation",
+                "title": "Dry-Stone Wall with Coping: Bedding Void & Laminar Exfoliation",
+                "description": "Traditional dry-stone wall with upright coping row, exhibiting severe laminar weathering, coping stone dislodgement risk, and basal ruderal vegetation.",
+                "country": "Ireland",
+                "region": "Co. Sligo",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_10.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "coping_displacement", "label": "Coping Stone Displacement / Weathering"},
+                    {"id": "delamination_exfoliation", "label": "Delamination / Exfoliation / Contour Scaling"},
+                    {"id": "vegetation_root_jacking", "label": "Vegetation & Woody Root Jacking"},
+                    {"id": "core_voiding", "label": "Core Voids / Cavitation"},
+                    {"id": "pinning_loss", "label": "Pinning Stone Loss / Gallet Dislodgement"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.16, "x_max": 0.52, "y_max": 0.16,
+                        "tolerance_radius": 0.08,
+                        "category": "coping_displacement", "severity": "critical",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Coping Bed Cavity & Dislodgement Hazard",
+                        "explanation": "Loss of bedding support beneath coping stones permits water ingress into wall core and risks catastrophic top-course collapse."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.18, "y_min": 0.78, "x_max": 0.18, "y_max": 0.78,
+                        "tolerance_radius": 0.08,
+                        "category": "delamination_exfoliation", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Severe Laminar Exfoliation & Arris Fretting",
+                        "explanation": "Cyclic wetting and frost crystal growth along weak sedimentary bedding planes causing stone face splitting and crumbly loss."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.24, "y_min": 0.92, "x_max": 0.24, "y_max": 0.92,
+                        "tolerance_radius": 0.08,
+                        "category": "vegetation_root_jacking", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Rooted Ruderal Weed Encroachment",
+                        "explanation": "Broadleaf weed roots expanding into basal voids, dislodging foundation pinning stones over seasonal freeze-thaw cycles."
+                    }
+                ]
             }
         ]
 
@@ -1459,13 +1710,16 @@ def create_app(config_class=Config):
                     image_filename=sseed["image_filename"],
                     image_url_direct=sseed["image_url_direct"],
                     is_published=True,
-                    is_skill_assessment=True
+                    is_skill_assessment=True,
+                    assessment_defect_modes=sseed.get("assessment_defect_modes")
                 )
                 db.session.add(sw)
                 db.session.commit()
             else:
                 sw.is_skill_assessment = True
                 sw.image_filename = sseed["image_filename"]
+                if sseed.get("assessment_defect_modes") and not sw.assessment_defect_modes:
+                    sw.assessment_defect_modes = sseed.get("assessment_defect_modes")
                 db.session.commit()
 
             for sd in sseed.get("defects", []):
