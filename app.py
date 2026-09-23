@@ -2973,50 +2973,71 @@ def create_app(config_class=Config):
     # --- Student Assignment Portal ---
     @app.route("/portal", methods=["GET", "POST"])
     def student_portal():
-        skill_specimens_query = Wall.query.filter_by(is_skill_assessment=True, is_published=True).all()
+        student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
+        if student_name and student_name != "Inspector Candidate":
+            session["student_name"] = student_name
+
+        progress = get_student_skill_progress(student_name)
+        comp_map = progress["completed_map"]
+
+        skill_specimens_query = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
         skill_specimens = []
         for s in skill_specimens_query:
             d_count = Defect.query.filter_by(wall_id=s.id).count()
             data = s.to_dict()
             data["defect_count"] = d_count
+            data["user_progress"] = comp_map.get(s.id)
             skill_specimens.append(data)
 
         if request.method == "POST":
             code = request.form.get("assignment_code", "").strip().upper()
-            student_name = request.form.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
+            post_student_name = request.form.get("student_name", student_name or "Inspector Candidate").strip() or "Inspector Candidate"
+            if post_student_name and post_student_name != "Inspector Candidate":
+                session["student_name"] = post_student_name
             specimen_slug = request.form.get("specimen_slug", "").strip()
 
             # 1. Direct launch from specimen cards or quick action
             if specimen_slug:
-                return redirect(url_for("skill_assessment_workstation", slug=specimen_slug, student_name=student_name))
+                return redirect(url_for("skill_assessment_workstation", slug=specimen_slug, student_name=post_student_name))
 
             # 2. If student typed SKILLS or ASSESSMENT, send to skill assessment hub
             if code in ["SKILL", "SKILLS", "ASSESSMENT", "ASSESS", "EXAM", "PRACTICAL"]:
-                return redirect(url_for("skill_assessment_hub"))
+                return redirect(url_for("skill_assessment_hub", student_name=post_student_name))
 
             # 3. If code matches a skill assessment slug directly
             matching_skill = Wall.query.filter_by(slug=code.lower(), is_skill_assessment=True).first()
             if matching_skill:
-                return redirect(url_for("skill_assessment_workstation", slug=matching_skill.slug, student_name=student_name))
+                return redirect(url_for("skill_assessment_workstation", slug=matching_skill.slug, student_name=post_student_name))
 
             # 4. If code is a number like 1..10 or SKILL-1..10
             clean_code = code.replace("SKILL-", "").replace("SPECIMEN-", "").strip()
             if clean_code.isdigit():
                 idx = int(clean_code) - 1
                 if 0 <= idx < len(skill_specimens):
-                    return redirect(url_for("skill_assessment_workstation", slug=skill_specimens[idx]["slug"], student_name=student_name))
+                    return redirect(url_for("skill_assessment_workstation", slug=skill_specimens[idx]["slug"], student_name=post_student_name))
 
             # 5. Check regular classroom assignment PIN
             assignment = Assignment.query.filter_by(code=code, is_active=True).first()
             if not assignment:
                 return render_template(
                     "student_portal.html",
-                    error="Invalid assignment code. Tip: Choose from the 10 Skill Assessment specimens below or launch a random assessment!",
-                    skill_specimens=skill_specimens
+                    error="Invalid assignment code. Tip: Choose from the Skill Assessment specimens below or launch a random assessment!",
+                    skill_specimens=skill_specimens,
+                    student_name=post_student_name,
+                    completed_count=progress["completed_count"],
+                    average_score=progress["average_score"],
+                    pending_count=max(0, len(skill_specimens) - progress["completed_count"])
                 )
-            return redirect(url_for("run_assignment", code=code, student_name=student_name))
+            return redirect(url_for("run_assignment", code=code, student_name=post_student_name))
 
-        return render_template("student_portal.html", skill_specimens=skill_specimens)
+        return render_template(
+            "student_portal.html",
+            skill_specimens=skill_specimens,
+            student_name=student_name,
+            completed_count=progress["completed_count"],
+            average_score=progress["average_score"],
+            pending_count=max(0, len(skill_specimens) - progress["completed_count"])
+        )
 
     @app.route("/portal/run/<code>")
     def run_assignment(code):
@@ -3250,12 +3271,14 @@ def create_app(config_class=Config):
         top_missed = sorted(missed_counts.items(), key=lambda x: x[1], reverse=True)[:5]
         certificates = Certificate.query.order_by(Certificate.issued_at.desc()).all()
         student_submissions = StudentSubmission.query.order_by(StudentSubmission.created_at.desc()).limit(30).all()
+        walls_map = {w.id: w.to_dict() for w in Wall.query.all()}
 
         return render_template(
             "dashboard.html",
             attempts=attempts,
             certificates=certificates,
             student_submissions=student_submissions,
+            walls_map=walls_map,
             total_attempts=total_attempts,
             pass_rate=pass_rate,
             avg_score=avg_score,
@@ -6078,15 +6101,95 @@ def create_app(config_class=Config):
     # STUDENT SKILL ASSESSMENT MODULE
     # =========================================================================
 
+    def get_student_skill_progress(student_name):
+        """
+        Computes completion status, best scores, and evaluation grades for all skill assessment specimens
+        for a given student name.
+        """
+        if not student_name or not student_name.strip():
+            return {
+                "completed_map": {},
+                "completed_count": 0,
+                "total_specimens": 0,
+                "average_score": 0.0
+            }
+
+        clean_name = student_name.strip()
+        attempts = AssessmentAttempt.query.filter(
+            AssessmentAttempt.student_name.ilike(clean_name)
+        ).order_by(AssessmentAttempt.created_at.desc()).all()
+
+        completed_map = {}
+        for att in attempts:
+            w_id = att.wall_id
+            score = float(att.score_percentage or 0.0)
+            grade = "Evaluated"
+            if isinstance(att.feedback_notes, dict):
+                grade = att.feedback_notes.get("grade", "Evaluated")
+
+            if w_id not in completed_map:
+                completed_map[w_id] = {
+                    "completed": True,
+                    "latest_score": round(score, 1),
+                    "best_score": round(score, 1),
+                    "grade": grade,
+                    "passed": bool(att.passed),
+                    "attempt_count": 1,
+                    "last_evaluated": att.created_at.strftime("%b %d, %Y") if att.created_at else ""
+                }
+            else:
+                completed_map[w_id]["attempt_count"] += 1
+                if score > completed_map[w_id]["best_score"]:
+                    completed_map[w_id]["best_score"] = round(score, 1)
+                    completed_map[w_id]["passed"] = bool(att.passed)
+                    completed_map[w_id]["grade"] = grade
+
+        scores = [v["best_score"] for v in completed_map.values()]
+        avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+        return {
+            "completed_map": completed_map,
+            "completed_count": len(completed_map),
+            "average_score": avg_score
+        }
+
+    @app.route("/api/skill-assessment/student-progress")
+    def api_skill_assessment_student_progress():
+        student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
+        progress = get_student_skill_progress(student_name)
+        all_walls = Wall.query.filter_by(is_skill_assessment=True).all()
+        slug_map = {}
+        for w in all_walls:
+            if w.id in progress["completed_map"]:
+                slug_map[w.slug] = progress["completed_map"][w.id]
+
+        return jsonify({
+            "success": True,
+            "student_name": student_name,
+            "total_specimens": len(all_walls),
+            "completed_count": progress["completed_count"],
+            "pending_count": max(0, len(all_walls) - progress["completed_count"]),
+            "average_score": progress["average_score"],
+            "by_id": progress["completed_map"],
+            "by_slug": slug_map
+        })
+
     @app.route("/skill-assessment")
     def skill_assessment_hub():
-        """Student Skill Assessment Hub: Lists published assessment specimens with stats and guidelines."""
-        specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).all()
+        """Student Skill Assessment Hub: Lists published assessment specimens with stats, scoring, and guidelines."""
+        specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
+        student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
+        if student_name and student_name != "Inspector Candidate":
+            session["student_name"] = student_name
+
+        progress = get_student_skill_progress(student_name)
+        comp_map = progress["completed_map"]
+
         specimen_list = []
         for s in specimens:
             d_count = Defect.query.filter_by(wall_id=s.id).count()
             data = s.to_dict()
             data["defect_count"] = d_count
+            data["user_progress"] = comp_map.get(s.id)
             specimen_list.append(data)
 
         wall_types = sorted(list(set(s.wall_type for s in specimens if s.wall_type)))
@@ -6098,7 +6201,11 @@ def create_app(config_class=Config):
             total_specimens=len(specimens),
             wall_types=wall_types,
             difficulties=difficulties,
-            defect_modes=SKILL_DEFECT_MODES
+            defect_modes=SKILL_DEFECT_MODES,
+            student_name=student_name,
+            completed_count=progress["completed_count"],
+            average_score=progress["average_score"],
+            pending_count=max(0, len(specimens) - progress["completed_count"])
         )
 
     @app.route("/skill-assessment/<slug>")
@@ -6107,7 +6214,24 @@ def create_app(config_class=Config):
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True, is_published=True).first_or_404()
         ground_truth_count = Defect.query.filter_by(wall_id=wall.id).count()
         modes_bundle = get_wall_defect_modes(wall)
-        student_name = request.args.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
+        student_name = (request.args.get("student_name") or session.get("student_name") or "Inspector Candidate").strip()
+        if student_name and student_name != "Inspector Candidate":
+            session["student_name"] = student_name
+
+        # Calculate sequencing for next/prev specimen navigation
+        all_specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
+        curr_idx = None
+        for i, sp in enumerate(all_specimens):
+            if sp.id == wall.id:
+                curr_idx = i
+                break
+
+        next_wall = None
+        prev_wall = None
+        if curr_idx is not None and len(all_specimens) > 1:
+            next_wall = all_specimens[(curr_idx + 1) % len(all_specimens)].to_dict()
+            prev_wall = all_specimens[(curr_idx - 1) % len(all_specimens)].to_dict()
+
         return render_template(
             "skill_assessment_workstation.html",
             wall=wall.to_dict(),
@@ -6116,7 +6240,11 @@ def create_app(config_class=Config):
             all_modes=modes_bundle["all"],
             defect_modes=modes_bundle["all"],
             remedial_options=REMEDIAL_OPTIONS,
-            student_name=student_name
+            student_name=student_name,
+            next_wall=next_wall,
+            prev_wall=prev_wall,
+            current_specimen_num=(curr_idx + 1) if curr_idx is not None else 1,
+            total_specimens=len(all_specimens)
         )
 
     @app.route("/api/skill-assessment/evaluate/<slug>", methods=["POST"], strict_slashes=False)
@@ -6298,6 +6426,23 @@ def create_app(config_class=Config):
                 "explanation": gt.get("explanation") or ""
             })
 
+        if student_name and student_name != "Inspector Candidate":
+            session["student_name"] = student_name
+
+        # Determine next specimen in sequence
+        all_skill_walls = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
+        next_wall_slug = None
+        next_wall_title = None
+        for i, sw in enumerate(all_skill_walls):
+            if sw.id == wall.id and len(all_skill_walls) > 1:
+                next_sw = all_skill_walls[(i + 1) % len(all_skill_walls)]
+                next_wall_slug = next_sw.slug
+                next_wall_title = next_sw.title
+                break
+
+        from urllib.parse import quote_plus
+        next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}" if next_wall_slug else None
+
         return jsonify({
             "success": True,
             "score": score,
@@ -6311,7 +6456,10 @@ def create_app(config_class=Config):
             "missed_count": missed_count,
             "evaluated_pins": evaluated_pins,
             "ground_truth": gt_overlay,
-            "feedback": feedback_items
+            "feedback": feedback_items,
+            "next_specimen_slug": next_wall_slug,
+            "next_specimen_title": next_wall_title,
+            "next_specimen_url": next_url
         })
 
     # --- Professional Controlled Ingestion & Grading Interface ---

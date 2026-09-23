@@ -368,6 +368,91 @@
       justify-content: center;
     }
     .btn-preview:hover { color: #f8fafc; border-color: #64748b; }
+    .btn-retake {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      border-color: #38bdf8 !important;
+    }
+    .specimen-card.card-completed-pass {
+      border-color: #10b981;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.22);
+    }
+    .specimen-card.card-completed-remedial {
+      border-color: #f59e0b;
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.22);
+    }
+    .specimen-score-overlay {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(6px);
+      padding: 5px 9px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 0.72rem;
+    }
+    .score-chip-pass {
+      color: #34d399;
+      font-weight: 800;
+    }
+    .score-chip-remedial {
+      color: #f87171;
+      font-weight: 800;
+    }
+    .score-chip-pending {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .candidate-progress-strip {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: #090e1a;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7 0%, #10b981 100%);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+    .pill-filter-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pill-btn {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pill-btn:hover { color: #f8fafc; border-color: #64748b; }
+    .pill-btn.active {
+      background: #2563eb;
+      color: white;
+      border-color: #38bdf8;
+    }
 
     /* Photography Guidelines Modal Trigger Banner */
     .guideline-callout {
@@ -456,6 +541,56 @@
   <!-- Main Workstation View -->
   <main class="main-container">
 
+    <!-- Candidate Skill Assessment Progress & Diagnostic Scoreboard Strip -->
+    <div class="candidate-progress-strip" id="candidate-progress-strip">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(5, 150, 105, 0.2); border: 1px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #34d399;">
+            <i class="fa-solid fa-user-graduate"></i>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Student Diagnostic Dashboard</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name">
+                {{ student_name if student_name else 'Inspector Candidate' }}
+              </span>
+              <input type="text" id="candidate-name-input" value="{{ student_name }}" placeholder="Switch Candidate Name..." style="background: #090e1a; border: 1px solid #334155; color: #38bdf8; font-size: 0.8rem; padding: 3px 8px; border-radius: 6px; outline: none; max-width: 200px;" oninput="onCandidateNameChange(this.value)">
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div style="background: #090e1a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 900; color: #34d399; line-height: 1.1;" id="stat-completed-count">{{ completed_count|default(0) }} / {{ specimens|length }}</div>
+            <div style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Specimens Completed</div>
+          </div>
+          <div style="background: #090e1a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 900; color: #38bdf8; line-height: 1.1;" id="stat-avg-score">{{ average_score|default(0) }}%</div>
+            <div style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Average Precision</div>
+          </div>
+          <div style="background: #090e1a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 900; color: #fbbf24; line-height: 1.1;" id="stat-pending-count">{{ pending_count|default(specimens|length) }}</div>
+            <div style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Remaining Pending</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; color: #94a3b8;">
+          <span>Overall Clinical Mastery Progression</span>
+          <span id="stat-progress-pct" style="font-weight: 700; color: #34d399;">
+            {% if specimens|length > 0 %}
+              {{ ((completed_count|default(0) / specimens|length) * 100)|round(1) }}%
+            {% else %}
+              0%
+            {% endif %}
+          </span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="stat-progress-bar" style="width: {% if specimens|length > 0 %}{{ ((completed_count|default(0) / specimens|length) * 100)|round(1) }}%{% else %}0%{% endif %};"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Protocol Guidance -->
     <div class="protocol-card">
       <div class="protocol-step">
@@ -491,19 +626,31 @@
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filter-group">
-        <span class="filter-label"><i class="fa-solid fa-filter"></i> Filter:</span>
-        <select class="filter-select" id="filter-type" onchange="filterSpecimens()">
+        <div class="pill-filter-bar">
+          <button type="button" class="pill-btn status-pill active" data-status="all" onclick="filterStatus('all', this)">
+            All (<span id="count-pill-all">{{ specimens|length }}</span>)
+          </button>
+          <button type="button" class="pill-btn status-pill" data-status="completed" onclick="filterStatus('completed', this)" style="border-color: #059669; color: #34d399;">
+            <i class="fa-solid fa-circle-check"></i> Completed (<span id="count-pill-completed">{{ completed_count|default(0) }}</span>)
+          </button>
+          <button type="button" class="pill-btn status-pill" data-status="pending" onclick="filterStatus('pending', this)">
+            <i class="fa-regular fa-clock"></i> Pending (<span id="count-pill-pending">{{ pending_count|default(specimens|length) }}</span>)
+          </button>
+        </div>
+        <span style="border-left: 1px solid #334155; height: 20px; align-self: center;"></span>
+        <select class="filter-select" id="filter-type" onchange="applyAllFilters()">
           <option value="all">All Wall Archetypes</option>
           {% for t in wall_types %}
             <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
           {% endfor %}
         </select>
-        <select class="filter-select" id="filter-difficulty" onchange="filterSpecimens()">
+        <select class="filter-select" id="filter-difficulty" onchange="applyAllFilters()">
           <option value="all">All Difficulties</option>
           {% for d in difficulties %}
             <option value="{{ d }}">{{ d.title() }}</option>
           {% endfor %}
         </select>
+        <input type="text" id="specimen-search" placeholder="🔍 Search title/desc..." style="background: #090e1a; border: 1px solid #334155; color: #f8fafc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; width: 170px;" oninput="applyAllFilters()">
       </div>
       <div style="font-size: 0.85rem; color: var(--text-muted);">
         Showing <strong id="visible-count" style="color: var(--text-main);">{{ specimens|length }}</strong> specimen assessments
@@ -513,11 +660,34 @@
     <!-- Specimen Cards Grid -->
     <div class="specimen-grid" id="specimen-container">
       {% for wall in specimens %}
-        <div class="specimen-card" data-type="{{ wall.wall_type }}" data-diff="{{ wall.difficulty }}">
+        {% set prog = wall.user_progress %}
+        <div class="specimen-card {% if prog %}{% if prog.passed %}card-completed-pass{% else %}card-completed-remedial{% endif %}{% else %}card-pending{% endif %}" 
+             data-type="{{ wall.wall_type }}" 
+             data-diff="{{ wall.difficulty }}"
+             data-title="{{ wall.title|lower }}"
+             data-desc="{{ (wall.description or '')|lower }}"
+             data-status="{% if prog %}completed{% else %}pending{% endif %}"
+             data-slug="{{ wall.slug }}"
+             id="card-specimen-{{ wall.slug }}">
           <div class="card-thumb-wrap">
             <img class="card-thumb" src="{{ wall.image_url }}" alt="{{ wall.title }}" loading="lazy" onerror="this.src='https://placehold.co/800x600/1e293b/94a3b8?text=Image+Loading'">
             <span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span>
             <span class="badge-count"><i class="fa-solid fa-crosshairs"></i> {{ wall.defect_count }} Targets</span>
+
+            <div class="specimen-score-overlay" id="overlay-{{ wall.slug }}">
+              {% if prog %}
+                <span class="{% if prog.passed %}score-chip-pass{% else %}score-chip-remedial{% endif %}">
+                  <i class="fa-solid {% if prog.passed %}fa-check-circle{% else %}fa-triangle-exclamation{% endif %}"></i>
+                  {{ prog.latest_score }}% • {{ prog.grade }}
+                </span>
+                <span style="color: #94a3b8; font-size: 0.68rem;">{{ prog.attempt_count }} attempt{{ 's' if prog.attempt_count != 1 else '' }}</span>
+              {% else %}
+                <span class="score-chip-pending">
+                  <i class="fa-regular fa-clock"></i> Not Attempted
+                </span>
+                <span style="color: #64748b; font-size: 0.68rem;">Pending</span>
+              {% endif %}
+            </div>
           </div>
           <div class="card-body">
             <div class="card-meta">
@@ -530,8 +700,12 @@
             <h3 class="card-title">{{ wall.title }}</h3>
             <p class="card-desc">{{ wall.description or 'Authentic field specimen for structural defect tagging and condition assessment.' }}</p>
             <div class="card-footer">
-              <a href="/skill-assessment/{{ wall.slug }}" class="btn-start">
-                <i class="fa-solid fa-play"></i> Start Assessment
+              <a href="/skill-assessment/{{ wall.slug }}{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-start {% if prog %}btn-retake{% endif %}" id="btn-{{ wall.slug }}">
+                {% if prog %}
+                  <i class="fa-solid fa-rotate-left"></i> Review / Retake Score ({{ prog.latest_score }}%) &rarr;
+                {% else %}
+                  <i class="fa-solid fa-play"></i> Start Assessment
+                {% endif %}
               </a>
               {% if is_admin %}
                 <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-preview" title="Edit Ground Truth Pins">
@@ -558,16 +732,32 @@
   </main>
 
   <script>
-    function filterSpecimens() {
+    let currentStatusFilter = 'all';
+    let candidateRefreshTimer = null;
+
+    function filterStatus(status, btnEl) {
+      document.querySelectorAll('.filter-bar .status-pill').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      currentStatusFilter = status;
+      applyAllFilters();
+    }
+
+    function applyAllFilters() {
       const typeFilter = document.getElementById('filter-type').value;
       const diffFilter = document.getElementById('filter-difficulty').value;
+      const searchVal = (document.getElementById('specimen-search')?.value || '').toLowerCase().trim();
       const cards = document.querySelectorAll('.specimen-card');
       let visible = 0;
 
       cards.forEach(card => {
         const typeMatch = (typeFilter === 'all' || card.getAttribute('data-type') === typeFilter);
         const diffMatch = (diffFilter === 'all' || card.getAttribute('data-diff') === diffFilter);
-        if (typeMatch && diffMatch) {
+        const statusMatch = (currentStatusFilter === 'all' || card.getAttribute('data-status') === currentStatusFilter);
+        const titleText = (card.getAttribute('data-title') || '').toLowerCase();
+        const descText = (card.getAttribute('data-desc') || '').toLowerCase();
+        const searchMatch = !searchVal || titleText.includes(searchVal) || descText.includes(searchVal);
+
+        if (typeMatch && diffMatch && statusMatch && searchMatch) {
           card.style.display = 'flex';
           visible++;
         } else {
@@ -577,7 +767,138 @@
 
       document.getElementById('visible-count').textContent = visible;
     }
-  </script>
+
+    function onCandidateNameChange(val) {
+      const trimmed = val ? val.trim() : '';
+      if (trimmed) {
+        localStorage.setItem('wall_candidate_name', trimmed);
+      }
+      const dashName = document.getElementById('dashboard-candidate-name');
+      if (dashName) {
+        dashName.textContent = trimmed || 'Inspector Candidate';
+      }
+
+      clearTimeout(candidateRefreshTimer);
+      candidateRefreshTimer = setTimeout(() => {
+        refreshStudentProgress(trimmed);
+      }, 350);
+    }
+
+    async function refreshStudentProgress(candidateName) {
+      const name = candidateName || localStorage.getItem('wall_candidate_name') || '';
+      if (!name) return;
+
+      try {
+        const res = await fetch(`/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success) {
+          updateHubProgressUI(data);
+        }
+      } catch (err) {
+        console.error("Failed to refresh candidate progress:", err);
+      }
+    }
+
+    function updateHubProgressUI(data) {
+      const dashName = document.getElementById('dashboard-candidate-name');
+      if (dashName) dashName.textContent = data.student_name || 'Inspector Candidate';
+      const input = document.getElementById('candidate-name-input');
+      if (input && !input.value) input.value = data.student_name || '';
+
+      const statComp = document.getElementById('stat-completed-count');
+      if (statComp) statComp.textContent = `${data.completed_count} / ${data.total_specimens}`;
+
+      const statAvg = document.getElementById('stat-avg-score');
+      if (statAvg) statAvg.textContent = `${data.average_score}%`;
+
+      const statPending = document.getElementById('stat-pending-count');
+      if (statPending) statPending.textContent = data.pending_count;
+
+      const pillComp = document.getElementById('count-pill-completed');
+      if (pillComp) pillComp.textContent = data.completed_count;
+
+      const pillPend = document.getElementById('count-pill-pending');
+      if (pillPend) pillPend.textContent = data.pending_count;
+
+      const pct = data.total_specimens > 0 ? ((data.completed_count / data.total_specimens) * 100).toFixed(1) : 0;
+      const statPct = document.getElementById('stat-progress-pct');
+      if (statPct) statPct.textContent = `${pct}%`;
+      const statBar = document.getElementById('stat-progress-bar');
+      if (statBar) statBar.style.width = `${pct}%`;
+
+      // Update specimen cards
+      const bySlug = data.by_slug || {};
+      const cards = document.querySelectorAll('.specimen-card');
+      const candidateName = data.student_name || 'Inspector Candidate';
+
+      cards.forEach(card => {
+        const slug = card.getAttribute('data-slug');
+        const prog = bySlug[slug];
+        const overlay = document.getElementById(`overlay-${slug}`);
+        const btn = document.getElementById(`btn-${slug}`);
+
+        card.classList.remove('card-completed-pass', 'card-completed-remedial', 'card-pending');
+
+        if (prog) {
+          card.setAttribute('data-status', 'completed');
+          if (prog.passed) {
+            card.classList.add('card-completed-pass');
+          } else {
+            card.classList.add('card-completed-remedial');
+          }
+
+          if (overlay) {
+            overlay.innerHTML = `
+              <span class="${prog.passed ? 'score-chip-pass' : 'score-chip-remedial'}">
+                <i class="fa-solid ${prog.passed ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
+                ${prog.latest_score}% • ${prog.grade}
+              </span>
+              <span style="color: #94a3b8; font-size: 0.68rem;">${prog.attempt_count} attempt${prog.attempt_count !== 1 ? 's' : ''}</span>
+            `;
+          }
+
+          if (btn) {
+            btn.className = 'btn-start btn-retake';
+            btn.href = `/skill-assessment/${slug}?student_name=${encodeURIComponent(candidateName)}`;
+            btn.innerHTML = `<i class="fa-solid fa-rotate-left"></i> Review / Retake Score (${prog.latest_score}%) &rarr;`;
+          }
+        } else {
+          card.setAttribute('data-status', 'pending');
+          card.classList.add('card-pending');
+
+          if (overlay) {
+            overlay.innerHTML = `
+              <span class="score-chip-pending">
+                <i class="fa-regular fa-clock"></i> Not Attempted
+              </span>
+              <span style="color: #64748b; font-size: 0.68rem;">Pending</span>
+            `;
+          }
+
+          if (btn) {
+            btn.className = 'btn-start';
+            btn.href = `/skill-assessment/${slug}?student_name=${encodeURIComponent(candidateName)}`;
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Assessment';
+          }
+        }
+      });
+
+      applyAllFilters();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedName = localStorage.getItem('wall_candidate_name');
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameParam = urlParams.get('student_name');
+      const resolvedName = nameParam || savedName;
+
+      if (resolvedName) {
+        const input = document.getElementById('candidate-name-input');
+        if (input) input.value = resolvedName;
+        refreshStudentProgress(resolvedName);
+      }
+    });
 
 </body>
 </html>

@@ -664,8 +664,21 @@
       <h1 title="{{ wall.title }}">{{ wall.title }}</h1>
     </div>
     <div class="nav-actions">
-      <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.5rem;">
-        Expected Pathology Targets: <strong style="color: #38bdf8;">~{{ ground_truth_count }}</strong>
+      {% if prev_wall %}
+        <a href="/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-exit" title="Previous Specimen: {{ prev_wall.title }}">
+          <i class="fa-solid fa-arrow-left"></i> Prev
+        </a>
+      {% endif %}
+      <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.25rem;">
+        Specimen <strong style="color: #f8fafc;">{{ current_specimen_num }}/{{ total_specimens }}</strong>
+      </span>
+      {% if next_wall %}
+        <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top" id="top-next-btn" style="background: #0284c7; color: white; border: 1px solid #38bdf8; font-weight: 700; text-decoration: none;" title="Next Specimen: {{ next_wall.title }}">
+          <span>Next Specimen</span> <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      {% endif %}
+      <span style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0.5rem;">
+        Expected Targets: <strong style="color: #38bdf8;">~{{ ground_truth_count }}</strong>
       </span>
       <button type="button" class="btn-top btn-submit" id="top-submit-btn" onclick="submitAssessment()">
         <i class="fa-solid fa-paper-plane"></i> Submit Assessment
@@ -833,15 +846,33 @@
         <a href="/portal" class="btn-top btn-exit">
           <i class="fa-solid fa-graduation-cap"></i> Student Portal
         </a>
-        <a href="/skill-assessment" class="btn-top btn-submit">
-          <i class="fa-solid fa-arrow-right"></i> Next Specimen
-        </a>
+        {% if next_wall %}
+          <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-submit" id="modal-next-btn" style="background: #0284c7; border-color: #38bdf8;">
+            <i class="fa-solid fa-arrow-right"></i> Advance to Next Specimen &rarr;
+          </a>
+        {% else %}
+          <a href="/skill-assessment?student_name={{ student_name|urlencode }}" class="btn-top btn-submit" id="modal-next-btn">
+            <i class="fa-solid fa-flag-checkered"></i> View Complete Portfolio
+          </a>
+        {% endif %}
       </div>
     </div>
   </div>
 
   <script>
     const wallSlug = {{ wall.slug|tojson }};
+    const initialStudentName = {{ student_name|tojson }};
+    const studentName = initialStudentName || (typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_name') : '') || '';
+    let nextSpecimenUrl = {% if next_wall %}"/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}"{% else %}""{% endif %};
+    if (studentName && nextSpecimenUrl) {
+      if (nextSpecimenUrl.includes('student_name=')) {
+        nextSpecimenUrl = nextSpecimenUrl.replace(/student_name=[^&]*/, 'student_name=' + encodeURIComponent(studentName));
+      } else {
+        nextSpecimenUrl += (nextSpecimenUrl.includes('?') ? '&' : '?') + 'student_name=' + encodeURIComponent(studentName);
+      }
+      const topNextLink = document.getElementById('top-next-btn');
+      if (topNextLink) topNextLink.href = nextSpecimenUrl;
+    }
     const defectModesData = {{ defect_modes|tojson }};
     const modeLookup = {};
     defectModesData.forEach(m => { modeLookup[m.id] = m; });
@@ -1081,9 +1112,16 @@
                 <div style="font-size: 0.62rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Missed</div>
               </div>
             </div>
-            <button type="button" class="btn-top" style="width: 100%; background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 7px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="openScoreModal()">
-              <i class="fa-solid fa-chart-pie"></i> Open Full Detailed Scorecard
-            </button>
+            <div style="display: flex; gap: 6px; margin-top: 6px;">
+              <button type="button" class="btn-top" style="flex: 1; background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 7px 8px; font-size: 0.8rem; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;" onclick="openScoreModal()">
+                <i class="fa-solid fa-chart-pie"></i> Scorecard
+              </button>
+              ${nextSpecimenUrl ? `
+                <a href="${nextSpecimenUrl}" class="btn-top" style="flex: 1.25; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; border: 1px solid #10b981; padding: 7px 8px; font-size: 0.8rem; font-weight: 800; border-radius: 6px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                  <span>Next Specimen</span> <i class="fa-solid fa-arrow-right"></i>
+                </a>
+              ` : ''}
+            </div>
           </div>
 
           <div style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin: 0.35rem 0 0;">
@@ -1193,6 +1231,30 @@
           submitBtn.parentElement.appendChild(retakeBtn);
         }
 
+        let advanceBtn = document.getElementById('sidebar-advance-btn');
+        if (!advanceBtn && submitBtn && submitBtn.parentElement && nextSpecimenUrl) {
+          advanceBtn = document.createElement('a');
+          advanceBtn.id = 'sidebar-advance-btn';
+          advanceBtn.href = nextSpecimenUrl;
+          advanceBtn.style.width = '100%';
+          advanceBtn.style.marginTop = '0.5rem';
+          advanceBtn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+          advanceBtn.style.color = '#ffffff';
+          advanceBtn.style.border = '1px solid #10b981';
+          advanceBtn.style.padding = '0.75rem';
+          advanceBtn.style.borderRadius = '8px';
+          advanceBtn.style.fontSize = '0.88rem';
+          advanceBtn.style.fontWeight = '800';
+          advanceBtn.style.textDecoration = 'none';
+          advanceBtn.style.display = 'flex';
+          advanceBtn.style.alignItems = 'center';
+          advanceBtn.style.justifyContent = 'center';
+          advanceBtn.style.gap = '8px';
+          advanceBtn.style.boxShadow = '0 4px 15px rgba(5, 150, 105, 0.35)';
+          advanceBtn.innerHTML = '<span>Advance to Next Specimen</span> <i class="fa-solid fa-arrow-right"></i>';
+          submitBtn.parentElement.appendChild(advanceBtn);
+        }
+
         if (topSubmitBtn) {
           topSubmitBtn.disabled = false;
           topSubmitBtn.style.background = '#0284c7';
@@ -1205,6 +1267,8 @@
         // --- DRAFT STATE ---
         const retakeBtn = document.getElementById('sidebar-retake-btn');
         if (retakeBtn) retakeBtn.remove();
+        const advanceBtn = document.getElementById('sidebar-advance-btn');
+        if (advanceBtn) advanceBtn.remove();
 
         badge.textContent = `${studentPins.length} Pinned`;
         badge.style.background = '';
@@ -1285,12 +1349,13 @@
       }
 
       try {
+        const candidateName = studentName || (typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_name') : '') || 'Inspector Candidate';
         const response = await fetch(`/api/skill-assessment/evaluate/${wallSlug}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pins: studentPins,
-            student_name: {{ (student_name or 'Inspector Candidate')|tojson }}
+            student_name: candidateName
           })
         });
 
@@ -1303,6 +1368,15 @@
         if (data && data.success) {
           isEvaluated = true;
           lastEvaluationData = data;
+          if (data.next_specimen_url) {
+            nextSpecimenUrl = data.next_specimen_url;
+            const topNextBtn = document.getElementById('top-next-btn');
+            if (topNextBtn) topNextBtn.href = nextSpecimenUrl;
+            const modalNextBtn = document.getElementById('modal-next-btn');
+            if (modalNextBtn) modalNextBtn.href = nextSpecimenUrl;
+            const sidebarAdvanceBtn = document.getElementById('sidebar-advance-btn');
+            if (sidebarAdvanceBtn) sidebarAdvanceBtn.href = nextSpecimenUrl;
+          }
           displayEvaluationResults(data);
         } else {
           alert('Error evaluating pins: ' + (data && data.error ? data.error : 'Server error'));

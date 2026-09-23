@@ -241,6 +241,83 @@
       color: #0f172a;
       box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
     }
+    .specimen-card.card-completed-pass {
+      border-color: #10b981;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.18);
+    }
+    .specimen-card.card-completed-remedial {
+      border-color: #f59e0b;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.18);
+    }
+    .specimen-score-overlay {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(6px);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.72rem;
+    }
+    .score-chip-pass {
+      color: #34d399;
+      font-weight: 800;
+    }
+    .score-chip-remedial {
+      color: #f87171;
+      font-weight: 800;
+    }
+    .score-chip-pending {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .btn-launch-workstation.btn-reviewed {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      border-color: #10b981;
+    }
+    .btn-launch-workstation.btn-reviewed:hover {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    .btn-launch-workstation.btn-remedial {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      border-color: #f59e0b;
+    }
+    .btn-launch-workstation.btn-remedial:hover {
+      background: #f59e0b;
+      color: #0f172a;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    }
+    .candidate-progress-strip {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: #090e1a;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7 0%, #10b981 100%);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
 
     /* Filter Pills */
     .pill-filter-bar {
@@ -364,13 +441,60 @@
         </div>
       </div>
 
+      <!-- Candidate Skill Assessment Progress & Diagnostic Scoreboard Strip -->
+      <div class="candidate-progress-strip" id="candidate-progress-strip">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #38bdf8;">
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Candidate Diagnostic Dashboard</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name">
+                {{ student_name if student_name else 'Inspector Candidate' }}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="background: #090e1a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 1.25rem; font-weight: 900; color: #34d399; line-height: 1.1;" id="stat-completed-count">{{ completed_count|default(0) }} / {{ skill_specimens|length }}</div>
+              <div style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Specimens Completed</div>
+            </div>
+            <div style="background: #090e1a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 1.25rem; font-weight: 900; color: #38bdf8; line-height: 1.1;" id="stat-avg-score">{{ average_score|default(0) }}%</div>
+              <div style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Average Precision</div>
+            </div>
+            <div style="background: #090e1a; border: 1px solid #334155; padding: 6px 14px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 1.25rem; font-weight: 900; color: #fbbf24; line-height: 1.1;" id="stat-pending-count">{{ pending_count|default(skill_specimens|length) }}</div>
+              <div style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Remaining Pending</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; color: #94a3b8;">
+            <span>Overall Diagnostic Completion Rate</span>
+            <span id="stat-progress-pct" style="font-weight: 700; color: #34d399;">
+              {% if skill_specimens|length > 0 %}
+                {{ ((completed_count|default(0) / skill_specimens|length) * 100)|round(1) }}%
+              {% else %}
+                0%
+              {% endif %}
+            </span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="stat-progress-bar" style="width: {% if skill_specimens|length > 0 %}{{ ((completed_count|default(0) / skill_specimens|length) * 100)|round(1) }}%{% else %}0%{% endif %};"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Quick Launch & Candidate Name Box -->
       <div style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 240px;">
           <label style="margin: 0 0 0.35rem; font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">
             <i class="fa-solid fa-user-pen"></i> Candidate Inspector Identity
           </label>
-          <input type="text" id="portal-candidate-name" placeholder="Enter your full name (e.g. Liam Kelly)..." style="margin: 0; background: #1e293b;" oninput="syncCandidateName(this.value)">
+          <input type="text" id="portal-candidate-name" value="{{ student_name }}" placeholder="Enter your full name (e.g. Liam Kelly)..." style="margin: 0; background: #1e293b;" oninput="syncCandidateName(this.value)">
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: flex-end; padding-top: 1.25rem;">
           <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.25rem; font-size: 0.9rem; background: #10b981; border: 1px solid #34d399; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="launchRandomSkillAssessment()">
@@ -382,25 +506,57 @@
       <!-- Filter and Live Search Controls -->
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
         <div class="pill-filter-bar">
-          <button type="button" class="pill-btn active" onclick="filterSpecimens('all', this)">All ({{ skill_specimens|length if skill_specimens else 10 }})</button>
-          <button type="button" class="pill-btn" onclick="filterSpecimens('dry_stone', this)">Dry Stone</button>
-          <button type="button" class="pill-btn" onclick="filterSpecimens('lime_mortar', this)">Historic Lime</button>
-          <button type="button" class="pill-btn" onclick="filterSpecimens('ashlar_stone', this)">Ashlar Block</button>
-          <button type="button" class="pill-btn" onclick="filterSpecimens('rubble', this)">Rubble</button>
+          <button type="button" class="pill-btn status-pill active" data-status="all" onclick="filterStatus('all', this)">
+            All (<span id="count-pill-all">{{ skill_specimens|length }}</span>)
+          </button>
+          <button type="button" class="pill-btn status-pill" data-status="completed" onclick="filterStatus('completed', this)" style="border-color: #059669; color: #34d399;">
+            <i class="fa-solid fa-circle-check"></i> Completed (<span id="count-pill-completed">{{ completed_count|default(0) }}</span>)
+          </button>
+          <button type="button" class="pill-btn status-pill" data-status="pending" onclick="filterStatus('pending', this)">
+            <i class="fa-regular fa-clock"></i> Pending (<span id="count-pill-pending">{{ pending_count|default(skill_specimens|length) }}</span>)
+          </button>
+          <span style="border-left: 1px solid #334155; margin: 0 4px; height: 20px; align-self: center;"></span>
+          <button type="button" class="pill-btn type-pill active" data-type="all" onclick="filterType('all', this)">All Types</button>
+          <button type="button" class="pill-btn type-pill" data-type="dry_stone" onclick="filterType('dry_stone', this)">Dry Stone</button>
+          <button type="button" class="pill-btn type-pill" data-type="lime_mortar" onclick="filterType('lime_mortar', this)">Historic Lime</button>
+          <button type="button" class="pill-btn type-pill" data-type="ashlar_stone" onclick="filterType('ashlar_stone', this)">Ashlar Block</button>
+          <button type="button" class="pill-btn type-pill" data-type="rubble" onclick="filterType('rubble', this)">Rubble</button>
         </div>
         <div style="flex: 1; max-width: 280px; min-width: 200px;">
-          <input type="text" id="specimen-search-input" placeholder="🔍 Search specimens..." style="margin: 0; padding: 0.5rem 0.75rem; font-size: 0.85rem;" oninput="searchSpecimens(this.value)">
+          <input type="text" id="specimen-search-input" placeholder="🔍 Search specimens..." style="margin: 0; padding: 0.5rem 0.75rem; font-size: 0.85rem;" oninput="applyAllFilters()">
         </div>
       </div>
 
       <!-- Specimen Grid -->
       <div class="specimen-grid" id="specimen-grid-container">
         {% for s in skill_specimens %}
-        <div class="specimen-card" data-type="{{ s.wall_type }}" data-title="{{ s.title|lower }}" data-desc="{{ s.description|lower }}">
+        {% set prog = s.user_progress %}
+        <div class="specimen-card {% if prog %}{% if prog.passed %}card-completed-pass{% else %}card-completed-remedial{% endif %}{% else %}card-pending{% endif %}" 
+             data-type="{{ s.wall_type }}" 
+             data-title="{{ s.title|lower }}" 
+             data-desc="{{ s.description|lower }}"
+             data-status="{% if prog %}completed{% else %}pending{% endif %}"
+             data-slug="{{ s.slug }}"
+             id="card-specimen-{{ s.slug }}">
           <div class="specimen-thumb-wrap">
             <img src="{{ s.image_url }}" alt="{{ s.title }}" class="specimen-thumb" loading="lazy">
             <span class="specimen-badge-chip badge-{{ s.wall_type }}">{{ s.wall_type|replace('_', ' ')|title }}</span>
             <span class="specimen-diff-chip diff-{{ s.difficulty }}">{{ s.difficulty|title }}</span>
+            
+            <div class="specimen-score-overlay" id="overlay-{{ s.slug }}">
+              {% if prog %}
+                <span class="{% if prog.passed %}score-chip-pass{% else %}score-chip-remedial{% endif %}">
+                  <i class="fa-solid {% if prog.passed %}fa-check-circle{% else %}fa-triangle-exclamation{% endif %}"></i>
+                  {{ prog.latest_score }}% • {{ prog.grade }}
+                </span>
+                <span style="color: #94a3b8; font-size: 0.68rem;">{{ prog.attempt_count }} attempt{{ 's' if prog.attempt_count != 1 else '' }}</span>
+              {% else %}
+                <span class="score-chip-pending">
+                  <i class="fa-regular fa-clock"></i> Not Attempted
+                </span>
+                <span style="color: #64748b; font-size: 0.68rem;">Pending</span>
+              {% endif %}
+            </div>
           </div>
           <div class="specimen-body">
             <h4 style="margin: 0 0 0.4rem; font-size: 0.95rem; color: #f8fafc; line-height: 1.35;">{{ s.title }}</h4>
@@ -411,8 +567,12 @@
               <span><i class="fa-solid fa-location-dot" style="color: #38bdf8;"></i> {{ s.region or s.country }}</span>
               <span style="color: #00f2fe; font-weight: 700;"><i class="fa-solid fa-bullseye"></i> {{ s.defect_count }} Targets</span>
             </div>
-            <button type="button" class="btn-launch-workstation" onclick="launchSpecimen('{{ s.slug }}')">
-              <i class="fa-solid fa-play"></i> Start Inspection Workstation &rarr;
+            <button type="button" class="btn-launch-workstation {% if prog %}{% if prog.passed %}btn-reviewed{% else %}btn-remedial{% endif %}{% endif %}" id="btn-{{ s.slug }}" onclick="launchSpecimen('{{ s.slug }}')">
+              {% if prog %}
+                <i class="fa-solid fa-rotate-left"></i> Review / Retake Score ({{ prog.latest_score }}%) &rarr;
+              {% else %}
+                <i class="fa-solid fa-play"></i> Start Inspection Workstation &rarr;
+              {% endif %}
             </button>
           </div>
         </div>
@@ -827,6 +987,42 @@
       `).join('');
     }
 
+    let currentStatusFilter = 'all';
+    let currentTypeFilter = 'all';
+    let candidateRefreshTimer = null;
+
+    function filterStatus(status, btnEl) {
+      document.querySelectorAll('.pill-filter-bar .status-pill').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      currentStatusFilter = status;
+      applyAllFilters();
+    }
+
+    function filterType(type, btnEl) {
+      document.querySelectorAll('.pill-filter-bar .type-pill').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      currentTypeFilter = type;
+      applyAllFilters();
+    }
+
+    function applyAllFilters() {
+      const cards = document.querySelectorAll('.specimen-card');
+      const searchVal = (document.getElementById('specimen-search-input')?.value || '').toLowerCase().trim();
+
+      cards.forEach(card => {
+        const cardType = (card.getAttribute('data-type') || '').toLowerCase();
+        const cardTitle = (card.getAttribute('data-title') || '').toLowerCase();
+        const cardDesc = (card.getAttribute('data-desc') || '').toLowerCase();
+        const cardStatus = (card.getAttribute('data-status') || 'pending').toLowerCase();
+
+        const matchesStatus = (currentStatusFilter === 'all') || (cardStatus === currentStatusFilter);
+        const matchesType = (currentTypeFilter === 'all') || (cardType === currentTypeFilter);
+        const matchesSearch = !searchVal || cardTitle.includes(searchVal) || cardDesc.includes(searchVal);
+
+        card.style.display = (matchesStatus && matchesType && matchesSearch) ? 'flex' : 'none';
+      });
+    }
+
     function syncCandidateName(val) {
       const trimmed = val ? val.trim() : '';
       if (trimmed) {
@@ -840,6 +1036,112 @@
       if (passportInput && !passportInput.value) {
         passportInput.value = val;
       }
+      const dashName = document.getElementById('dashboard-candidate-name');
+      if (dashName) {
+        dashName.textContent = trimmed || 'Inspector Candidate';
+      }
+
+      clearTimeout(candidateRefreshTimer);
+      candidateRefreshTimer = setTimeout(() => {
+        refreshStudentProgress(trimmed);
+      }, 350);
+    }
+
+    async function refreshStudentProgress(candidateName) {
+      const name = candidateName || localStorage.getItem('wall_candidate_name') || '';
+      if (!name) return;
+
+      try {
+        const res = await fetch(`/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success) {
+          updatePortalProgressUI(data);
+        }
+      } catch (err) {
+        console.error("Failed to refresh candidate progress:", err);
+      }
+    }
+
+    function updatePortalProgressUI(data) {
+      const dashName = document.getElementById('dashboard-candidate-name');
+      if (dashName) dashName.textContent = data.student_name || 'Inspector Candidate';
+
+      const statComp = document.getElementById('stat-completed-count');
+      if (statComp) statComp.textContent = `${data.completed_count} / ${data.total_specimens}`;
+
+      const statAvg = document.getElementById('stat-avg-score');
+      if (statAvg) statAvg.textContent = `${data.average_score}%`;
+
+      const statPending = document.getElementById('stat-pending-count');
+      if (statPending) statPending.textContent = data.pending_count;
+
+      const pillComp = document.getElementById('count-pill-completed');
+      if (pillComp) pillComp.textContent = data.completed_count;
+
+      const pillPend = document.getElementById('count-pill-pending');
+      if (pillPend) pillPend.textContent = data.pending_count;
+
+      const pct = data.total_specimens > 0 ? ((data.completed_count / data.total_specimens) * 100).toFixed(1) : 0;
+      const statPct = document.getElementById('stat-progress-pct');
+      if (statPct) statPct.textContent = `${pct}%`;
+      const statBar = document.getElementById('stat-progress-bar');
+      if (statBar) statBar.style.width = `${pct}%`;
+
+      // Update specimen cards
+      const bySlug = data.by_slug || {};
+      const cards = document.querySelectorAll('.specimen-card');
+      cards.forEach(card => {
+        const slug = card.getAttribute('data-slug');
+        const prog = bySlug[slug];
+        const overlay = document.getElementById(`overlay-${slug}`);
+        const btn = document.getElementById(`btn-${slug}`);
+
+        card.classList.remove('card-completed-pass', 'card-completed-remedial', 'card-pending');
+
+        if (prog) {
+          card.setAttribute('data-status', 'completed');
+          if (prog.passed) {
+            card.classList.add('card-completed-pass');
+          } else {
+            card.classList.add('card-completed-remedial');
+          }
+
+          if (overlay) {
+            overlay.innerHTML = `
+              <span class="${prog.passed ? 'score-chip-pass' : 'score-chip-remedial'}">
+                <i class="fa-solid ${prog.passed ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
+                ${prog.latest_score}% • ${prog.grade}
+              </span>
+              <span style="color: #94a3b8; font-size: 0.68rem;">${prog.attempt_count} attempt${prog.attempt_count !== 1 ? 's' : ''}</span>
+            `;
+          }
+
+          if (btn) {
+            btn.className = `btn-launch-workstation ${prog.passed ? 'btn-reviewed' : 'btn-remedial'}`;
+            btn.innerHTML = `<i class="fa-solid fa-rotate-left"></i> Review / Retake Score (${prog.latest_score}%) &rarr;`;
+          }
+        } else {
+          card.setAttribute('data-status', 'pending');
+          card.classList.add('card-pending');
+
+          if (overlay) {
+            overlay.innerHTML = `
+              <span class="score-chip-pending">
+                <i class="fa-regular fa-clock"></i> Not Attempted
+              </span>
+              <span style="color: #64748b; font-size: 0.68rem;">Pending</span>
+            `;
+          }
+
+          if (btn) {
+            btn.className = 'btn-launch-workstation';
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Inspection Workstation &rarr;';
+          }
+        }
+      });
+
+      applyAllFilters();
     }
 
     function launchSpecimen(slug) {
@@ -860,57 +1162,25 @@
       }
     }
 
-    function filterSpecimens(type, btnEl) {
-      document.querySelectorAll('.pill-filter-bar .pill-btn').forEach(b => b.classList.remove('active'));
-      if (btnEl) btnEl.classList.add('active');
-
-      const cards = document.querySelectorAll('.specimen-card');
-      const searchVal = (document.getElementById('specimen-search-input')?.value || '').toLowerCase().trim();
-
-      cards.forEach(card => {
-        const cardType = (card.getAttribute('data-type') || '').toLowerCase();
-        const cardTitle = (card.getAttribute('data-title') || '').toLowerCase();
-        const cardDesc = (card.getAttribute('data-desc') || '').toLowerCase();
-
-        const matchesType = (type === 'all') || (cardType === type);
-        const matchesSearch = !searchVal || cardTitle.includes(searchVal) || cardDesc.includes(searchVal);
-
-        card.style.display = (matchesType && matchesSearch) ? 'flex' : 'none';
-      });
-    }
-
-    function searchSpecimens(query) {
-      const q = (query || '').toLowerCase().trim();
-      const activePill = document.querySelector('.pill-filter-bar .pill-btn.active');
-      const currentType = activePill ? (activePill.getAttribute('onclick') || '').match(/'([^']+)'/)?.[1] || 'all' : 'all';
-
-      const cards = document.querySelectorAll('.specimen-card');
-      cards.forEach(card => {
-        const cardType = (card.getAttribute('data-type') || '').toLowerCase();
-        const cardTitle = (card.getAttribute('data-title') || '').toLowerCase();
-        const cardDesc = (card.getAttribute('data-desc') || '').toLowerCase();
-
-        const matchesType = (currentType === 'all') || (cardType === currentType);
-        const matchesSearch = !q || cardTitle.includes(q) || cardDesc.includes(q);
-
-        card.style.display = (matchesType && matchesSearch) ? 'flex' : 'none';
-      });
-    }
-
     document.addEventListener("DOMContentLoaded", () => {
       // Restore candidate name if previously saved
       const savedName = localStorage.getItem('wall_candidate_name');
-      if (savedName) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nameParam = urlParams.get('student_name');
+      const resolvedName = nameParam || savedName;
+
+      if (resolvedName) {
         const candidateInput = document.getElementById('portal-candidate-name');
-        if (candidateInput) candidateInput.value = savedName;
+        if (candidateInput) candidateInput.value = resolvedName;
         const examName = document.getElementById('exam-student-name');
-        if (examName) examName.value = savedName;
+        if (examName) examName.value = resolvedName;
         const passSearch = document.getElementById('passport-search-input');
-        if (passSearch && !passSearch.value) passSearch.value = savedName;
+        if (passSearch && !passSearch.value) passSearch.value = resolvedName;
+
+        refreshStudentProgress(resolvedName);
       }
 
       // Check URL tab parameter (?tab=skills, ?tab=exam, ?tab=passport)
-      const urlParams = new URLSearchParams(window.location.search);
       const requestedTab = urlParams.get('tab');
       if (requestedTab === 'exam' || requestedTab === 'passport' || requestedTab === 'skills') {
         switchPortalTab(requestedTab);

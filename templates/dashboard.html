@@ -108,6 +108,7 @@
       <thead>
         <tr>
           <th>Student Inspector</th>
+          <th>Specimen Target</th>
           <th>Assignment PIN</th>
           <th>Cohort Code</th>
           <th>Score</th>
@@ -118,8 +119,24 @@
       </thead>
       <tbody>
         {% for a in attempts %}
+          {% set wall = walls_map.get(a.wall_id) if walls_map else None %}
           <tr>
             <td><strong>{{ a.student_name }}</strong></td>
+            <td>
+              {% if wall %}
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="{{ wall.image_url }}" alt="{{ wall.title }}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid #334155; flex-shrink: 0;" onerror="this.src='https://placehold.co/60x60/0f172a/38bdf8?text=Photo'">
+                  <div style="max-width: 190px;">
+                    <a href="/skill-assessment/{{ wall.slug }}" target="_blank" style="color: #38bdf8; text-decoration: none; font-size: 0.82rem; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;" title="{{ wall.title }}">
+                      {{ wall.title }}
+                    </a>
+                    <span style="font-size: 0.7rem; color: #94a3b8;">{{ wall.wall_type|replace('_', ' ')|title }}</span>
+                  </div>
+                </div>
+              {% else %}
+                <span style="color: #64748b; font-size: 0.75rem;">Specimen #{{ a.wall_id }}</span>
+              {% endif %}
+            </td>
             <td><span style="font-family: monospace; color: #38bdf8;">{{ a.assignment_code or '—' }}</span></td>
             <td><span style="background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #334155; font-size: 0.75rem;">{{ a.cohort_code or 'GENERAL' }}</span></td>
             <td><strong>{{ a.score_percentage }}%</strong></td>
@@ -137,7 +154,7 @@
           </tr>
         {% else %}
           <tr>
-            <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">No assessments recorded under this cohort filter.</td>
+            <td colspan="8" style="text-align: center; color: #94a3b8; padding: 2rem;">No assessments recorded under this cohort filter.</td>
           </tr>
         {% endfor %}
       </tbody>
