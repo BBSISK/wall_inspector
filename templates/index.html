@@ -242,7 +242,10 @@
 
       const qrAdminImg = document.getElementById("qr-admin-img");
       if (qrAdminImg) {
-        const adminUrl = `${origin}/mobile/admin`;
+        const token = "{{ mobile_admin_token or '' }}";
+        const adminUrl = token
+          ? `${origin}/mobile/admin?token=${encodeURIComponent(token)}`
+          : `${origin}/mobile/admin`;
         qrAdminImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(adminUrl)}`;
         document.getElementById("link-admin-open").href = adminUrl;
       }

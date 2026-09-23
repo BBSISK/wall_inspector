@@ -242,17 +242,37 @@
   </style>
 </head>
 <body>
+  {% set is_skill_mode = (capture_mode == 'skill_assessment' or request.args.get('mode') == 'skill_assessment') %}
   <div class="mobile-header">
     <div>
-      <h1>📸 Field Wall Capture</h1>
-      <small style="color: #94a3b8;">On-site smartphone camera ingestion</small>
+      <h1>{% if is_skill_mode %}🎯 Skill Ingestion{% else %}📸 Field Wall Capture{% endif %}</h1>
+      <small style="color: #94a3b8;">{% if is_skill_mode %}Calibrated 90° smartphone camera capture{% else %}On-site smartphone camera ingestion{% endif %}</small>
     </div>
     <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <span class="badge-admin">ADMIN PWA</span>
-      <a href="/" class="btn-exit">&times; Exit</a>
+      <span class="badge-admin" style="{% if is_skill_mode %}background: #064e3b; border-color: #059669; color: #6ee7b7;{% endif %}">
+        {% if is_skill_mode %}SKILL INGESTION{% else %}ADMIN PWA{% endif %}
+      </span>
+      <a href="{% if is_skill_mode %}/skill-assessment/admin{% else %}/{% endif %}" class="btn-exit">&times; Exit</a>
     </div>
   </div>
 
+  {% if is_skill_mode %}
+  <!-- Active Skill Assessment Calibrated Ingestion Banner -->
+  <div style="width: 100%; max-width: 480px; background: linear-gradient(135deg, rgba(6, 78, 59, 0.95), rgba(4, 120, 87, 0.95)); border: 1.5px solid #10b981; border-radius: 12px; padding: 12px 14px; margin-bottom: 0.85rem; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4); display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 1.4rem;">🎯</span>
+      <div>
+        <strong style="font-size: 0.88rem; color: #ffffff; display: block;">Skill Assessment Ingestion Mode</strong>
+        <small style="font-size: 0.72rem; color: #a7f3d0; line-height: 1.3; display: block;">
+          90° normal angle • Diffuse light • 3–5 courses • Sharp arrises
+        </small>
+      </div>
+    </div>
+    <a href="/skill-assessment/admin" style="background: #ffffff; color: #064e3b; text-decoration: none; padding: 5px 12px; border-radius: 16px; font-size: 0.72rem; font-weight: 800; white-space: nowrap;">
+      Admin Queue &rarr;
+    </a>
+  </div>
+  {% else %}
   <!-- Skill Assessment Direct Link Banner -->
   <div style="width: 100%; max-width: 480px; background: linear-gradient(90deg, rgba(6, 78, 59, 0.9), rgba(5, 150, 105, 0.9)); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);">
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -266,6 +286,7 @@
       Guide & Ingest
     </a>
   </div>
+  {% endif %}
 
   <!-- Rural Offline Sync Banner -->
   <div id="offline-banner" style="display: none; width: 100%; max-width: 480px; background: linear-gradient(90deg, #065f46, #059669); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 0.75rem; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);">
@@ -296,15 +317,19 @@
   </div>
 
   <form id="capture-form" class="form-container" method="POST" action="/mobile/admin/upload" enctype="multipart/form-data">
+    <input type="hidden" name="auth_token" value="{{ auth_token or mobile_admin_token or '' }}">
     <!-- Camera Viewfinder -->
-    <div class="viewfinder-card" id="viewfinder" onclick="triggerCamera()">
+    <div class="viewfinder-card" id="viewfinder" onclick="triggerCamera()" style="position: relative;">
       <!-- Plumb-Bob AR HUD Overlay -->
       <div id="hud-overlay" style="display: none; position: absolute; inset: 0; z-index: 5; pointer-events: none;"></div>
 
       <div class="viewfinder-prompt" id="prompt-box">
-        <div class="viewfinder-icon">📷</div>
-        <strong style="font-size: 1rem; color: #38bdf8;">Tap to Capture Wall Photo</strong>
-        <span style="font-size: 0.78rem;">Activates device rear camera or photo library</span>
+        <div class="viewfinder-icon">📸</div>
+        <strong style="font-size: 1.1rem; color: #38bdf8;">Tap to Launch Rear Camera</strong>
+        <span style="font-size: 0.8rem; color: #94a3b8;">Activates smartphone camera or photo album</span>
+        <div style="margin-top: 6px; background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; box-shadow: 0 2px 8px rgba(2,132,199,0.4);">
+          ⚡ Open Camera Viewfinder
+        </div>
       </div>
       <img id="preview-img" class="viewfinder-img" alt="Captured Wall Preview">
       <button type="button" class="btn-retake" id="btn-retake" onclick="triggerCamera(event)">↺ Retake</button>
@@ -379,7 +404,7 @@
 
       <div style="background: rgba(5, 150, 105, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 10px; margin-top: 4px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #a7f3d0; font-size: 0.82rem; font-weight: 700; margin: 0;">
-          <input type="checkbox" name="is_skill_assessment" value="1" style="width: auto; accent-color: #059669;">
+          <input type="checkbox" name="is_skill_assessment" id="chk_skill_assessment" value="1" style="width: auto; accent-color: #059669;" {% if is_skill_mode %}checked{% endif %}>
           <span>🎯 Register for Student Skill Assessment</span>
         </label>
         <small style="color: #94a3b8; font-size: 0.72rem; display: block; margin-top: 2px;">
@@ -396,15 +421,19 @@
   <!-- Success Modal -->
   <div id="success-modal">
     <div class="success-card">
-      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
-      <h2 style="margin: 0 0 0.5rem; font-size: 1.4rem; color: #34d399;">Wall Uploaded to Catalog!</h2>
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;" id="success-icon">🎉</div>
+      <h2 style="margin: 0 0 0.5rem; font-size: 1.4rem; color: #34d399;" id="success-heading">Wall Uploaded to Catalog!</h2>
       <p style="color: #94a3b8; font-size: 0.85rem; margin: 0;" id="success-wall-title">Wall has been registered and synced with Cloudinary.</p>
 
       <div class="btn-action-block">
+        <!-- Skill Assessment Actions -->
+        <a id="link-grade" href="#" class="btn-modal" style="display: none; background: #059669; color: white;">🎯 Grade Defect Pins Now &rarr;</a>
+        <a id="link-skill-queue" href="/skill-assessment/admin" class="btn-modal" style="display: none; background: #0284c7; color: white;">📋 Assessment Specimen Queue</a>
+        <!-- General Catalog Actions -->
         <a id="link-tagger" href="#" class="btn-modal" style="background: #2563eb; color: white;">🏷️ Tag Defects Now</a>
         <a id="link-inspect" href="#" class="btn-modal" style="background: #059669; color: white;">🔍 View in Inspector</a>
-        <button type="button" class="btn-modal" style="background: #334155; color: #93c5fd;" onclick="snapAnother()">📸 Snap Another Wall</button>
-        <a href="/" class="btn-modal" style="background: #0f172a; color: #94a3b8; border: 1px solid #334155;">&larr; Exit to Catalog</a>
+        <button type="button" class="btn-modal" style="background: #334155; color: #93c5fd;" onclick="snapAnother()">📸 Snap Another Specimen</button>
+        <a href="{% if is_skill_mode %}/skill-assessment/admin{% else %}/{% endif %}" class="btn-modal" style="background: #0f172a; color: #94a3b8; border: 1px solid #334155;">&larr; Exit to Hub</a>
       </div>
     </div>
   </div>
@@ -567,9 +596,36 @@
 
         const data = await res.json();
         if (res.ok && data.success) {
+          const isSkill = formData.get("is_skill_assessment") === "1" || {{ 'true' if is_skill_mode else 'false' }};
+          const headingEl = document.getElementById("success-heading");
+          const taggerLink = document.getElementById("link-tagger");
+          const inspectLink = document.getElementById("link-inspect");
+          const gradeLink = document.getElementById("link-grade");
+          const queueLink = document.getElementById("link-skill-queue");
+
+          if (isSkill) {
+            if (headingEl) headingEl.innerText = "Assessment Specimen Ingested!";
+            if (gradeLink) {
+              gradeLink.href = `/skill-assessment/admin/grade/${data.wall.slug}`;
+              gradeLink.style.display = "block";
+            }
+            if (queueLink) queueLink.style.display = "block";
+            if (taggerLink) taggerLink.style.display = "none";
+            if (inspectLink) inspectLink.style.display = "none";
+          } else {
+            if (headingEl) headingEl.innerText = "Wall Uploaded to Catalog!";
+            if (gradeLink) gradeLink.style.display = "none";
+            if (queueLink) queueLink.style.display = "none";
+            if (taggerLink) {
+              taggerLink.href = `/admin/walls/${data.wall.id}/tagger`;
+              taggerLink.style.display = "block";
+            }
+            if (inspectLink) {
+              inspectLink.href = `/inspect/${data.wall.slug}`;
+              inspectLink.style.display = "block";
+            }
+          }
           document.getElementById("success-wall-title").innerText = `"${data.wall.title}" has been saved to persistent storage.`;
-          document.getElementById("link-tagger").href = `/admin/walls/${data.wall.id}/tagger`;
-          document.getElementById("link-inspect").href = `/inspect/${data.wall.slug}`;
           document.getElementById("success-modal").style.display = "flex";
         } else {
           alert("Upload issue: " + (data.error || "Server error") + "\n\nPlease tap 'Retry Upload & Publish' to try again.");
@@ -602,6 +658,9 @@
       promptBox.style.display = "flex";
       btnRetake.style.display = "none";
       viewfinder.classList.remove("has-photo");
+      const isSkillMode = {{ 'true' if is_skill_mode else 'false' }};
+      const chk = document.getElementById("chk_skill_assessment");
+      if (chk && isSkillMode) chk.checked = true;
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = `<span>🚀 Upload & Publish Wall</span>`;
     }

@@ -451,7 +451,10 @@
 
     // Dashboard Field Camera QR Logic
     function initDashQr() {
-      const adminUrl = `${window.location.origin}/mobile/admin`;
+      const token = "{{ mobile_admin_token or '' }}";
+      const adminUrl = token
+        ? `${window.location.origin}/mobile/admin?token=${encodeURIComponent(token)}`
+        : `${window.location.origin}/mobile/admin`;
       const qrSmall = document.getElementById('dash-qr-img');
       const qrLarge = document.getElementById('dash-enlarged-qr-img');
       if (qrSmall) qrSmall.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=${encodeURIComponent(adminUrl)}`;

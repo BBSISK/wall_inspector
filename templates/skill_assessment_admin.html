@@ -428,6 +428,9 @@
       <span class="badge-admin">Admin Control</span>
     </div>
     <div class="nav-actions">
+      <button type="button" class="btn-nav" onclick="openSkillQrModal()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: 1px solid #10b981; font-weight: 700; cursor: pointer;">
+        <i class="fa-solid fa-qrcode"></i> Connect Phone Camera
+      </button>
       <a href="/skill-assessment" class="btn-nav btn-back"><i class="fa-solid fa-arrow-left"></i> Student Hub</a>
       <a href="/dashboard" class="btn-nav btn-back"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
       <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-house"></i> Main Catalog</a>
@@ -442,7 +445,12 @@
         <h2 class="hud-title">
           <i class="fa-solid fa-camera-viewfinder"></i> Photographic Capture Standards & Ingestion Protocol
         </h2>
-        <span class="hud-pill"><i class="fa-solid fa-shield-halved"></i> Calibrated Ingestion Spec</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" onclick="openSkillQrModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-qrcode"></i> Connect Phone Camera [QR]
+          </button>
+          <span class="hud-pill"><i class="fa-solid fa-shield-halved"></i> Calibrated Ingestion Spec</span>
+        </div>
       </div>
 
       <div class="guidelines-grid">
@@ -511,7 +519,28 @@
 
       <!-- Upload Ingestion Form -->
       <section class="upload-card">
-        <h3><i class="fa-solid fa-cloud-arrow-up" style="color: #38bdf8;"></i> Ingest Assessment Specimen</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <h3 style="margin: 0;"><i class="fa-solid fa-cloud-arrow-up" style="color: #38bdf8;"></i> Ingest Assessment Specimen</h3>
+          <button type="button" onclick="openSkillQrModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-qrcode"></i> Pair Mobile Camera
+          </button>
+        </div>
+
+        <!-- Mobile Phone Camera Pairing Callout -->
+        <div style="background: linear-gradient(135deg, rgba(6, 78, 59, 0.5), rgba(15, 23, 42, 0.9)); border: 1.5px solid #059669; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 0.25rem;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #059669; color: white; width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+              📱
+            </div>
+            <div>
+              <strong style="font-size: 0.88rem; color: #6ee7b7; display: block;">Connect Smartphone Camera</strong>
+              <small style="font-size: 0.74rem; color: #94a3b8;">Scan QR to launch rear camera with 90° live tilt guides</small>
+            </div>
+          </div>
+          <button type="button" onclick="openSkillQrModal()" style="background: #10b981; color: #022c22; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <i class="fa-solid fa-qrcode"></i> Show QR
+          </button>
+        </div>
 
         <form action="/skill-assessment/admin/upload" method="POST" enctype="multipart/form-data" id="upload-form">
 
@@ -660,7 +689,107 @@
 
   </main>
 
+  <!-- Smartphone Camera QR Pairing Modal -->
+  <div id="modal-skill-qr" style="display: none; position: fixed; inset: 0; background: rgba(9, 14, 26, 0.88); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #0f172a; border: 2px solid #059669; border-radius: 16px; width: 100%; max-width: 440px; padding: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 1.15rem; box-shadow: 0 15px 45px rgba(0,0,0,0.8); position: relative;">
+      
+      <button type="button" onclick="closeSkillQrModal()" style="position: absolute; top: 12px; right: 14px; background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; line-height: 1;">&times;</button>
+      
+      <div style="text-align: center;">
+        <div style="width: 52px; height: 52px; background: rgba(5, 150, 105, 0.2); border: 2px solid #10b981; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 0.5rem;">
+          📸
+        </div>
+        <h3 style="margin: 0; font-size: 1.2rem; color: #f8fafc;">Connect Smartphone Camera</h3>
+        <p style="margin: 4px 0 0; font-size: 0.82rem; color: #94a3b8;">
+          Instantly pairs your phone camera with the Skill Assessment Specimen Ingestion pipeline.
+        </p>
+      </div>
+
+      <!-- High-contrast QR Box -->
+      <div style="background: #ffffff; padding: 14px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+        <img id="skill-qr-img" src="" alt="Skill Assessment Field Camera QR" style="width: 210px; height: 210px; display: block;">
+      </div>
+
+      <!-- Live 1-2-3 Instructions -->
+      <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; width: 100%; font-size: 0.78rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="color: #34d399; font-weight: bold;">1.</span>
+          <span>Open your phone's built-in <strong>Camera app</strong> (iOS or Android).</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="color: #34d399; font-weight: bold;">2.</span>
+          <span>Point at the QR code above and tap the link yellow/white prompt.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="color: #34d399; font-weight: bold;">3.</span>
+          <span>Your camera capture screen opens automatically with <strong>authenticated access</strong>.</span>
+        </div>
+      </div>
+
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-family: monospace; font-size: 0.7rem; color: #38bdf8; word-break: break-all; background: #090e1a; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; text-align: center;">
+          <span id="skill-qr-url-text">Loading secure pairing URL...</span>
+        </div>
+        <div style="display: flex; gap: 8px; width: 100%;">
+          <button type="button" onclick="copySkillCaptureUrl()" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-copy"></i> Copy Link
+          </button>
+          <a id="btn-open-skill-mobile" href="#" target="_blank" style="flex: 1; background: #059669; color: white; border: none; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open View &rarr;
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <script>
+    const mobileAdminToken = "{{ mobile_admin_token or '' }}";
+
+    function getSkillMobileUrl() {
+      const origin = window.location.origin;
+      const base = `${origin}/mobile/admin?mode=skill_assessment`;
+      return mobileAdminToken ? `${base}&token=${encodeURIComponent(mobileAdminToken)}` : base;
+    }
+
+    function openSkillQrModal() {
+      const modal = document.getElementById('modal-skill-qr');
+      const qrImg = document.getElementById('skill-qr-img');
+      const urlText = document.getElementById('skill-qr-url-text');
+      const openBtn = document.getElementById('btn-open-skill-mobile');
+      
+      const fullUrl = getSkillMobileUrl();
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=0&data=${encodeURIComponent(fullUrl)}`;
+      }
+      if (urlText) urlText.innerText = fullUrl;
+      if (openBtn) openBtn.href = fullUrl;
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeSkillQrModal() {
+      const modal = document.getElementById('modal-skill-qr');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function copySkillCaptureUrl() {
+      const url = getSkillMobileUrl();
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`Copied Field Camera URL with Instant Token to clipboard:\n${url}`);
+      }).catch(() => {
+        prompt("Copy this URL:", url);
+      });
+    }
+
+    // Close modal on Escape key or outside click
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSkillQrModal();
+    });
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('modal-skill-qr');
+      if (e.target === modal) closeSkillQrModal();
+    });
+
     function handleFileSelected(event) {
       const file = event.target.files[0];
       if (!file) return;

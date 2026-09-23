@@ -304,9 +304,17 @@
       }
     }
 
-    function renderAdminQr() {
+    const adminToken = "{{ mobile_admin_token or '' }}";
+
+    function getAdminMobileUrl() {
       const origin = window.location.origin;
-      const adminUrl = `${origin}/mobile/admin`;
+      return adminToken 
+        ? `${origin}/mobile/admin?token=${encodeURIComponent(adminToken)}` 
+        : `${origin}/mobile/admin`;
+    }
+
+    function renderAdminQr() {
+      const adminUrl = getAdminMobileUrl();
       const qrImg = document.getElementById('admin-qr-img');
       if (qrImg) {
         qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(adminUrl)}`;
@@ -333,13 +341,13 @@
     }
 
     function copyAdminMobileUrl() {
-      const url = `${window.location.origin}/mobile/admin`;
+      const url = getAdminMobileUrl();
       navigator.clipboard.writeText(url).then(() => {
-        alert(`Copied Admin Field Capture URL to clipboard:\n${url}`);
+        alert(`Copied Admin Field Capture URL with Instant Mobile Auth to clipboard:\n${url}`);
       });
     }
 
-    // Interactive AJAX Login Handler: Reveals QR Code instantly on success!
+    // Interactive AJAX Login Handler: Redirects instantly on mobile or reveals QR Code on desktop
     const loginForm = document.getElementById('login-form');
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -371,7 +379,13 @@
 
         const data = await res.json();
         if (res.ok && data.success) {
-          showQrView(data.redirect || nextVal);
+          const targetUrl = data.redirect || nextVal;
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          if (isMobile || targetUrl.includes('/mobile/admin')) {
+            window.location.href = targetUrl;
+          } else {
+            showQrView(targetUrl);
+          }
         } else {
           errMsg.innerText = data.error || "Invalid instructor credentials.";
           errBox.style.display = 'flex';
@@ -386,7 +400,13 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       const isAlreadyAuth = {{ 'true' if already_authenticated or login_success else 'false' }};
+      const nextVal = "{{ next_url or '' }}";
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isAlreadyAuth) {
+        if (isMobile || (nextVal && nextVal !== '/dashboard')) {
+          window.location.href = nextVal || '/mobile/admin';
+          return;
+        }
         renderAdminQr();
       }
     });

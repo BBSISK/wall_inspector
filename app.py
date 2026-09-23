@@ -354,6 +354,30 @@ def get_wall_defect_modes(wall):
         "all": all_modes
     }
 
+def generate_mobile_admin_token(app_instance=None, expires_sec=86400 * 7):
+    """Generates a cryptographically signed mobile authorization token for QR pairing."""
+    from itsdangerous import URLSafeTimedSerializer
+    target_app = app_instance or globals().get("app")
+    secret = (target_app.secret_key if (target_app and hasattr(target_app, "secret_key") and target_app.secret_key)
+              else (os.getenv("SECRET_KEY") or "dev-secret-key-change-in-production"))
+    s = URLSafeTimedSerializer(secret, salt="mobile-admin-auth")
+    return s.dumps({"role": "admin"})
+
+def verify_mobile_admin_token(token, app_instance=None, max_age=86400 * 7):
+    """Verifies a signed mobile authorization token and confirms admin privileges."""
+    if not token:
+        return False
+    from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+    target_app = app_instance or globals().get("app")
+    secret = (target_app.secret_key if (target_app and hasattr(target_app, "secret_key") and target_app.secret_key)
+              else (os.getenv("SECRET_KEY") or "dev-secret-key-change-in-production"))
+    s = URLSafeTimedSerializer(secret, salt="mobile-admin-auth")
+    try:
+        data = s.loads(token, max_age=max_age)
+        return data.get("role") == "admin"
+    except (BadSignature, SignatureExpired, Exception):
+        return False
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -2842,9 +2866,21 @@ def create_app(config_class=Config):
                 raise err
 
 
+    def generate_token_for_admin(expires_sec=86400 * 7):
+        return generate_mobile_admin_token(app_instance=app, expires_sec=expires_sec)
+
+    def verify_token_for_admin(token, max_age=86400 * 7):
+        return verify_mobile_admin_token(token, app_instance=app, max_age=max_age)
+
     def admin_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            # Check for signed mobile auth token in query parameters or form payload
+            token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
+            if token and verify_token_for_admin(token):
+                session["is_admin"] = True
+                session.permanent = True
+
             if not session.get("is_admin"):
                 if request.path.startswith("/api/") or (request.method in ["POST", "DELETE"] and not request.path.startswith("/admin/login")):
                     return jsonify({"error": "Admin authentication required"}), 401
@@ -2855,7 +2891,12 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_admin_status():
-        return {"is_admin": session.get("is_admin", False)}
+        is_admin = session.get("is_admin", False)
+        admin_token = generate_token_for_admin() if is_admin else None
+        return {
+            "is_admin": is_admin,
+            "mobile_admin_token": admin_token
+        }
 
     @app.route("/admin/login", methods=["GET", "POST"])
     def admin_login():
@@ -2871,6 +2912,7 @@ def create_app(config_class=Config):
 
             if (password and password == expected_password) or (pin and pin == expected_pin):
                 session["is_admin"] = True
+                session.permanent = True
                 if request.is_json:
                     return jsonify({"success": True, "redirect": next_url})
                 return redirect(next_url)
@@ -2881,6 +2923,13 @@ def create_app(config_class=Config):
                 return render_template("admin_login.html", error=error, next_url=next_url), 401
 
         already_auth = session.get("is_admin", False) and not request.args.get("show_form")
+        if already_auth:
+            # If user is already authenticated and requested a specific destination (like /mobile/admin), redirect immediately!
+            user_agent = request.headers.get("User-Agent", "").lower()
+            is_mobile = any(m in user_agent for m in ["iphone", "ipad", "android", "mobile"])
+            if is_mobile or (next_url and next_url != "/dashboard"):
+                return redirect(next_url)
+
         return render_template("admin_login.html", error=error, next_url=next_url, already_authenticated=already_auth)
 
     @app.route("/admin/logout")
@@ -4960,7 +5009,14 @@ def create_app(config_class=Config):
     @app.route("/mobile/admin")
     @admin_required
     def mobile_admin_capture():
-        return render_template("mobile_admin_capture.html", wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()))
+        mode = request.args.get("mode", "")
+        token = request.args.get("token") or request.args.get("auth_token") or ""
+        return render_template(
+            "mobile_admin_capture.html",
+            wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()),
+            capture_mode=mode,
+            auth_token=token
+        )
 
     @app.route("/mobile/admin/upload", methods=["POST"])
     @admin_required
