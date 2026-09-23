@@ -2182,6 +2182,251 @@ def create_app(config_class=Config):
                         "explanation": "Horizontal lime bedding joint showing fine longitudinal shrinkage separation and border erosion, allowing micro-capillary water ingress."
                     }
                 ]
+            },
+            {
+                "slug": "skill-coursed-rubble-galleted-bed-crack",
+                "title": "Coursed Rubble Masonry: Upper Block Fissure & Flush Joint Fretting",
+                "description": "Coursed limestone rubble wall incorporating thin gallet levelers and snecks, exhibiting a diagonal hairline fracture across upper corner block, horizontal bed joint fretting, and basal salt weathering.",
+                "country": "Ireland",
+                "region": "Co. Kilkenny",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_21.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Stone Unit Fissure / Diagonal Shear Crack"},
+                    {"id": "mortar_erosion", "label": "Flush Bed Joint Fretting & Mortar Loss"},
+                    {"id": "rising_damp_salt", "label": "Subflorescence & Granular Decay"},
+                    {"id": "spalling", "label": "Arris Compressive Spalling"},
+                    {"id": "core_voiding", "label": "Internal Hearting Voiding"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.05, "y_min": 0.15, "x_max": 0.05, "y_max": 0.15,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Upper Corner Block Diagonal Hairline Fracture",
+                        "explanation": "Tensile bending stress or localized point load concentration propagating a sharp hairline fracture across the upper quoin-like limestone unit."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.59, "y_min": 0.57, "x_max": 0.59, "y_max": 0.57,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Horizontal Bed Joint Weathering & Mortar Recess",
+                        "explanation": "Erosion of hydraulic lime pointing along central bedding course exposing upper arris of underlying rubble stone."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.73, "y_min": 0.78, "x_max": 0.73, "y_max": 0.78,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Subflorescence & Sandstone Grain Friability",
+                        "explanation": "Ground moisture absorption and cyclic crystallization causing granular disaggregation and light surface powdering."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-rubble-shattered-spall-efflorescence",
+                "title": "Limestone Rubble Wall: Shattered Stone Exfoliation & Crystalline Efflorescence",
+                "description": "Mixed limestone rubble boundary wall with severe freeze-thaw shattering on an argillaceous unit, dense white calcium salt efflorescence on an upper stone, and recessed bedding joints.",
+                "country": "Ireland",
+                "region": "Co. Clare",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "foundational",
+                "image_filename": "skill_specimen_22.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "spalling", "label": "Shattered Stone Unit / Severe Frost Exfoliation"},
+                    {"id": "efflorescence_salts", "label": "Surface Efflorescence Crust / Salt Bloom"},
+                    {"id": "mortar_erosion", "label": "Bed Joint Fretting & Pinning Mortar Loss"},
+                    {"id": "core_voiding", "label": "Loss of Bearing / Cavity Void"},
+                    {"id": "biological_colonisation", "label": "Algal & Lichen Patina"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.85, "y_min": 0.52, "x_max": 0.85, "y_max": 0.52,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Severe Frost Shatter & Multi-layer Spall on Argillaceous Facies",
+                        "explanation": "Clay-rich sedimentary limestone unit experiencing catastrophic freeze-thaw disintegration, splitting into loose angular flakes and loss of structural core."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.33, "y_min": 0.28, "x_max": 0.33, "y_max": 0.28,
+                        "tolerance_radius": 0.08,
+                        "category": "efflorescence_salts", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Dense White Carbonate Efflorescence Crust",
+                        "explanation": "Capillary moisture evaporation depositing dense white crystalline salt bloom across dark limestone face."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.60, "x_max": 0.52, "y_max": 0.60,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Mortar Recess & Bed Fretting Below Circular Sneck",
+                        "explanation": "Localized washout of lime mortar beneath round pinning stone, reducing bedding support."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-rubble-lichen-encrustation-vertical-seam",
+                "title": "Limestone Rubble Wall: Xanthoria Lichen Encrustation & Unbonded Vertical Seam",
+                "description": "Coursed rubble wall featuring bright Xanthoria parietina lichen encrustation on the upper coping band, a disruptive unbonded vertical through-stone seam, and contour spalling.",
+                "country": "Ireland",
+                "region": "Co. Galway",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_23.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "biological_colonisation", "label": "Xanthoria Lichen & Carbonaceous Patina"},
+                    {"id": "stepped_crack", "label": "Unbonded Vertical Seam / Continuous Joint Run"},
+                    {"id": "spalling", "label": "Differential Contour Spalling & Arris Weathering"},
+                    {"id": "mortar_erosion", "label": "Lime Pointing Erosion"},
+                    {"id": "rising_damp_salt", "label": "Basal Damp Ingress"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.34, "y_min": 0.08, "x_max": 0.34, "y_max": 0.08,
+                        "tolerance_radius": 0.08,
+                        "category": "biological_colonisation", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Xanthoria parietina Foliose Lichen Colony & Soot Patina",
+                        "explanation": "Golden-orange nitrophilic lichen thalli anchored to upper stone face, accompanied by dark atmospheric carbonaceous deposit."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.34, "y_min": 0.73, "x_max": 0.34, "y_max": 0.73,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Unbonded Vertical Through-Stone Seam & Joint Alignment",
+                        "explanation": "Vertically oriented sneck stone breaking horizontal coursing beds and creating a continuous vertical shear plane across courses."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.18, "y_min": 0.47, "x_max": 0.18, "y_max": 0.47,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Contour Spalling & Granular Loss on Tan Facies",
+                        "explanation": "Selective granular loss and superficial exfoliation along face of porous yellowish stone."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-uncoursed-rubble-deep-bed-cavity",
+                "title": "Uncoursed Rubble Boundary: Deep Horizontal Cavity Void & Sneck Weathering",
+                "description": "Weathered uncoursed limestone rubble wall with severe horizontal bed joint cavitation exceeding 45mm, stone face fretting, and differential weathering on rounded boulder units.",
+                "country": "Ireland",
+                "region": "Co. Limerick",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_24.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "mortar_washout", "label": "Deep Bed Joint Cavitation (>40mm Void)"},
+                    {"id": "core_voiding", "label": "Loss of Core Hearting / Cavity Void"},
+                    {"id": "spalling", "label": "Boulder Surface Fretting & Arris Decay"},
+                    {"id": "biological_colonisation", "label": "Microbial Biofilm & Moisture Shadow"},
+                    {"id": "stepped_crack", "label": "Diagonal Shear Dislodgement"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.34, "y_min": 0.36, "x_max": 0.34, "y_max": 0.36,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Deep Bed Joint Washout & Structural Cavity Void (>40mm)",
+                        "explanation": "Hydraulic lime mortar washed out deep behind facing stones, forming a dark hollow cavity that destabilizes upper coursing stones."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.63, "y_min": 0.33, "x_max": 0.63, "y_max": 0.33,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Horizontal Bed Seam Mortar Depletion & Shadow Void",
+                        "explanation": "Continuation of eroded horizontal bed joint with complete loss of protective mortar pointing."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.17, "y_min": 0.62, "x_max": 0.17, "y_max": 0.62,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Elongated Stone Arris Weathering & Contour Loss",
+                        "explanation": "Progressive surface detachment and arris rounding on elongated limestone rubble unit."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-coursed-rubble-open-bed-aperture",
+                "title": "Coursed Rubble Masonry: Open Bed Joint Aperture & Upright Sneck Shear",
+                "description": "Coursed rubble limestone wall showing an open bed joint aperture on upper right, prominent vertical sneck through-stone, and perimeter mortar recessing.",
+                "country": "Ireland",
+                "region": "Co. Tipperary",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_25.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "mortar_washout", "label": "Open Bed Joint Aperture / Horizontal Void"},
+                    {"id": "spalling", "label": "Wedge Stone Perimeter Micro-Spalling"},
+                    {"id": "stepped_crack", "label": "Upright Sneck Joint Cleavage Seam"},
+                    {"id": "mortar_erosion", "label": "Bedding Mortar Shrinkage & Fretting"},
+                    {"id": "biological_colonisation", "label": "Localized Algal Staining"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.90, "y_min": 0.36, "x_max": 0.90, "y_max": 0.36,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Open Horizontal Bed Joint Aperture & Cavity Void",
+                        "explanation": "Extensive mortar loss creating an open horizontal slot aperture between coursed blocks, exposing unpointed core hearting."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.28, "y_min": 0.46, "x_max": 0.28, "y_max": 0.46,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Light Wedge Stone Perimeter Micro-Spall & Arris Blunting",
+                        "explanation": "Mechanical stress and moisture cycling causing fine perimeter flaking and loss of original arris definition."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.44, "y_min": 0.20, "x_max": 0.44, "y_max": 0.20,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "minor",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Upright Sneck Joint Cleavage Seam",
+                        "explanation": "Tightly pinned vertical stone creating a cross-course joint anomaly vulnerable to differential shifting."
+                    }
+                ]
             }
         ]
 
