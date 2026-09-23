@@ -351,6 +351,49 @@
     .pinned-item:hover {
       border-color: #38bdf8;
     }
+    .pinned-item.highlight-focus {
+      animation: pulseHighlight 1.5s 2;
+    }
+    @keyframes pulseHighlight {
+      0%, 100% { box-shadow: 0 0 0 rgba(56, 189, 248, 0); }
+      50% { box-shadow: 0 0 16px rgba(56, 189, 248, 0.9); border-color: #38bdf8; }
+    }
+    .result-summary-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+      border: 1px solid #38bdf8;
+      border-radius: 10px;
+      padding: 0.9rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .badge-grade {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+    }
+    .badge-grade.distinction { background: #065f46; color: #34d399; border: 1px solid #10b981; }
+    .badge-grade.merit { background: #0c4a6e; color: #38bdf8; border: 1px solid #0284c7; }
+    .badge-grade.pass { background: #78350f; color: #fbbf24; border: 1px solid #d97706; }
+    .badge-grade.remedial { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+
+    .pinned-item.result-correct {
+      border: 1px solid #10b981;
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .pinned-item.result-partial {
+      border: 1px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.08);
+    }
+    .pinned-item.result-false_positive {
+      border: 1px solid #ef4444;
+      background: rgba(239, 68, 68, 0.08);
+    }
+    .pinned-item.result-missed {
+      border: 1px dashed #64748b;
+      background: rgba(100, 116, 139, 0.07);
+    }
     .pinned-item-header {
       display: flex;
       justify-content: space-between;
@@ -520,7 +563,7 @@
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.9);
-      z-index: 300;
+      z-index: 1000;
       align-items: center;
       justify-content: center;
       padding: 1.5rem;
@@ -734,7 +777,8 @@
 
   <!-- Score & Evaluation Report Modal -->
   <div id="score-modal">
-    <div class="score-card">
+    <div class="score-card" style="position: relative;">
+      <button type="button" class="btn-del-pin" style="position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; color: #94a3b8; background: transparent; border: none; cursor: pointer;" onclick="closeScoreModal()">&times;</button>
       <div id="score-gauge" class="score-gauge score-passed">
         <div class="score-pct" id="modal-score-pct">0%</div>
         <div class="score-grade" id="modal-grade">Merit</div>
@@ -779,12 +823,15 @@
         </table>
       </div>
 
-      <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem;">
-        <button type="button" class="btn-top btn-exit" onclick="document.getElementById('score-modal').style.display='none'">
+      <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
+        <button type="button" class="btn-top btn-exit" onclick="closeScoreModal()">
           <i class="fa-solid fa-eye"></i> Inspect Solution Overlay
         </button>
-        <a href="/skill-assessment/{{ wall.slug }}" class="btn-top" style="background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8;">
+        <button type="button" class="btn-top" style="background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8;" onclick="retakeAssessment()">
           <i class="fa-solid fa-arrows-rotate"></i> Retake Specimen
+        </button>
+        <a href="/portal" class="btn-top btn-exit">
+          <i class="fa-solid fa-graduation-cap"></i> Student Portal
         </a>
         <a href="/skill-assessment" class="btn-top btn-submit">
           <i class="fa-solid fa-arrow-right"></i> Next Specimen
@@ -880,6 +927,56 @@
       renderPins();
     }
 
+    let lastEvaluationData = null;
+
+    function openScoreModal() {
+      const modal = document.getElementById('score-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeScoreModal() {
+      const modal = document.getElementById('score-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function focusOnCoordinate(x, y) {
+      const wrap = document.getElementById('canvas-wrap');
+      if (!wrap) return;
+      const highlight = document.createElement('div');
+      highlight.style.position = 'absolute';
+      highlight.style.left = (x * 100) + '%';
+      highlight.style.top = (y * 100) + '%';
+      highlight.style.transform = 'translate(-50%, -50%)';
+      highlight.style.width = '64px';
+      highlight.style.height = '64px';
+      highlight.style.borderRadius = '50%';
+      highlight.style.border = '3px solid #00f2fe';
+      highlight.style.boxShadow = '0 0 25px rgba(0, 242, 254, 0.9)';
+      highlight.style.animation = 'pinPulse 1s 3 ease-out';
+      highlight.style.pointerEvents = 'none';
+      highlight.style.zIndex = '60';
+      wrap.appendChild(highlight);
+      setTimeout(() => highlight.remove(), 3500);
+    }
+
+    function retakeAssessment() {
+      if (!confirm("Retake this assessment? Your current pins and scores will be reset for a fresh attempt.")) {
+        return;
+      }
+      closeScoreModal();
+      isEvaluated = false;
+      lastEvaluationData = null;
+      studentPins = [];
+
+      const gtLayer = document.getElementById('gt-layer');
+      if (gtLayer) {
+        gtLayer.style.display = 'none';
+        gtLayer.innerHTML = '';
+      }
+
+      renderPins();
+    }
+
     function renderPins() {
       const container = document.getElementById('pins-layer');
       container.innerHTML = '';
@@ -894,12 +991,33 @@
 
         const mode = modeLookup[pin.category] || { label: pin.category };
 
+        // Apply evaluation class if already graded
+        if (isEvaluated && lastEvaluationData && Array.isArray(lastEvaluationData.evaluated_pins)) {
+          const evalPin = lastEvaluationData.evaluated_pins[index];
+          if (evalPin) {
+            pinEl.classList.add(evalPin.status || 'neutral');
+            pinEl.title = `#${index + 1}: ${(evalPin.status || '').toUpperCase()} - ${evalPin.explanation || ''}`;
+          }
+        }
+
         pinEl.innerHTML = `
           <div class="pin-pulse"></div>
           <div class="pin-marker" title="${mode.label}">
             <span class="pin-inner-num">${index + 1}</span>
           </div>
         `;
+
+        // Click pin to focus corresponding card in sidebar
+        pinEl.onclick = (e) => {
+          e.stopPropagation();
+          const targetCard = document.getElementById('pinned-item-' + index);
+          if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            targetCard.classList.add('highlight-focus');
+            setTimeout(() => targetCard.classList.remove('highlight-focus'), 2500);
+          }
+        };
+
         container.appendChild(pinEl);
       });
 
@@ -912,53 +1030,259 @@
       const submitBtn = document.getElementById('main-submit-btn');
       const topSubmitBtn = document.getElementById('top-submit-btn');
 
-      badge.textContent = `${studentPins.length} Pinned`;
+      if (isEvaluated && lastEvaluationData) {
+        // --- EVALUATED STATE: DISPLAY CLINICAL SCORECARD IN SIDEBAR ---
+        const d = lastEvaluationData;
+        badge.textContent = `${d.score}% Score`;
+        badge.style.background = d.passed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+        badge.style.color = d.passed ? '#34d399' : '#f87171';
+        badge.style.borderColor = d.passed ? '#10b981' : '#ef4444';
 
-      if (studentPins.length === 0) {
-        list.innerHTML = `
-          <div class="empty-state" id="empty-state">
-            <i class="fa-solid fa-hand-pointer"></i>
-            <div>No defect points placed yet.</div>
-            <small>Click on visible voids, joint erosion, spalling, or fractures to mark defect locations.</small>
+        let gradeClass = 'merit';
+        let scoreColor = '#38bdf8';
+        if (d.score >= 85) { gradeClass = 'distinction'; scoreColor = '#34d399'; }
+        else if (d.score >= 70) { gradeClass = 'merit'; scoreColor = '#38bdf8'; }
+        else if (d.score >= 50) { gradeClass = 'pass'; scoreColor = '#fbbf24'; }
+        else { gradeClass = 'remedial'; scoreColor = '#f87171'; }
+
+        let html = `
+          <!-- Persistent Scorecard Summary Box -->
+          <div class="result-summary-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">
+                <i class="fa-solid fa-clipboard-check"></i> Diagnostic Result
+              </span>
+              <span class="badge-grade ${gradeClass}">${d.grade || 'Evaluated'}</span>
+            </div>
+            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.65rem;">
+              <div>
+                <span style="font-size: 2.2rem; font-weight: 900; color: ${scoreColor}; line-height: 1;">${d.score}%</span>
+                <span style="font-size: 0.78rem; color: #94a3b8; margin-left: 6px;">(${d.earned_points} / ${d.total_gt} Points)</span>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 700; color: ${d.passed ? '#34d399' : '#f87171'};">
+                ${d.passed ? '✓ Passing Standard' : '⚠ Remedial Review'}
+              </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; margin-bottom: 0.75rem;">
+              <div style="background: #090e1a; padding: 5px 2px; border-radius: 6px; border: 1px solid #334155;">
+                <div style="color: #34d399; font-weight: 800; font-size: 0.95rem;">${d.full_hits || 0}</div>
+                <div style="font-size: 0.62rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Hits</div>
+              </div>
+              <div style="background: #090e1a; padding: 5px 2px; border-radius: 6px; border: 1px solid #334155;">
+                <div style="color: #fbbf24; font-weight: 800; font-size: 0.95rem;">${d.partial_hits || 0}</div>
+                <div style="font-size: 0.62rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Partial</div>
+              </div>
+              <div style="background: #090e1a; padding: 5px 2px; border-radius: 6px; border: 1px solid #334155;">
+                <div style="color: #f87171; font-weight: 800; font-size: 0.95rem;">${d.false_positives || 0}</div>
+                <div style="font-size: 0.62rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">False+</div>
+              </div>
+              <div style="background: #090e1a; padding: 5px 2px; border-radius: 6px; border: 1px solid #334155;">
+                <div style="color: #94a3b8; font-weight: 800; font-size: 0.95rem;">${d.missed_count || 0}</div>
+                <div style="font-size: 0.62rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Missed</div>
+              </div>
+            </div>
+            <button type="button" class="btn-top" style="width: 100%; background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 7px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="openScoreModal()">
+              <i class="fa-solid fa-chart-pie"></i> Open Full Detailed Scorecard
+            </button>
+          </div>
+
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin: 0.35rem 0 0;">
+            <i class="fa-solid fa-list-check"></i> Pinned Defect Evaluations (${d.evaluated_pins?.length || 0})
           </div>
         `;
-        submitBtn.disabled = true;
-        topSubmitBtn.disabled = true;
-      } else {
-        submitBtn.disabled = false;
-        topSubmitBtn.disabled = false;
-        list.innerHTML = '';
 
-        studentPins.forEach((pin, index) => {
-          const mode = modeLookup[pin.category] || { label: pin.category };
-          const item = document.createElement('div');
-          item.className = 'pinned-item';
-          item.innerHTML = `
-            <div class="pinned-item-header">
-              <span class="pin-id-tag">#${index + 1} • (${Math.round(pin.x*100)}%, ${Math.round(pin.y*100)}%)</span>
-              ${!isEvaluated ? `<button type="button" class="btn-del-pin" onclick="deletePin('${pin.id}')" title="Delete Pin">&times;</button>` : ''}
-            </div>
-            <div class="pinned-title">${mode.label}</div>
-            <div class="pinned-meta">
-              <span>Severity: <strong style="color: #f1f5f9;">${pin.severity}</strong></span>
-              ${pin.notes ? `<span>• "${pin.notes}"</span>` : ''}
+        if (Array.isArray(d.evaluated_pins)) {
+          d.evaluated_pins.forEach((res, index) => {
+            const mode = modeLookup[res.category] || { label: res.category };
+            const statusType = res.status || 'neutral';
+
+            let badgeHtml = '';
+            let cardClass = 'result-correct';
+            if (statusType === 'correct') {
+              badgeHtml = `<span style="background: #065f46; color: #34d399; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 0.68rem;"><i class="fa-solid fa-check"></i> FULL HIT</span>`;
+              cardClass = 'result-correct';
+            } else if (statusType === 'partial') {
+              badgeHtml = `<span style="background: #78350f; color: #fbbf24; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 0.68rem;"><i class="fa-solid fa-triangle-exclamation"></i> MODE MISMATCH</span>`;
+              cardClass = 'result-partial';
+            } else {
+              badgeHtml = `<span style="background: #7f1d1d; color: #fca5a5; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 0.68rem;"><i class="fa-solid fa-xmark"></i> FALSE POSITIVE</span>`;
+              cardClass = 'result-false_positive';
+            }
+
+            html += `
+              <div class="pinned-item ${cardClass}" id="pinned-item-${index}">
+                <div class="pinned-item-header">
+                  <span class="pin-id-tag">#${index + 1} • (${Math.round(res.x * 100)}%, ${Math.round(res.y * 100)}%)</span>
+                  ${badgeHtml}
+                </div>
+                <div class="pinned-title">${mode.label}</div>
+                <div style="font-size: 0.74rem; color: #cbd5e1; line-height: 1.35; margin: 2px 0;">
+                  ${res.explanation || ''}
+                </div>
+                ${res.matched_gt_title ? `
+                  <div style="font-size: 0.72rem; color: #94a3b8; border-top: 1px solid rgba(51, 65, 85, 0.5); padding-top: 4px; margin-top: 2px;">
+                    <span style="color: #38bdf8; font-weight: 700;">Ground Truth:</span> ${res.matched_gt_title}
+                    ${res.distance !== null ? `<br><small style="color: #64748b;">Distance: ${Math.round(res.distance * 100)}% (within tolerance)</small>` : ''}
+                    ${res.remedial_action && res.remedial_action !== 'none' ? `<br><span style="color: #34d399; font-weight: 600;">Rx: ${res.remedial_action.replace(/_/g, ' ')}</span>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+        }
+
+        // Missed Ground Truth Targets
+        if (Array.isArray(d.feedback)) {
+          const missedItems = d.feedback.filter(f => f.status === 'missed');
+          if (missedItems.length > 0) {
+            html += `
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: #f59e0b; font-weight: 800; letter-spacing: 0.5px; margin-top: 0.5rem;">
+                <i class="fa-solid fa-eye-slash"></i> Overlooked Pathology Targets (${missedItems.length})
+              </div>
+            `;
+            missedItems.forEach((m, mIdx) => {
+              html += `
+                <div class="pinned-item result-missed">
+                  <div class="pinned-item-header">
+                    <span style="background: #1e293b; color: #94a3b8; font-weight: 700; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;">UNIDENTIFIED</span>
+                    <span style="color: #f59e0b; font-size: 0.7rem; font-weight: 700;">${m.severity || 'Moderate'}</span>
+                  </div>
+                  <strong style="color: #f8fafc; font-size: 0.85rem;">${m.title}</strong>
+                  <div style="font-size: 0.74rem; color: #94a3b8; line-height: 1.35;">${m.explanation || ''}</div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                    <span style="color: #34d399; font-size: 0.72rem; font-weight: 600;">Rx: ${(m.remedial_action || '').replace(/_/g, ' ')}</span>
+                  </div>
+                </div>
+              `;
+            });
+          }
+        }
+
+        list.innerHTML = html;
+
+        // Both buttons remain ACTIVE and re-open the scorecard
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.background = 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)';
+          submitBtn.style.borderColor = '#38bdf8';
+          submitBtn.innerHTML = `<i class="fa-solid fa-chart-pie"></i> View Detailed Scorecard (${d.score}%)`;
+          submitBtn.onclick = openScoreModal;
+        }
+
+        let retakeBtn = document.getElementById('sidebar-retake-btn');
+        if (!retakeBtn && submitBtn && submitBtn.parentElement) {
+          retakeBtn = document.createElement('button');
+          retakeBtn.type = 'button';
+          retakeBtn.id = 'sidebar-retake-btn';
+          retakeBtn.style.width = '100%';
+          retakeBtn.style.marginTop = '0.5rem';
+          retakeBtn.style.background = '#1e293b';
+          retakeBtn.style.color = '#94a3b8';
+          retakeBtn.style.border = '1px solid #334155';
+          retakeBtn.style.padding = '0.65rem';
+          retakeBtn.style.borderRadius = '8px';
+          retakeBtn.style.fontSize = '0.85rem';
+          retakeBtn.style.fontWeight = '700';
+          retakeBtn.style.cursor = 'pointer';
+          retakeBtn.style.display = 'flex';
+          retakeBtn.style.alignItems = 'center';
+          retakeBtn.style.justifyContent = 'center';
+          retakeBtn.style.gap = '6px';
+          retakeBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Retake Specimen Assessment';
+          retakeBtn.onclick = retakeAssessment;
+          submitBtn.parentElement.appendChild(retakeBtn);
+        }
+
+        if (topSubmitBtn) {
+          topSubmitBtn.disabled = false;
+          topSubmitBtn.style.background = '#0284c7';
+          topSubmitBtn.style.borderColor = '#38bdf8';
+          topSubmitBtn.innerHTML = `<i class="fa-solid fa-chart-pie"></i> Scorecard (${d.score}%)`;
+          topSubmitBtn.onclick = openScoreModal;
+        }
+
+      } else {
+        // --- DRAFT STATE ---
+        const retakeBtn = document.getElementById('sidebar-retake-btn');
+        if (retakeBtn) retakeBtn.remove();
+
+        badge.textContent = `${studentPins.length} Pinned`;
+        badge.style.background = '';
+        badge.style.color = '';
+        badge.style.borderColor = '';
+
+        if (submitBtn) {
+          submitBtn.style.background = '';
+          submitBtn.style.borderColor = '';
+          submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment for Grading';
+          submitBtn.onclick = submitAssessment;
+        }
+        if (topSubmitBtn) {
+          topSubmitBtn.style.background = '';
+          topSubmitBtn.style.borderColor = '';
+          topSubmitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment';
+          topSubmitBtn.onclick = submitAssessment;
+        }
+
+        if (studentPins.length === 0) {
+          list.innerHTML = `
+            <div class="empty-state" id="empty-state">
+              <i class="fa-solid fa-hand-pointer"></i>
+              <div>No defect points placed yet.</div>
+              <small>Click on visible voids, joint erosion, spalling, or fractures to mark defect locations.</small>
             </div>
           `;
-          list.appendChild(item);
-        });
+          if (submitBtn) submitBtn.disabled = true;
+          if (topSubmitBtn) topSubmitBtn.disabled = true;
+        } else {
+          if (submitBtn) submitBtn.disabled = false;
+          if (topSubmitBtn) topSubmitBtn.disabled = false;
+          list.innerHTML = '';
+
+          studentPins.forEach((pin, index) => {
+            const mode = modeLookup[pin.category] || { label: pin.category };
+            const item = document.createElement('div');
+            item.className = 'pinned-item';
+            item.id = 'pinned-item-' + index;
+            item.innerHTML = `
+              <div class="pinned-item-header">
+                <span class="pin-id-tag">#${index + 1} • (${Math.round(pin.x*100)}%, ${Math.round(pin.y*100)}%)</span>
+                <button type="button" class="btn-del-pin" onclick="deletePin('${pin.id}')" title="Delete Pin">&times;</button>
+              </div>
+              <div class="pinned-title">${mode.label}</div>
+              <div class="pinned-meta">
+                <span>Severity: <strong style="color: #f1f5f9;">${pin.severity}</strong></span>
+                ${pin.notes ? `<span>• "${pin.notes}"</span>` : ''}
+              </div>
+            `;
+            list.appendChild(item);
+          });
+        }
       }
     }
 
     async function submitAssessment() {
-      if (studentPins.length === 0 || isEvaluated) return;
+      // If already evaluated, clicking submit simply re-opens the scorecard!
+      if (isEvaluated) {
+        openScoreModal();
+        return;
+      }
+
+      if (studentPins.length === 0) {
+        alert("Please drop at least one defect pin on the wall face before submitting for grading.");
+        return;
+      }
 
       const mainBtn = document.getElementById('main-submit-btn');
       const topBtn = document.getElementById('top-submit-btn');
       if (mainBtn) {
         mainBtn.disabled = true;
-        mainBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Grading...';
+        mainBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Grading against ground truth...';
       }
-      if (topBtn) topBtn.disabled = true;
+      if (topBtn) {
+        topBtn.disabled = true;
+        topBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Grading...';
+      }
 
       try {
         const response = await fetch(`/api/skill-assessment/evaluate/${wallSlug}`, {
@@ -978,41 +1302,44 @@
         const data = await response.json();
         if (data && data.success) {
           isEvaluated = true;
-          if (mainBtn) {
-            mainBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Assessment Evaluated';
-            mainBtn.disabled = true;
-          }
-          if (topBtn) topBtn.disabled = true;
+          lastEvaluationData = data;
           displayEvaluationResults(data);
         } else {
           alert('Error evaluating pins: ' + (data && data.error ? data.error : 'Server error'));
           if (mainBtn) {
             mainBtn.disabled = false;
-            mainBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment for Grading';
+            mainBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Complete & Evaluate';
           }
-          if (topBtn) topBtn.disabled = false;
+          if (topBtn) {
+            topBtn.disabled = false;
+            topBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment';
+          }
         }
       } catch (err) {
         console.error('Skill assessment submission failed:', err);
         alert('Evaluation failed: ' + (err.message || 'Please check your connection and try again.'));
         if (mainBtn) {
           mainBtn.disabled = false;
-          mainBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment for Grading';
+          mainBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Complete & Evaluate';
         }
-        if (topBtn) topBtn.disabled = false;
+        if (topBtn) {
+          topBtn.disabled = false;
+          topBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment';
+        }
       }
     }
 
     function displayEvaluationResults(data) {
       try {
-        // 1. Color student pins
+        // 1. Color student pins and set titles
         if (Array.isArray(data.evaluated_pins)) {
           data.evaluated_pins.forEach((res, idx) => {
             if (studentPins[idx]) {
               const pinEl = document.getElementById(studentPins[idx].id);
               if (pinEl) {
+                pinEl.classList.remove('correct', 'partial', 'false_positive', 'neutral');
                 pinEl.classList.add(res.status || 'neutral');
-                pinEl.title = `${(res.status || '').toUpperCase()}: ${res.explanation || ''}`;
+                pinEl.title = `#${idx + 1}: ${(res.status || '').toUpperCase()} - ${res.explanation || ''}`;
               }
             }
           });
@@ -1042,8 +1369,13 @@
               gtPin.style.left = ((gt.x || 0.5) * 100) + '%';
               gtPin.style.top = ((gt.y || 0.5) * 100) + '%';
               gtPin.style.pointerEvents = 'auto';
+              gtPin.title = `${gt.title || 'Ground Truth'} - ${gt.explanation || ''}`;
+              gtPin.onclick = (e) => {
+                e.stopPropagation();
+                openScoreModal();
+              };
               gtPin.innerHTML = `
-                <div class="gt-pin-marker" title="${gt.title || 'Ground Truth'} - ${gt.explanation || ''}">
+                <div class="gt-pin-marker">
                   <i class="fa-solid fa-flag"></i>
                 </div>
                 <div class="gt-label">${gt.title || 'Ground Truth'}</div>
@@ -1091,14 +1423,15 @@
           }
         }
 
-        const scoreModal = document.getElementById('score-modal');
-        if (scoreModal) {
-          scoreModal.style.display = 'flex';
-        }
+        // 4. Update Sidebar with full evaluated state
         renderSidebar();
+
+        // 5. Open Score Modal
+        openScoreModal();
+
       } catch (renderErr) {
         console.error('Error rendering evaluation results:', renderErr);
-        alert('Results calculated but error displaying modal: ' + renderErr.message);
+        alert('Results calculated: ' + renderErr.message);
       }
     }
   </script>
