@@ -2672,6 +2672,104 @@ def create_app(config_class=Config):
                         "explanation": "Capillary moisture carrying dissolved minerals evaporating near ground level, leaving yellowish iron staining."
                     }
                 ]
+            },
+            {
+                "slug": "skill-coursed-sandstone-iron-nodule-recess",
+                "title": "Coursed Sandstone Masonry: Ironstone Nodule Recess & Crazed Surface Spall",
+                "description": "Coursed Old Red Sandstone wall featuring an incompatible ironstone nodular inclusion with perimeter joint recession, surface granular fretting on dressed blocks, and basal moisture crazing.",
+                "country": "Ireland",
+                "region": "Co. Waterford",
+                "wall_type": "sandstone",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_31.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "mortar_erosion", "label": "Perimeter Mortar Recess Around Iron Inclusion"},
+                    {"id": "spalling", "label": "Differential Contour Spalling & Arris Fretting"},
+                    {"id": "rising_damp_salt", "label": "Basal Moisture Crazing & Subflorescence"},
+                    {"id": "stepped_crack", "label": "Unbonded Vertical Joint Alignment"},
+                    {"id": "core_voiding", "label": "Core Hearting Voiding"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.30, "y_min": 0.44, "x_max": 0.30, "y_max": 0.44,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Perimeter Mortar Recess Around Ironstone Inclusion",
+                        "explanation": "Thermal differential and moisture trapping around dense ironstone nodule causing perimeter lime mortar recession and loosening."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.33, "y_min": 0.28, "x_max": 0.33, "y_max": 0.28,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Sandstone Face Granular Fretting & Contour Wear",
+                        "explanation": "Loss of surface binder in porous sandstone block resulting in contour powdering and rounded arris profile."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.78, "y_min": 0.91, "x_max": 0.78, "y_max": 0.91,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Moisture Crazing & Superficial Salt Cryptoflorescence",
+                        "explanation": "Ground moisture wick-up producing micro-fissuring and granular delamination along bottom course."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-coursed-sandstone-diagonal-sneck-shear",
+                "title": "Old Red Sandstone Wall: Oblique Sneck Shear Joint & Bed Aperture",
+                "description": "Coursed Old Red Sandstone rubble wall with an oblique diagonal shear joint bounding a tapered sneck wedge, an open horizontal bed joint aperture on the right wythe, and alveolar spalling on an olive sandstone block.",
+                "country": "Ireland",
+                "region": "Co. Kerry",
+                "wall_type": "sandstone",
+                "structural_function": "boundary",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_32.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Oblique Sneck Shear Joint / Alignment Fissure"},
+                    {"id": "mortar_washout", "label": "Open Horizontal Bed Joint Aperture (>30mm)"},
+                    {"id": "spalling", "label": "Alveolar Weathering & Face Spall on Olive Facies"},
+                    {"id": "mortar_erosion", "label": "Bedding Mortar Shrinkage & Fretting"},
+                    {"id": "core_voiding", "label": "Cavity Hearting Voiding"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.57, "y_min": 0.36, "x_max": 0.57, "y_max": 0.36,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Oblique Diagonal Shear Joint along Tapered Sneck",
+                        "explanation": "Differential lateral ground pressure or settlement forcing an oblique shear displacement along the unbonded sneck perimeter."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.94, "y_min": 0.42, "x_max": 0.94, "y_max": 0.42,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Open Horizontal Bed Joint Aperture & Deep Void (>30mm)",
+                        "explanation": "Hydraulic lime mortar washed out beneath dressed sandstone block, leaving an open horizontal slot aperture vulnerable to water entry."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.82, "y_min": 0.81, "x_max": 0.82, "y_max": 0.81,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Alveolar Surface Weathering & Contour Spall on Olive Facies",
+                        "explanation": "Clay-bearing olive sandstone block exhibiting cavernous/alveolar decay and contour loss compared to adjacent quartzitic sandstone."
+                    }
+                ]
             }
         ]
 
