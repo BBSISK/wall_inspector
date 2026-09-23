@@ -544,19 +544,50 @@
     <!-- Candidate Skill Assessment Progress & Diagnostic Scoreboard Strip -->
     <div class="candidate-progress-strip" id="candidate-progress-strip">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Logged in State -->
+        <div id="auth-state-loggedin" style="{% if not current_student %}display: none;{% endif %} display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #10b981); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; font-weight: bold; flex-shrink: 0;" id="user-avatar-initials">
+            {{ current_student.name[0] if current_student and current_student.name else 'S' }}
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name">
+                {{ current_student.name if current_student else 'Inspector Candidate' }}
+              </span>
+              <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 12px;">
+                <i class="fa-solid fa-shield-halved"></i> ENROLLED
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #94a3b8; margin-top: 2px; flex-wrap: wrap;">
+              <span><i class="fa-regular fa-envelope"></i> <span id="auth-user-email">{{ current_student.email if current_student else '' }}</span></span>
+              <span>•</span>
+              <span>
+                <i class="fa-solid fa-key" style="color: #facc15;"></i> PIN: 
+                <strong id="auth-user-pin" style="color: #f8fafc; letter-spacing: 2px; font-family: monospace;">{{ current_student.pin if current_student else '0000' }}</strong>
+                <button type="button" onclick="promptChangePin()" title="Change your 4-digit PIN" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 0.7rem; border-radius: 4px; padding: 1px 5px; cursor: pointer; margin-left: 4px;">Change PIN</button>
+              </span>
+              <span>•</span>
+              <button type="button" onclick="logoutStudent()" style="background: none; border: none; color: #94a3b8; font-size: 0.75rem; text-decoration: underline; cursor: pointer; padding: 0;">Sign Out</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logged out State -->
+        <div id="auth-state-loggedout" style="{% if current_student %}display: none;{% endif %} display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(5, 150, 105, 0.2); border: 1px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #34d399;">
             <i class="fa-solid fa-user-graduate"></i>
           </div>
           <div>
             <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Student Diagnostic Dashboard</div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name">
+              <span style="font-size: 1.05rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name-guest">
                 {{ student_name if student_name else 'Inspector Candidate' }}
               </span>
-              <input type="text" id="candidate-name-input" value="{{ student_name }}" placeholder="Switch Candidate Name..." style="background: #090e1a; border: 1px solid #334155; color: #38bdf8; font-size: 0.8rem; padding: 3px 8px; border-radius: 6px; outline: none; max-width: 200px;" oninput="onCandidateNameChange(this.value)">
-              <button type="button" onclick="syncOrClaimRecentAttempts()" id="btn-sync-hub" title="Sync progress or claim any recent assessments completed on this device" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-arrows-rotate"></i> Sync Progress
+              <button type="button" onclick="openAuthModal('login')" style="background: #2563eb; border: 1px solid #38bdf8; color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-key"></i> Student Login (PIN: 0000)
+              </button>
+              <button type="button" onclick="openAuthModal('enroll')" style="background: #059669; border: 1px solid #10b981; color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-user-plus"></i> Enroll
               </button>
             </div>
           </div>
@@ -842,19 +873,48 @@
       }, 2000);
     }
 
-    async function refreshStudentProgress(candidateName, claimRecent = false) {
-      const name = candidateName || localStorage.getItem('wall_candidate_name') || '';
-      if (!name) return;
+    function updateAllCardLinks(candidateName) {
+      const name = candidateName || localStorage.getItem('wall_candidate_name') || '{{ student_name if student_name else "Inspector Candidate" }}';
+      const studentId = localStorage.getItem('wall_student_id') || '{{ current_student.id if current_student else "" }}';
+      const enc = encodeURIComponent(name);
+      const cards = document.querySelectorAll('.specimen-card');
+      cards.forEach(card => {
+        const slug = card.getAttribute('data-slug');
+        const btn = document.getElementById(`btn-${slug}`);
+        if (btn && btn.href) {
+          try {
+            const u = new URL(btn.href, window.location.origin);
+            u.searchParams.set('student_name', name);
+            if (studentId) {
+              u.searchParams.set('student_id', studentId);
+            }
+            btn.href = u.pathname + u.search;
+          } catch(e) {
+            btn.href = `/skill-assessment/${slug}?student_name=${enc}${studentId ? '&student_id=' + encodeURIComponent(studentId) : ''}`;
+          }
+        }
+      });
+    }
+
+    async function refreshStudentProgress(candidateName, claimRecent = false, explicitStudentId = null) {
+      const studentId = explicitStudentId || localStorage.getItem('wall_student_id') || '{{ current_student.id if current_student else "" }}';
+      const name = candidateName || localStorage.getItem('wall_candidate_name') || '{{ student_name if student_name else "" }}';
+      if (!name && !studentId) return;
 
       try {
         const token = getCandidateToken();
-        let url = `/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}&candidate_token=${encodeURIComponent(token)}`;
+        let url = `/api/skill-assessment/student-progress?candidate_token=${encodeURIComponent(token)}`;
+        if (studentId) url += `&student_id=${encodeURIComponent(studentId)}`;
+        if (name) url += `&student_name=${encodeURIComponent(name)}`;
         if (claimRecent) url += '&claim_recent=1';
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
         if (data.success) {
           updateHubProgressUI(data);
+          if (data.student) {
+            setLoggedInStudentUI(data.student);
+          }
         }
       } catch (err) {
         console.error("Failed to refresh candidate progress:", err);
@@ -864,8 +924,8 @@
     function updateHubProgressUI(data) {
       const dashName = document.getElementById('dashboard-candidate-name');
       if (dashName) dashName.textContent = data.student_name || 'Inspector Candidate';
-      const input = document.getElementById('candidate-name-input');
-      if (input && !input.value) input.value = data.student_name || '';
+      const dashNameGuest = document.getElementById('dashboard-candidate-name-guest');
+      if (dashNameGuest) dashNameGuest.textContent = data.student_name || 'Inspector Candidate';
 
       const statComp = document.getElementById('stat-completed-count');
       if (statComp) statComp.textContent = `${data.completed_count} / ${data.total_specimens}`;
@@ -892,12 +952,14 @@
       const bySlug = data.by_slug || {};
       const cards = document.querySelectorAll('.specimen-card');
       const candidateName = data.student_name || localStorage.getItem('wall_candidate_name') || 'Inspector Candidate';
+      const studentId = localStorage.getItem('wall_student_id') || '{{ current_student.id if current_student else "" }}';
 
       cards.forEach(card => {
         const slug = card.getAttribute('data-slug');
         const prog = bySlug[slug];
         const overlay = document.getElementById(`overlay-${slug}`);
         const btn = document.getElementById(`btn-${slug}`);
+        const linkUrl = `/skill-assessment/${slug}?student_name=${encodeURIComponent(candidateName)}${studentId ? '&student_id=' + encodeURIComponent(studentId) : ''}`;
 
         card.classList.remove('card-completed-pass', 'card-completed-remedial', 'card-pending');
 
@@ -921,7 +983,7 @@
 
           if (btn) {
             btn.className = 'btn-start btn-retake';
-            btn.href = `/skill-assessment/${slug}?student_name=${encodeURIComponent(candidateName)}`;
+            btn.href = linkUrl;
             btn.innerHTML = `<i class="fa-solid fa-rotate-left"></i> Review / Retake Score (${prog.latest_score}%) &rarr;`;
           }
         } else {
@@ -939,7 +1001,7 @@
 
           if (btn) {
             btn.className = 'btn-start';
-            btn.href = `/skill-assessment/${slug}?student_name=${encodeURIComponent(candidateName)}`;
+            btn.href = linkUrl;
             btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Assessment';
           }
         }
@@ -948,22 +1010,326 @@
       applyAllFilters();
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    /* Student Authentication & PIN Modal Management */
+    function openAuthModal(tab = 'login') {
+      const modal = document.getElementById('studentAuthModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        switchAuthTab(tab);
+        const feedback = document.getElementById('auth-modal-feedback');
+        if (feedback) feedback.style.display = 'none';
+      }
+    }
+
+    function closeAuthModal() {
+      const modal = document.getElementById('studentAuthModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchAuthTab(tab) {
+      const loginForm = document.getElementById('auth-login-form');
+      const enrollForm = document.getElementById('auth-enroll-form');
+      const loginTabBtn = document.getElementById('auth-tab-btn-login');
+      const enrollTabBtn = document.getElementById('auth-tab-btn-enroll');
+      const feedback = document.getElementById('auth-modal-feedback');
+      if (feedback) feedback.style.display = 'none';
+
+      if (tab === 'login') {
+        if (loginForm) loginForm.style.display = 'block';
+        if (enrollForm) enrollForm.style.display = 'none';
+        if (loginTabBtn) {
+          loginTabBtn.style.background = '#2563eb';
+          loginTabBtn.style.color = '#ffffff';
+        }
+        if (enrollTabBtn) {
+          enrollTabBtn.style.background = 'transparent';
+          enrollTabBtn.style.color = '#94a3b8';
+        }
+        setTimeout(() => document.getElementById('login-email')?.focus(), 50);
+      } else {
+        if (loginForm) loginForm.style.display = 'none';
+        if (enrollForm) enrollForm.style.display = 'block';
+        if (enrollTabBtn) {
+          enrollTabBtn.style.background = '#059669';
+          enrollTabBtn.style.color = '#ffffff';
+        }
+        if (loginTabBtn) {
+          loginTabBtn.style.background = 'transparent';
+          loginTabBtn.style.color = '#94a3b8';
+        }
+        setTimeout(() => document.getElementById('enroll-name')?.focus(), 50);
+      }
+    }
+
+    function showAuthFeedback(msg, isError = false) {
+      const el = document.getElementById('auth-modal-feedback');
+      if (!el) return;
+      el.style.display = 'block';
+      el.style.background = isError ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+      el.style.border = isError ? '1px solid #ef4444' : '1px solid #10b981';
+      el.style.color = isError ? '#fca5a5' : '#6ee7b7';
+      el.innerHTML = msg;
+    }
+
+    function togglePinVisibility(inputId, btnEl) {
+      const inp = document.getElementById(inputId);
+      if (!inp) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        if (btnEl) btnEl.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+      } else {
+        inp.type = 'password';
+        if (btnEl) btnEl.innerHTML = '<i class="fa-regular fa-eye"></i>';
+      }
+    }
+
+    function setLoggedInStudentUI(student) {
+      if (!student) return;
+      const loggedInDiv = document.getElementById('auth-state-loggedin');
+      const loggedOutDiv = document.getElementById('auth-state-loggedout');
+      if (loggedInDiv) loggedInDiv.style.display = 'flex';
+      if (loggedOutDiv) loggedOutDiv.style.display = 'none';
+
+      const nameEl = document.getElementById('dashboard-candidate-name');
+      if (nameEl) nameEl.textContent = student.name;
+      const emailEl = document.getElementById('auth-user-email');
+      if (emailEl) emailEl.textContent = student.email;
+      const pinEl = document.getElementById('auth-user-pin');
+      if (pinEl) pinEl.textContent = student.pin || '0000';
+      const initialsEl = document.getElementById('user-avatar-initials');
+      if (initialsEl && student.name) initialsEl.textContent = student.name.charAt(0).toUpperCase();
+
+      localStorage.setItem('wall_student_id', student.id);
+      localStorage.setItem('wall_candidate_name', student.name);
+      localStorage.setItem('wall_student_email', student.email);
+
+      updateAllCardLinks(student.name);
+    }
+
+    async function handleStudentLogin(e) {
+      e.preventDefault();
+      const email = (document.getElementById('login-email')?.value || '').trim();
+      const pin = (document.getElementById('login-pin')?.value || '').trim() || '0000';
+      const submitBtn = document.getElementById('btn-submit-login');
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/student/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, pin })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showAuthFeedback(data.error || 'Login failed. Please verify your PIN (default 0000).', true);
+          if (submitBtn) submitBtn.disabled = false;
+          return;
+        }
+
+        setLoggedInStudentUI(data.student);
+        closeAuthModal();
+        await refreshStudentProgress(data.student.name, true, data.student.id);
+      } catch (err) {
+        showAuthFeedback('Network or server error: ' + err.message, true);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    async function handleStudentEnroll(e) {
+      e.preventDefault();
+      const name = (document.getElementById('enroll-name')?.value || '').trim();
+      const email = (document.getElementById('enroll-email')?.value || '').trim();
+      const pin = (document.getElementById('enroll-pin')?.value || '').trim() || '0000';
+      const submitBtn = document.getElementById('btn-submit-enroll');
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/student/enroll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, pin })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showAuthFeedback(data.error || 'Enrollment failed. Please check your details.', true);
+          if (submitBtn) submitBtn.disabled = false;
+          return;
+        }
+
+        setLoggedInStudentUI(data.student);
+        closeAuthModal();
+        await refreshStudentProgress(data.student.name, true, data.student.id);
+      } catch (err) {
+        showAuthFeedback('Network or server error: ' + err.message, true);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    async function logoutStudent() {
+      if (!confirm("Are you sure you want to sign out or switch candidate?")) return;
+      try {
+        await fetch('/api/student/logout', { method: 'POST' });
+      } catch (e) {}
+
+      localStorage.removeItem('wall_student_id');
+      localStorage.removeItem('wall_student_email');
+      localStorage.removeItem('wall_candidate_name');
+
+      const loggedInDiv = document.getElementById('auth-state-loggedin');
+      const loggedOutDiv = document.getElementById('auth-state-loggedout');
+      if (loggedInDiv) loggedInDiv.style.display = 'none';
+      if (loggedOutDiv) loggedOutDiv.style.display = 'flex';
+
+      const dashNameGuest = document.getElementById('dashboard-candidate-name-guest');
+      if (dashNameGuest) dashNameGuest.textContent = 'Inspector Candidate';
+
+      window.location.href = '/skill-assessment';
+    }
+
+    async function promptChangePin() {
+      const currentPin = document.getElementById('auth-user-pin')?.textContent || '0000';
+      const studentId = localStorage.getItem('wall_student_id') || '{{ current_student.id if current_student else "" }}';
+      const newPin = prompt(`Enter your new 4-digit Access PIN (Current: ${currentPin}):`, currentPin);
+      if (!newPin || !newPin.trim()) return;
+      const cleanPin = newPin.trim();
+      if (cleanPin.length < 4) {
+        alert("PIN must be at least 4 characters/digits.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/student/update-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: studentId, new_pin: cleanPin })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const pinEl = document.getElementById('auth-user-pin');
+          if (pinEl) pinEl.textContent = cleanPin;
+          alert(`Success! Your 4-digit Access PIN has been updated to: ${cleanPin}`);
+        } else {
+          alert("Could not update PIN: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        alert("Error updating PIN: " + err.message);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1. Check if server rendered a current_student
+      {% if current_student %}
+        const serverStudent = {
+          id: {{ current_student.id|tojson }},
+          name: {{ current_student.name|tojson }},
+          email: {{ current_student.email|tojson }},
+          pin: {{ current_student.pin|tojson }}
+        };
+        setLoggedInStudentUI(serverStudent);
+      {% else %}
+        const localStudentId = localStorage.getItem('wall_student_id');
+        if (localStudentId) {
+          try {
+            const res = await fetch(`/api/student/current?student_id=${encodeURIComponent(localStudentId)}`);
+            const curData = await res.json();
+            if (curData.success && curData.logged_in && curData.student) {
+              setLoggedInStudentUI(curData.student);
+            }
+          } catch (e) {
+            console.warn("Could not check local student session:", e);
+          }
+        }
+      {% endif %}
+
       const savedName = localStorage.getItem('wall_candidate_name');
       const urlParams = new URLSearchParams(window.location.search);
       const nameParam = urlParams.get('student_name');
       const resolvedName = nameParam || savedName;
+      const studentIdParam = urlParams.get('student_id') || localStorage.getItem('wall_student_id');
 
-      if (resolvedName) {
-        const input = document.getElementById('candidate-name-input');
-        if (input) input.value = resolvedName;
+      if (resolvedName || studentIdParam) {
         updateAllCardLinks(resolvedName);
-        refreshStudentProgress(resolvedName);
+        refreshStudentProgress(resolvedName, false, studentIdParam);
       } else {
         updateAllCardLinks('Inspector Candidate');
       }
     });
+  </script>
 
+  <!-- Student Auth Modal (Enrollment / Login / PIN Access) -->
+  <div id="studentAuthModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 14px; max-width: 480px; width: 100%; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); position: relative;">
+      <button type="button" onclick="closeAuthModal()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; color: #94a3b8; font-size: 1.35rem; cursor: pointer; padding: 4px;" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Modal Tabs: Login vs Enroll -->
+      <div style="display: flex; gap: 6px; background: #0f172a; padding: 4px; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #334155;">
+        <button type="button" id="auth-tab-btn-login" onclick="switchAuthTab('login')" style="flex: 1; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;">
+          <i class="fa-solid fa-key"></i> Student Sign In
+        </button>
+        <button type="button" id="auth-tab-btn-enroll" onclick="switchAuthTab('enroll')" style="flex: 1; padding: 10px; background: transparent; color: #94a3b8; border: none; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;">
+          <i class="fa-solid fa-user-plus"></i> New Enrollment
+        </button>
+      </div>
+
+      <div id="auth-modal-feedback" style="display: none; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1.25rem;"></div>
+
+      <!-- FORM 1: LOGIN -->
+      <form id="auth-login-form" onsubmit="handleStudentLogin(event)">
+        <h3 style="margin: 0 0 4px; font-size: 1.25rem; color: #f8fafc;">Student Sign In</h3>
+        <p style="text-align: left; margin: 0 0 1.25rem; font-size: 0.82rem; color: #94a3b8;">
+          Enter your email and 4-digit PIN (defaults to <strong>0000</strong>) to access all saved assessments.
+        </p>
+
+        <label style="margin-top: 0.5rem; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Registered Email Address</label>
+        <input type="email" id="login-email" placeholder="e.g. barry.b.sisk@gmail.com" required style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 1rem; margin-top: 0.35rem;">
+
+        <label style="margin-top: 1rem; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">4-Digit Access PIN</label>
+        <div style="position: relative; margin-top: 0.35rem;">
+          <input type="password" id="login-pin" maxlength="6" value="0000" placeholder="0000" required style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-family: monospace; letter-spacing: 4px; font-size: 1.3rem; text-align: center; margin: 0;">
+          <button type="button" onclick="togglePinVisibility('login-pin', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;" title="Show / Hide PIN">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <small style="color: #64748b; font-size: 0.74rem; display: block; margin-top: 5px;">
+          Default PIN is <strong>0000</strong> unless previously changed.
+        </small>
+
+        <button type="submit" id="btn-submit-login" style="display: block; width: 100%; background: #2563eb; color: white; border: 1px solid #38bdf8; padding: 0.85rem; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 1.5rem;">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In & Load Progress
+        </button>
+      </form>
+
+      <!-- FORM 2: ENROLL -->
+      <form id="auth-enroll-form" style="display: none;" onsubmit="handleStudentEnroll(event)">
+        <h3 style="margin: 0 0 4px; font-size: 1.25rem; color: #f8fafc;">Quick Student Enrollment</h3>
+        <p style="text-align: left; margin: 0 0 1.25rem; font-size: 0.82rem; color: #94a3b8;">
+          Enroll once to permanently link and sync all your assessment attempts across browsers and devices.
+        </p>
+
+        <label style="margin-top: 0.5rem; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Full Student Name</label>
+        <input type="text" id="enroll-name" placeholder="e.g. Barry Sisk" required style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 1rem; margin-top: 0.35rem;">
+
+        <label style="margin-top: 1rem; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Email Address</label>
+        <input type="email" id="enroll-email" placeholder="e.g. barry.b.sisk@gmail.com" required style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 1rem; margin-top: 0.35rem;">
+
+        <label style="margin-top: 1rem; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">4-Digit Access PIN (Student Selectable)</label>
+        <div style="position: relative; margin-top: 0.35rem;">
+          <input type="text" id="enroll-pin" maxlength="6" value="0000" placeholder="0000" required style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.75rem; border-radius: 6px; font-family: monospace; letter-spacing: 4px; font-size: 1.3rem; text-align: center; margin: 0;">
+        </div>
+        <small style="color: #34d399; font-size: 0.74rem; display: block; margin-top: 5px;">
+          <i class="fa-solid fa-check"></i> Low friction: Defaults to <strong>0000</strong>. You can keep it or pick any 4 digits.
+        </small>
+
+        <button type="submit" id="btn-submit-enroll" style="display: block; width: 100%; background: #059669; color: white; border: 1px solid #10b981; padding: 0.85rem; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 1.5rem;">
+          <i class="fa-solid fa-circle-check"></i> Enroll & Claim All Attempts
+        </button>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
 

@@ -658,8 +658,8 @@
   <!-- Top Header Navigation -->
   <header class="workstation-nav">
     <div class="specimen-info">
-      <a href="/portal{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-portal-btn" title="Back to Student Portal"><i class="fa-solid fa-graduation-cap"></i> Portal</a>
-      <a href="/skill-assessment{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-hub-btn" title="Back to Skills Hub"><i class="fa-solid fa-arrow-left"></i> Hub</a>
+      <a href="/portal?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-portal-btn" title="Back to Student Portal"><i class="fa-solid fa-graduation-cap"></i> Portal</a>
+      <a href="/skill-assessment?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-hub-btn" title="Back to Skills Hub"><i class="fa-solid fa-arrow-left"></i> Hub</a>
       <span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span>
       <h1 title="{{ wall.title }}">{{ wall.title }}</h1>
     </div>
@@ -669,12 +669,15 @@
         <i class="fa-solid fa-user-graduate" style="color: #38bdf8;"></i>
         <span style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; font-weight: 600;">Candidate:</span>
         <span id="workstation-candidate-display" style="color: #f8fafc; font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ student_name }}</span>
+        {% if current_student %}
+          <span style="color: #facc15; font-family: monospace; font-size: 0.75rem; margin-left: 2px;">(PIN: {{ current_student.pin }})</span>
+        {% endif %}
         <button type="button" onclick="editCandidateName()" title="Edit Candidate Name" style="background: transparent; border: none; color: #38bdf8; cursor: pointer; padding: 2px; font-size: 0.75rem;">
           <i class="fa-solid fa-pen"></i>
         </button>
       </div>
       {% if prev_wall %}
-        <a href="/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-exit" id="top-prev-btn" title="Previous Specimen: {{ prev_wall.title }}">
+        <a href="/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-prev-btn" title="Previous Specimen: {{ prev_wall.title }}">
           <i class="fa-solid fa-arrow-left"></i> Prev
         </a>
       {% endif %}
@@ -682,7 +685,7 @@
         Specimen <strong style="color: #f8fafc;">{{ current_specimen_num }}/{{ total_specimens }}</strong>
       </span>
       {% if next_wall %}
-        <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top" id="top-next-btn" style="background: #0284c7; color: white; border: 1px solid #38bdf8; font-weight: 700; text-decoration: none;" title="Next Specimen: {{ next_wall.title }}">
+        <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top" id="top-next-btn" style="background: #0284c7; color: white; border: 1px solid #38bdf8; font-weight: 700; text-decoration: none;" title="Next Specimen: {{ next_wall.title }}">
           <span>Next Specimen</span> <i class="fa-solid fa-arrow-right"></i>
         </a>
       {% endif %}
@@ -852,18 +855,18 @@
         <button type="button" class="btn-top" style="background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8;" onclick="retakeAssessment()">
           <i class="fa-solid fa-arrows-rotate"></i> Retake Specimen
         </button>
-        <a href="/portal{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="modal-portal-btn">
+        <a href="/portal?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-exit" id="modal-portal-btn">
           <i class="fa-solid fa-graduation-cap"></i> Student Portal
         </a>
-        <a href="/skill-assessment{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="modal-hub-btn">
+        <a href="/skill-assessment?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-exit" id="modal-hub-btn">
           <i class="fa-solid fa-layer-group"></i> Skills Hub
         </a>
         {% if next_wall %}
-          <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-submit" id="modal-next-btn" style="background: #0284c7; border-color: #38bdf8;">
+          <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-submit" id="modal-next-btn" style="background: #0284c7; border-color: #38bdf8;">
             <i class="fa-solid fa-arrow-right"></i> Advance to Next Specimen &rarr;
           </a>
         {% else %}
-          <a href="/skill-assessment?student_name={{ student_name|urlencode }}" class="btn-top btn-submit" id="modal-next-btn">
+          <a href="/skill-assessment?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-submit" id="modal-next-btn">
             <i class="fa-solid fa-flag-checkered"></i> View Complete Portfolio
           </a>
         {% endif %}
@@ -874,6 +877,7 @@
   <script>
     const wallSlug = {{ wall.slug|tojson }};
     const initialStudentName = {{ student_name|tojson }};
+    const initialStudentId = {{ student_id|tojson }};
 
     function getStoredCandidateToken() {
       let token = typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_token') : null;
@@ -886,6 +890,19 @@
       return token;
     }
     const candidateToken = getStoredCandidateToken();
+
+    function resolveCandidateStudentId() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = (urlParams.get('student_id') || '').trim();
+      const localId = (typeof localStorage !== 'undefined' ? (localStorage.getItem('wall_student_id') || '') : '').trim();
+      const jinjaId = (initialStudentId || '').trim();
+      const chosen = urlId || localId || jinjaId || '';
+      if (chosen && typeof localStorage !== 'undefined') {
+        localStorage.setItem('wall_student_id', chosen);
+      }
+      return chosen;
+    }
+    let studentId = resolveCandidateStudentId();
 
     function resolveCandidateName() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -916,27 +933,30 @@
     function updateAllNavigationLinks(name) {
       if (!name) name = studentName || 'Inspector Candidate';
       const enc = encodeURIComponent(name);
+      const sid = studentId || localStorage.getItem('wall_student_id') || '';
+      const sidParam = sid ? `&student_id=${encodeURIComponent(sid)}` : '';
 
       const disp = document.getElementById('workstation-candidate-display');
       if (disp) disp.textContent = name;
 
       const portalBtn = document.getElementById('top-portal-btn');
-      if (portalBtn) portalBtn.href = `/portal?student_name=${enc}`;
+      if (portalBtn) portalBtn.href = `/portal?student_name=${enc}${sidParam}`;
 
       const hubBtn = document.getElementById('top-hub-btn');
-      if (hubBtn) hubBtn.href = `/skill-assessment?student_name=${enc}`;
+      if (hubBtn) hubBtn.href = `/skill-assessment?student_name=${enc}${sidParam}`;
 
       const modalPortalBtn = document.getElementById('modal-portal-btn');
-      if (modalPortalBtn) modalPortalBtn.href = `/portal?student_name=${enc}`;
+      if (modalPortalBtn) modalPortalBtn.href = `/portal?student_name=${enc}${sidParam}`;
 
       const modalHubBtn = document.getElementById('modal-hub-btn');
-      if (modalHubBtn) modalHubBtn.href = `/skill-assessment?student_name=${enc}`;
+      if (modalHubBtn) modalHubBtn.href = `/skill-assessment?student_name=${enc}${sidParam}`;
 
       const topPrevBtn = document.getElementById('top-prev-btn');
       if (topPrevBtn && topPrevBtn.href) {
         try {
           const u = new URL(topPrevBtn.href, window.location.origin);
           u.searchParams.set('student_name', name);
+          if (sid) u.searchParams.set('student_id', sid);
           topPrevBtn.href = u.pathname + u.search;
         } catch(e) {}
       }
@@ -946,6 +966,7 @@
         try {
           const u = new URL(topNextBtn.href, window.location.origin);
           u.searchParams.set('student_name', name);
+          if (sid) u.searchParams.set('student_id', sid);
           topNextBtn.href = u.pathname + u.search;
           nextSpecimenUrl = topNextBtn.href;
         } catch(e) {}
@@ -956,6 +977,7 @@
         try {
           const u = new URL(modalNextBtn.href, window.location.origin);
           u.searchParams.set('student_name', name);
+          if (sid) u.searchParams.set('student_id', sid);
           modalNextBtn.href = u.pathname + u.search;
         } catch(e) {}
       }
@@ -965,6 +987,7 @@
         try {
           const u = new URL(sidebarAdvanceBtn.href, window.location.origin);
           u.searchParams.set('student_name', name);
+          if (sid) u.searchParams.set('student_id', sid);
           sidebarAdvanceBtn.href = u.pathname + u.search;
         } catch(e) {}
       }
@@ -1463,6 +1486,7 @@
       try {
         const candidateName = resolveCandidateName();
         studentName = candidateName;
+        const candidateStudentId = localStorage.getItem('wall_student_id') || studentId || '';
         if (candidateName && candidateName !== 'Inspector Candidate' && typeof localStorage !== 'undefined') {
           localStorage.setItem('wall_candidate_name', candidateName);
         }
@@ -1474,6 +1498,7 @@
           body: JSON.stringify({
             pins: studentPins,
             student_name: candidateName,
+            student_id: candidateStudentId,
             candidate_token: candidateToken
           })
         });
@@ -1487,10 +1512,18 @@
         if (data && data.success) {
           isEvaluated = true;
           lastEvaluationData = data;
+          if (data.student_id) {
+            studentId = data.student_id;
+            localStorage.setItem('wall_student_id', data.student_id);
+          }
+          if (data.student_name) {
+            studentName = data.student_name;
+            localStorage.setItem('wall_candidate_name', data.student_name);
+          }
           if (data.next_specimen_url) {
             nextSpecimenUrl = data.next_specimen_url;
           }
-          updateAllNavigationLinks(candidateName);
+          updateAllNavigationLinks(studentName);
           displayEvaluationResults(data);
         } else {
           alert('Error evaluating pins: ' + (data && data.error ? data.error : 'Server error'));

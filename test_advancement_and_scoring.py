@@ -1,6 +1,6 @@
 import unittest
 import json
-from app import app, db, Wall, AssessmentAttempt
+from app import app, db, Wall, AssessmentAttempt, Student
 
 class TestAdvancementAndScoring(unittest.TestCase):
     def setUp(self):
@@ -10,8 +10,15 @@ class TestAdvancementAndScoring(unittest.TestCase):
 
     def tearDown(self):
         with self.app.app_context():
-            # Clean up test attempts created for Barry Sisk
-            AssessmentAttempt.query.filter_by(student_name="Barry Sisk").delete()
+            # Clean up test attempts and test students created for tests
+            AssessmentAttempt.query.filter(
+                (AssessmentAttempt.student_name.ilike("%Barry%")) |
+                (AssessmentAttempt.student_session_id.ilike("%test%"))
+            ).delete(synchronize_session=False)
+            Student.query.filter(
+                (Student.email.ilike("%barry%")) |
+                (Student.email.ilike("%test%"))
+            ).delete(synchronize_session=False)
             db.session.commit()
 
     def test_specimen_workstation_advancement_links(self):
@@ -183,6 +190,146 @@ class TestAdvancementAndScoring(unittest.TestCase):
         self.assertIn("editCandidateName()", html)
         self.assertIn("top-portal-btn", html)
         self.assertIn("top-hub-btn", html)
+
+    def test_student_enrollment_default_pin_and_pin_update(self):
+        """Test student enrollment with default PIN 0000, and subsequent PIN update."""
+        # 1. Enroll with default 0000 PIN
+        enroll_payload = {
+            "name": "Barry Sisk",
+            "email": "barry.b.sisk.test@gmail.com",
+            "pin": "0000"
+        }
+        res = self.client.post("/api/student/enroll",
+                               data=json.dumps(enroll_payload),
+                               content_type="application/json")
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data.decode("utf-8"))
+        self.assertTrue(data["success"])
+        self.assertEqual(data["student"]["name"], "Barry Sisk")
+        self.assertEqual(data["student"]["email"], "barry.b.sisk.test@gmail.com")
+        self.assertEqual(data["student"]["pin"], "0000")
+        student_id = data["student"]["id"]
+
+        # 2. Check current student endpoint
+        cur_res = self.client.get("/api/student/current")
+        self.assertEqual(cur_res.status_code, 200)
+        cur_data = json.loads(cur_res.data.decode("utf-8"))
+        self.assertTrue(cur_data["logged_in"])
+        self.assertEqual(cur_data["student"]["id"], student_id)
+
+        # 3. Update PIN to 4321
+        update_res = self.client.post("/api/student/update-pin",
+                                      data=json.dumps({"student_id": student_id, "new_pin": "4321"}),
+                                      content_type="application/json")
+        self.assertEqual(update_res.status_code, 200)
+        up_data = json.loads(update_res.data.decode("utf-8"))
+        self.assertTrue(up_data["success"])
+        self.assertEqual(up_data["new_pin"], "4321")
+
+        with self.app.app_context():
+            updated_student = db.session.get(Student, student_id)
+            self.assertEqual(updated_student.pin, "4321")
+
+    def test_student_pin_login_validation_and_logout(self):
+        """Test PIN login validation (accept correct PIN, reject incorrect PIN) and logout."""
+        # Enroll
+        self.client.post("/api/student/enroll",
+                         data=json.dumps({
+                             "name": "Barry Sisk",
+                             "email": "barry.b.sisk.login@gmail.com",
+                             "pin": "0000"
+                         }),
+                         content_type="application/json")
+
+        # Logout
+        self.client.post("/api/student/logout")
+
+        # Login with incorrect PIN
+        bad_res = self.client.post("/api/student/login",
+                                   data=json.dumps({
+                                       "email": "barry.b.sisk.login@gmail.com",
+                                       "pin": "9999"
+                                   }),
+                                   content_type="application/json")
+        self.assertEqual(bad_res.status_code, 401)
+        bad_data = json.loads(bad_res.data.decode("utf-8"))
+        self.assertFalse(bad_data["success"])
+        self.assertIn("Incorrect", bad_data["error"])
+
+        # Login with correct PIN
+        good_res = self.client.post("/api/student/login",
+                                    data=json.dumps({
+                                        "email": "barry.b.sisk.login@gmail.com",
+                                        "pin": "0000"
+                                    }),
+                                    content_type="application/json")
+        self.assertEqual(good_res.status_code, 200)
+        good_data = json.loads(good_res.data.decode("utf-8"))
+        self.assertTrue(good_data["success"])
+        self.assertEqual(good_data["student"]["name"], "Barry Sisk")
+
+    def test_auto_link_prior_attempts_and_student_id_attribution(self):
+        """Verify prior attempts by name are claimed upon student enrollment and subsequent evaluations bind student_id."""
+        with self.app.app_context():
+            walls = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).limit(3).all()
+            self.assertEqual(len(walls), 3)
+
+        # 1. Complete specimen 1 and 2 as 'Barry Sisk' without an enrolled student record
+        for wall in walls[:2]:
+            self.client.post(f"/api/skill-assessment/evaluate/{wall.slug}",
+                             data=json.dumps({
+                                 "pins": [{"id": "p1", "x": 0.5, "y": 0.5, "category": "lime_washout", "severity": "moderate"}],
+                                 "student_name": "Barry Sisk"
+                             }),
+                             content_type="application/json")
+
+        # Verify attempts exist with student_id=None
+        with self.app.app_context():
+            unlinked_attempts = AssessmentAttempt.query.filter_by(student_name="Barry Sisk", student_id=None).all()
+            self.assertGreaterEqual(len(unlinked_attempts), 2)
+
+        # 2. Now student registers/enrolls with email and PIN
+        enroll_res = self.client.post("/api/student/enroll",
+                                      data=json.dumps({
+                                          "name": "Barry Sisk",
+                                          "email": "barry.b.sisk.autolink@gmail.com",
+                                          "pin": "0000"
+                                      }),
+                                      content_type="application/json")
+        self.assertEqual(enroll_res.status_code, 200)
+        student_id = json.loads(enroll_res.data.decode("utf-8"))["student"]["id"]
+
+        # Verify prior attempts were automatically linked to student.id!
+        with self.app.app_context():
+            linked_attempts = AssessmentAttempt.query.filter_by(student_id=student_id).all()
+            self.assertGreaterEqual(len(linked_attempts), 2)
+
+        # 3. Complete specimen 3 passing student_id in evaluation
+        eval_res = self.client.post(f"/api/skill-assessment/evaluate/{walls[2].slug}",
+                                    data=json.dumps({
+                                        "pins": [{"id": "p3", "x": 0.5, "y": 0.5, "category": "mortar_erosion", "severity": "moderate"}],
+                                        "student_name": "Barry Sisk",
+                                        "student_id": student_id
+                                    }),
+                                    content_type="application/json")
+        self.assertEqual(eval_res.status_code, 200)
+        eval_data = json.loads(eval_res.data.decode("utf-8"))
+        self.assertEqual(eval_data.get("student_id"), student_id)
+
+        # 4. Check progress by student_id
+        prog_res = self.client.get(f"/api/skill-assessment/student-progress?student_id={student_id}")
+        self.assertEqual(prog_res.status_code, 200)
+        prog_data = json.loads(prog_res.data.decode("utf-8"))
+        self.assertGreaterEqual(prog_data["completed_count"], 3)
+        self.assertEqual(prog_data["student"]["id"], student_id)
+
+        # 5. Check portal renders enrolled student badge and PIN
+        portal_res = self.client.get(f"/portal?student_id={student_id}")
+        self.assertEqual(portal_res.status_code, 200)
+        portal_html = portal_res.data.decode("utf-8")
+        self.assertIn("ENROLLED STUDENT", portal_html)
+        self.assertIn("barry.b.sisk.autolink@gmail.com", portal_html)
+        self.assertIn("0000", portal_html)
 
 if __name__ == "__main__":
     unittest.main()

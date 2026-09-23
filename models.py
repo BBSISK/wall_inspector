@@ -83,11 +83,36 @@ class Defect(db.Model):
             "explanation": self.explanation
         }
 
+class Student(db.Model):
+    __tablename__ = "students"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False, index=True)
+    pin = db.Column(db.String(10), default="0000", nullable=False)
+    cohort_code = db.Column(db.String(50), default="GENERAL")
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    last_active_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    attempts = db.relationship("AssessmentAttempt", backref="student_account", lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "pin": self.pin,
+            "cohort_code": self.cohort_code,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else "",
+            "last_active_at": self.last_active_at.strftime("%Y-%m-%d %H:%M") if self.last_active_at else ""
+        }
+
 class AssessmentAttempt(db.Model):
     __tablename__ = "assessment_attempts"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     wall_id = db.Column(db.String(36), db.ForeignKey("walls.id"), nullable=False)
+    student_id = db.Column(db.String(36), db.ForeignKey("students.id"), nullable=True)
     student_session_id = db.Column(db.String(100), nullable=False)
     cohort_code = db.Column(db.String(50), default="GENERAL")
     assignment_code = db.Column(db.String(50), nullable=True)

@@ -10,7 +10,7 @@ from sqlalchemy import text, inspect
 import cloudinary
 import cloudinary.uploader
 from config import Config
-from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission
+from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission, Student
 
 cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
 if cloudinary_url:
@@ -443,6 +443,14 @@ def create_app(config_class=Config):
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE assessment_attempts ADD COLUMN assignment_code VARCHAR(50);"))
                     conn.commit()
+            if "student_id" not in attempt_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assessment_attempts ADD COLUMN student_id VARCHAR(36);"))
+                    conn.commit()
+
+            all_tables = inspector.get_table_names()
+            if "students" not in all_tables:
+                Student.__table__.create(db.engine)
 
             assign_cols = [c["name"] for c in inspector.get_columns("assignments")]
             if "time_limit_minutes" not in assign_cols:
@@ -2973,18 +2981,36 @@ def create_app(config_class=Config):
     # --- Student Assignment Portal ---
     @app.route("/portal", methods=["GET", "POST"])
     def student_portal():
+        student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
         candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
-        if student_name and student_name != "Inspector Candidate":
+
+        current_student = None
+        if student_id:
+            current_student = db.session.get(Student, student_id)
+        if not current_student and student_name and student_name != "Inspector Candidate":
+            current_student = Student.query.filter(Student.name.ilike(student_name)).first()
+
+        if current_student:
+            student_name = current_student.name
+            student_id = current_student.id
+            session["student_id"] = current_student.id
+            session["student_name"] = current_student.name
+            session["student_email"] = current_student.email
+            session["student_pin"] = current_student.pin
+            session.permanent = True
+            session.modified = True
+        elif student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
             session.permanent = True
             session.modified = True
+
         if candidate_token:
             session["candidate_token"] = candidate_token
             session.permanent = True
             session.modified = True
 
-        progress = get_student_skill_progress(student_name, candidate_token=candidate_token)
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token, student_id=student_id)
         comp_map = progress["completed_map"]
 
         skill_specimens_query = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
@@ -3007,23 +3033,23 @@ def create_app(config_class=Config):
 
             # 1. Direct launch from specimen cards or quick action
             if specimen_slug:
-                return redirect(url_for("skill_assessment_workstation", slug=specimen_slug, student_name=post_student_name))
+                return redirect(url_for("skill_assessment_workstation", slug=specimen_slug, student_name=post_student_name, student_id=student_id or None))
 
             # 2. If student typed SKILLS or ASSESSMENT, send to skill assessment hub
             if code in ["SKILL", "SKILLS", "ASSESSMENT", "ASSESS", "EXAM", "PRACTICAL"]:
-                return redirect(url_for("skill_assessment_hub", student_name=post_student_name))
+                return redirect(url_for("skill_assessment_hub", student_name=post_student_name, student_id=student_id or None))
 
             # 3. If code matches a skill assessment slug directly
             matching_skill = Wall.query.filter_by(slug=code.lower(), is_skill_assessment=True).first()
             if matching_skill:
-                return redirect(url_for("skill_assessment_workstation", slug=matching_skill.slug, student_name=post_student_name))
+                return redirect(url_for("skill_assessment_workstation", slug=matching_skill.slug, student_name=post_student_name, student_id=student_id or None))
 
             # 4. If code is a number like 1..10 or SKILL-1..10
             clean_code = code.replace("SKILL-", "").replace("SPECIMEN-", "").strip()
             if clean_code.isdigit():
                 idx = int(clean_code) - 1
                 if 0 <= idx < len(skill_specimens):
-                    return redirect(url_for("skill_assessment_workstation", slug=skill_specimens[idx]["slug"], student_name=post_student_name))
+                    return redirect(url_for("skill_assessment_workstation", slug=skill_specimens[idx]["slug"], student_name=post_student_name, student_id=student_id or None))
 
             # 5. Check regular classroom assignment PIN
             assignment = Assignment.query.filter_by(code=code, is_active=True).first()
@@ -3033,6 +3059,8 @@ def create_app(config_class=Config):
                     error="Invalid assignment code. Tip: Choose from the Skill Assessment specimens below or launch a random assessment!",
                     skill_specimens=skill_specimens,
                     student_name=post_student_name,
+                    current_student=current_student,
+                    student_id=student_id,
                     completed_count=progress["completed_count"],
                     average_score=progress["average_score"],
                     pending_count=max(0, len(skill_specimens) - progress["completed_count"])
@@ -3043,6 +3071,8 @@ def create_app(config_class=Config):
             "student_portal.html",
             skill_specimens=skill_specimens,
             student_name=student_name,
+            current_student=current_student,
+            student_id=student_id,
             completed_count=progress["completed_count"],
             average_score=progress["average_score"],
             pending_count=max(0, len(skill_specimens) - progress["completed_count"])
@@ -6107,22 +6137,198 @@ def create_app(config_class=Config):
         })
 
     # =========================================================================
+    # STUDENT ENROLLMENT & 4-DIGIT PIN AUTHENTICATION
+    # =========================================================================
+
+    @app.route("/api/student/enroll", methods=["POST"])
+    def api_student_enroll():
+        data = request.get_json(silent=True) or {}
+        name = data.get("name", "").strip()
+        email = data.get("email", "").strip().lower()
+        pin = str(data.get("pin", "0000")).strip() or "0000"
+
+        if not name:
+            return jsonify({"success": False, "error": "Please provide your full name."}), 400
+        if not email or "@" not in email or "." not in email:
+            return jsonify({"success": False, "error": "Please provide a valid email address."}), 400
+
+        pin = pin[:6]
+        from sqlalchemy import func
+        student = Student.query.filter(func.lower(Student.email) == email).first()
+        if student:
+            student.name = name
+            if pin and pin != "0000":
+                student.pin = pin
+            student.last_active_at = datetime.now(timezone.utc)
+        else:
+            student = Student(
+                name=name,
+                email=email,
+                pin=pin,
+                cohort_code="GENERAL"
+            )
+            db.session.add(student)
+
+        try:
+            db.session.commit()
+            # Auto-link past attempts matching this student's name
+            unlinked = AssessmentAttempt.query.filter(
+                AssessmentAttempt.student_id.is_(None),
+                (AssessmentAttempt.student_name.ilike(name) |
+                 AssessmentAttempt.student_name.ilike(f"%{name}%"))
+            ).all()
+            for u in unlinked:
+                u.student_id = student.id
+                u.student_name = student.name
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 500
+
+        session["student_id"] = student.id
+        session["student_name"] = student.name
+        session["student_email"] = student.email
+        session["student_pin"] = student.pin
+        session.permanent = True
+        session.modified = True
+
+        return jsonify({
+            "success": True,
+            "message": f"Welcome, {student.name}! Your 4-digit PIN is {student.pin}.",
+            "student": student.to_dict()
+        })
+
+    @app.route("/api/student/login", methods=["POST"])
+    def api_student_login():
+        data = request.get_json(silent=True) or {}
+        email = data.get("email", "").strip().lower()
+        pin = str(data.get("pin", "0000")).strip() or "0000"
+
+        if not email:
+            return jsonify({"success": False, "error": "Please enter your email address."}), 400
+
+        from sqlalchemy import func
+        student = Student.query.filter(func.lower(Student.email) == email).first()
+        if not student:
+            return jsonify({
+                "success": False,
+                "error": f"No student account found for '{email}'. Please click Enroll to register."
+            }), 404
+
+        if student.pin != pin:
+            return jsonify({
+                "success": False,
+                "error": "Incorrect 4-digit PIN. (Default is 0000)"
+            }), 401
+
+        student.last_active_at = datetime.now(timezone.utc)
+        # Auto-link any unlinked attempts matching student's name
+        unlinked = AssessmentAttempt.query.filter(
+            AssessmentAttempt.student_id.is_(None),
+            (AssessmentAttempt.student_name.ilike(student.name) |
+             AssessmentAttempt.student_name.ilike(f"%{student.name}%"))
+        ).all()
+        for u in unlinked:
+            u.student_id = student.id
+        db.session.commit()
+
+        session["student_id"] = student.id
+        session["student_name"] = student.name
+        session["student_email"] = student.email
+        session["student_pin"] = student.pin
+        session.permanent = True
+        session.modified = True
+
+        return jsonify({
+            "success": True,
+            "message": f"Welcome back, {student.name}!",
+            "student": student.to_dict()
+        })
+
+    @app.route("/api/student/logout", methods=["POST"])
+    def api_student_logout():
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        session.pop("student_email", None)
+        session.pop("student_pin", None)
+        session.modified = True
+        return jsonify({"success": True})
+
+    @app.route("/api/student/current", methods=["GET"])
+    def api_student_current():
+        student_id = session.get("student_id") or request.args.get("student_id")
+        email = session.get("student_email") or request.args.get("email")
+
+        student = None
+        if student_id:
+            student = db.session.get(Student, student_id)
+        elif email:
+            from sqlalchemy import func
+            student = Student.query.filter(func.lower(Student.email) == email.strip().lower()).first()
+
+        if student:
+            return jsonify({
+                "success": True,
+                "logged_in": True,
+                "student": student.to_dict()
+            })
+        return jsonify({
+            "success": True,
+            "logged_in": False,
+            "student": None
+        })
+
+    @app.route("/api/student/update-pin", methods=["POST"])
+    def api_student_update_pin():
+        data = request.get_json(silent=True) or {}
+        student_id = data.get("student_id") or session.get("student_id")
+        new_pin = str(data.get("new_pin", "")).strip()
+
+        if not student_id:
+            return jsonify({"success": False, "error": "Not logged in."}), 401
+        if not new_pin or len(new_pin) < 4:
+            return jsonify({"success": False, "error": "PIN must be at least 4 digits."}), 400
+
+        student = db.session.get(Student, student_id)
+        if not student:
+            return jsonify({"success": False, "error": "Student not found."}), 404
+
+        student.pin = new_pin[:6]
+        student.last_active_at = datetime.now(timezone.utc)
+        db.session.commit()
+        session["student_pin"] = student.pin
+        session.modified = True
+
+        return jsonify({
+            "success": True,
+            "message": "PIN updated successfully.",
+            "pin": student.pin,
+            "new_pin": student.pin
+        })
+
+    # =========================================================================
     # STUDENT SKILL ASSESSMENT MODULE
     # =========================================================================
 
-    def get_student_skill_progress(student_name, candidate_token=None, claim_recent=False):
+    def get_student_skill_progress(student_name, candidate_token=None, claim_recent=False, student_id=None):
         """
         Computes completion status, best scores, and evaluation grades for all skill assessment specimens
-        for a given student name and candidate token.
-        Provides resilient query matching across casing, spacing, and session tokens.
-        Can optionally claim recent orphaned attempts from the same candidate session or token.
+        for a given student name, candidate token, and/or registered student ID.
+        Provides resilient query matching across registered student_id, casing, and session tokens.
         """
-        from sqlalchemy import or_
+        from sqlalchemy import or_, func
         clean_name = (student_name or "").strip()
         clean_token = (candidate_token or "").strip()
+        clean_student_id = (student_id or (session.get("student_id") if session else None) or "").strip()
         sess_token = session.get("candidate_token") if session else None
 
-        if not clean_name and not clean_token and not sess_token:
+        student = None
+        if clean_student_id:
+            student = db.session.get(Student, clean_student_id)
+            if student and not clean_name:
+                clean_name = student.name
+
+        if not clean_name and not clean_token and not sess_token and not clean_student_id:
             return {
                 "completed_map": {},
                 "completed_count": 0,
@@ -6130,9 +6336,22 @@ def create_app(config_class=Config):
                 "average_score": 0.0
             }
 
-        # Auto-claim / re-attribute attempts created by this browser session or token
-        # if they defaulted to "Inspector Candidate" and we now have a genuine name
+        # Auto-claim / re-attribute attempts
         if clean_name and clean_name != "Inspector Candidate":
+            if student:
+                unassigned = AssessmentAttempt.query.filter(
+                    AssessmentAttempt.student_id.is_(None),
+                    (AssessmentAttempt.student_name.ilike(clean_name) |
+                     AssessmentAttempt.student_name.ilike(f"%{clean_name}%"))
+                ).all()
+                if unassigned:
+                    for u in unassigned:
+                        u.student_id = student.id
+                    try:
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
             match_tokens = [t for t in [clean_token, sess_token] if t]
             if match_tokens:
                 unclaimed = AssessmentAttempt.query.filter(
@@ -6143,13 +6362,14 @@ def create_app(config_class=Config):
                 if unclaimed:
                     for u in unclaimed:
                         u.student_name = clean_name
+                        if student:
+                            u.student_id = student.id
                     try:
                         db.session.commit()
                     except Exception:
                         db.session.rollback()
 
             if claim_recent:
-                # If explicit claim requested, claim recent unassigned attempts for skill assessments
                 recent_unclaimed = AssessmentAttempt.query.filter(
                     AssessmentAttempt.assignment_code == "SKILL-ASSESS",
                     (AssessmentAttempt.student_name.in_(["Inspector Candidate", "Candidate", "", None]) |
@@ -6158,6 +6378,8 @@ def create_app(config_class=Config):
                 if recent_unclaimed:
                     for ru in recent_unclaimed:
                         ru.student_name = clean_name
+                        if student:
+                            ru.student_id = student.id
                     try:
                         db.session.commit()
                     except Exception:
@@ -6165,6 +6387,9 @@ def create_app(config_class=Config):
 
         # Build resilient query filters
         filters = []
+        if clean_student_id:
+            filters.append(AssessmentAttempt.student_id == clean_student_id)
+
         if clean_name and clean_name != "Inspector Candidate":
             filters.append(AssessmentAttempt.student_name.ilike(clean_name))
             filters.append(AssessmentAttempt.student_name.ilike(f"%{clean_name}%"))
@@ -6226,20 +6451,24 @@ def create_app(config_class=Config):
 
     @app.route("/api/skill-assessment/student-progress")
     def api_skill_assessment_student_progress():
+        student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
         candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
         claim_recent = request.args.get("claim_recent") in ["1", "true", "yes"]
 
-        if student_name and student_name != "Inspector Candidate":
-            session["student_name"] = student_name
-            session.permanent = True
-            session.modified = True
-        if candidate_token:
-            session["candidate_token"] = candidate_token
-            session.permanent = True
-            session.modified = True
+        student = None
+        if student_id:
+            student = db.session.get(Student, student_id)
+            if student:
+                student_name = student.name
+                session["student_id"] = student.id
+                session["student_name"] = student.name
+                session["student_email"] = student.email
+                session["student_pin"] = student.pin
+                session.permanent = True
+                session.modified = True
 
-        progress = get_student_skill_progress(student_name, candidate_token=candidate_token, claim_recent=claim_recent)
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token, claim_recent=claim_recent, student_id=student_id)
         all_walls = Wall.query.filter_by(is_skill_assessment=True).all()
         slug_map = {}
         for w in all_walls:
@@ -6256,6 +6485,7 @@ def create_app(config_class=Config):
         return jsonify({
             "success": True,
             "student_name": student_name or (session.get("student_name") or "Inspector Candidate"),
+            "student": student.to_dict() if student else None,
             "total_specimens": len(all_walls),
             "completed_count": progress["completed_count"],
             "pending_count": max(0, len(all_walls) - progress["completed_count"]),
@@ -6268,18 +6498,36 @@ def create_app(config_class=Config):
     def skill_assessment_hub():
         """Student Skill Assessment Hub: Lists published assessment specimens with stats, scoring, and guidelines."""
         specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
+        student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
         candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
-        if student_name and student_name != "Inspector Candidate":
+
+        current_student = None
+        if student_id:
+            current_student = db.session.get(Student, student_id)
+        if not current_student and student_name and student_name != "Inspector Candidate":
+            current_student = Student.query.filter(Student.name.ilike(student_name)).first()
+
+        if current_student:
+            student_name = current_student.name
+            student_id = current_student.id
+            session["student_id"] = current_student.id
+            session["student_name"] = current_student.name
+            session["student_email"] = current_student.email
+            session["student_pin"] = current_student.pin
+            session.permanent = True
+            session.modified = True
+        elif student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
             session.permanent = True
             session.modified = True
+
         if candidate_token:
             session["candidate_token"] = candidate_token
             session.permanent = True
             session.modified = True
 
-        progress = get_student_skill_progress(student_name, candidate_token=candidate_token)
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token, student_id=student_id)
         comp_map = progress["completed_map"]
 
         specimen_list = []
@@ -6301,6 +6549,8 @@ def create_app(config_class=Config):
             difficulties=difficulties,
             defect_modes=SKILL_DEFECT_MODES,
             student_name=student_name,
+            current_student=current_student,
+            student_id=student_id,
             completed_count=progress["completed_count"],
             average_score=progress["average_score"],
             pending_count=max(0, len(specimens) - progress["completed_count"])
@@ -6312,12 +6562,30 @@ def create_app(config_class=Config):
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True, is_published=True).first_or_404()
         ground_truth_count = Defect.query.filter_by(wall_id=wall.id).count()
         modes_bundle = get_wall_defect_modes(wall)
+        student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
         student_name = (request.args.get("student_name") or session.get("student_name") or "Inspector Candidate").strip()
         candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
-        if student_name and student_name != "Inspector Candidate":
+
+        current_student = None
+        if student_id:
+            current_student = db.session.get(Student, student_id)
+        if not current_student and student_name and student_name != "Inspector Candidate":
+            current_student = Student.query.filter(Student.name.ilike(student_name)).first()
+
+        if current_student:
+            student_name = current_student.name
+            student_id = current_student.id
+            session["student_id"] = current_student.id
+            session["student_name"] = current_student.name
+            session["student_email"] = current_student.email
+            session["student_pin"] = current_student.pin
+            session.permanent = True
+            session.modified = True
+        elif student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
             session.permanent = True
             session.modified = True
+
         if candidate_token:
             session["candidate_token"] = candidate_token
             session.permanent = True
@@ -6346,6 +6614,8 @@ def create_app(config_class=Config):
             defect_modes=modes_bundle["all"],
             remedial_options=REMEDIAL_OPTIONS,
             student_name=student_name,
+            current_student=current_student,
+            student_id=student_id,
             next_wall=next_wall,
             prev_wall=prev_wall,
             current_specimen_num=(curr_idx + 1) if curr_idx is not None else 1,
@@ -6361,10 +6631,22 @@ def create_app(config_class=Config):
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
         data = request.get_json(silent=True) or {}
         submitted_pins = data.get("pins", [])
+        student_id = (data.get("student_id") or session.get("student_id") or "").strip()
         student_name = data.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
         candidate_token = (data.get("candidate_token") or session.get("candidate_token") or "").strip()
         cohort_code = data.get("cohort_code", "SKILLS").strip().upper() or "SKILLS"
         session_id = candidate_token or data.get("session_id", uuid.uuid4().hex[:8])
+
+        student = None
+        if student_id:
+            student = db.session.get(Student, student_id)
+        if not student and student_name and student_name != "Inspector Candidate":
+            student = Student.query.filter(Student.name.ilike(student_name)).first()
+
+        if student:
+            student_id = student.id
+            student_name = student.name
+            cohort_code = student.cohort_code or cohort_code
 
         gt_defects = Defect.query.filter_by(wall_id=wall.id).all()
         gt_dicts = [d.to_dict() for d in gt_defects]
@@ -6496,6 +6778,7 @@ def create_app(config_class=Config):
         try:
             attempt = AssessmentAttempt(
                 wall_id=wall.id,
+                student_id=student.id if student else None,
                 student_session_id=session_id,
                 cohort_code=cohort_code,
                 assignment_code="SKILL-ASSESS",
@@ -6532,7 +6815,14 @@ def create_app(config_class=Config):
                 "explanation": gt.get("explanation") or ""
             })
 
-        if student_name and student_name != "Inspector Candidate":
+        if student:
+            session["student_id"] = student.id
+            session["student_name"] = student.name
+            session["student_email"] = student.email
+            session["student_pin"] = student.pin
+            session.permanent = True
+            session.modified = True
+        elif student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
             session.permanent = True
             session.modified = True
@@ -6554,10 +6844,14 @@ def create_app(config_class=Config):
 
         from urllib.parse import quote_plus
         token_arg = f"&candidate_token={quote_plus(candidate_token)}" if candidate_token else ""
-        next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}{token_arg}" if next_wall_slug else None
+        student_id_arg = f"&student_id={quote_plus(student_id)}" if student_id else ""
+        next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}{student_id_arg}{token_arg}" if next_wall_slug else None
 
         return jsonify({
             "success": True,
+            "student_name": student_name,
+            "student_id": student.id if student else None,
+            "student": student.to_dict() if student else None,
             "score": score,
             "grade": grade,
             "passed": passed,
