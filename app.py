@@ -2427,6 +2427,251 @@ def create_app(config_class=Config):
                         "explanation": "Tightly pinned vertical stone creating a cross-course joint anomaly vulnerable to differential shifting."
                     }
                 ]
+            },
+            {
+                "slug": "skill-random-rubble-galleted-iron-stain",
+                "title": "Random Rubble Masonry: Differential Iron Weathering & Bed Joint Washout",
+                "description": "Random limestone rubble boundary wall incorporating small pinning snecks, exhibiting atmospheric carbonaceous encrustation on upper stones, central bed joint recessing, and localized iron-stain subflorescence.",
+                "country": "Ireland",
+                "region": "Co. Dublin",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_26.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "biological_colonisation", "label": "Atmospheric Soot Encrustation & Biofilm"},
+                    {"id": "mortar_erosion", "label": "Bed Joint Mortar Washout & Recess"},
+                    {"id": "spalling", "label": "Differential Stone Decay & Alveolar Spall"},
+                    {"id": "rising_damp_salt", "label": "Iron Oxidation & Basal Subflorescence"},
+                    {"id": "core_voiding", "label": "Hearting Cavitation Void"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.08, "y_min": 0.16, "x_max": 0.08, "y_max": 0.16,
+                        "tolerance_radius": 0.08,
+                        "category": "biological_colonisation", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Upper Course Soot & Carbonaceous Encrustation",
+                        "explanation": "Adherent black gypsum and atmospheric carbon deposit forming an impermeable crust that accelerates underlying stone decay."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.46, "y_min": 0.60, "x_max": 0.46, "y_max": 0.60,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Central Horizontal Bed Joint Mortar Recess",
+                        "explanation": "Progressive hydraulic lime mortar erosion creating a deep open seam along the load-bearing bed line."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.50, "y_min": 0.79, "x_max": 0.50, "y_max": 0.79,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Iron-Oxide Staining & Granular Subflorescence",
+                        "explanation": "Moisture-induced oxidation of ferrous mineral veins producing yellowish discoloration and localized grain detachment."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-sandstone-coursed-ashlar-moisture-tide",
+                "title": "Old Red Sandstone Blockwork: Basal Damp Tide & Contour Delamination",
+                "description": "Historic Old Red Sandstone coursed ashlar wall showing distinct petrological bedding exfoliation on greenish-tan blocks, open joints around ironstone pinners, and basal capillary rising damp.",
+                "country": "Ireland",
+                "region": "Co. Cork (Old Red Sandstone belt)",
+                "wall_type": "sandstone",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_27.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "delamination_exfoliation", "label": "Sedimentary Bedding Delamination & Contour Spall"},
+                    {"id": "rising_damp_salt", "label": "Basal Moisture Tide & Ground Water Ingress"},
+                    {"id": "mortar_erosion", "label": "Pinning Sneck Joint Mortar Separation"},
+                    {"id": "spalling", "label": "Alveolar Honeycomb Weathering"},
+                    {"id": "stepped_crack", "label": "Perpendicular Joint Shear Gap"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.30, "y_min": 0.13, "x_max": 0.30, "y_max": 0.13,
+                        "tolerance_radius": 0.08,
+                        "category": "delamination_exfoliation", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Sedimentary Bedding Exfoliation & Contour Spalling",
+                        "explanation": "Sheet delamination along parallel sedimentary planes on chloritic sandstone facies, triggered by freeze-thaw cycling."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.18, "y_min": 0.89, "x_max": 0.18, "y_max": 0.89,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Moisture Rising Damp Tide Mark",
+                        "explanation": "Capillary suction from adjacent paving flags creating persistent basal damp saturation band across lower sandstone courses."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.63, "y_min": 0.38, "x_max": 0.63, "y_max": 0.38,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Perimeter Mortar Shrinkage Around Ironstone Pinner",
+                        "explanation": "Differential thermal expansion between dense ironstone sliver and porous sandstone causing perimeter pointing separation."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-radius-ashlar-trapezoidal-shear-joint",
+                "title": "Curved Ashlar Retaining Bastion: Trapezoidal Shear Joint & Soot Crust",
+                "description": "Segmental curved carboniferous limestone ashlar retaining wall with a central trapezoidal wedge stone exhibiting stepped joint shear, localized tan block contour spall, and atmospheric soot encrustation along the curved flank.",
+                "country": "Ireland",
+                "region": "Co. Limerick",
+                "wall_type": "ashlar_stone",
+                "structural_function": "retaining",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_28.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Stepped Joint Shear Fracture / Radial Displacement"},
+                    {"id": "spalling", "label": "Differential Porous Block Contour Spalling"},
+                    {"id": "biological_colonisation", "label": "Atmospheric Soot Patina on Curved Face"},
+                    {"id": "mortar_washout", "label": "Curved Bed Joint Mortar Recess"},
+                    {"id": "core_voiding", "label": "Retaining Wall Core Voiding"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.49, "y_min": 0.63, "x_max": 0.49, "y_max": 0.63,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Diagonal Stepped Shear Joint along Trapezoidal Sneck",
+                        "explanation": "Radial soil pressure behind curved retaining wall inducing stepped shear displacement across diagonal cross-joints."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.34, "y_min": 0.34, "x_max": 0.34, "y_max": 0.34,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Differential Surface Spall & Contour Weathering on Tan Facies",
+                        "explanation": "Selective granular disintegration and face relief loss on iron-rich porous limestone block."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.89, "y_min": 0.28, "x_max": 0.89, "y_max": 0.28,
+                        "tolerance_radius": 0.08,
+                        "category": "biological_colonisation", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Atmospheric Carbon Encrustation along Curved Radius",
+                        "explanation": "Sheltered curvature trapping airborne pollutants, forming an adherent dark deposit across upper ashlar courses."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-rubble-boulder-contour-flaking",
+                "title": "Dense Limestone Rubble: Glacial Boulder Flaking & Bed Joint Fretting",
+                "description": "Dense uncoursed limestone rubble boundary wall incorporating rounded glacial boulders, showing severe surface contour flaking on upper boulder units, bed joint recessing, and localized salt fretting.",
+                "country": "Ireland",
+                "region": "Co. Galway",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_29.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "spalling", "label": "Differential Glacial Boulder Contour Flaking"},
+                    {"id": "mortar_erosion", "label": "Horizontal Bed Joint Mortar Fretting"},
+                    {"id": "core_voiding", "label": "Interstitial Pinning Voiding"},
+                    {"id": "rising_damp_salt", "label": "Basal Damp Crypto-florescence"},
+                    {"id": "biological_colonisation", "label": "Algal & Lichen Patina"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.22, "y_min": 0.16, "x_max": 0.22, "y_max": 0.16,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Differential Contour Flaking on Rounded Glacial Boulder",
+                        "explanation": "Thermal and moisture cycling causing progressive surface spalling and loss of rounded boulder outer face."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.62, "y_min": 0.57, "x_max": 0.62, "y_max": 0.57,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Horizontal Bed Joint Mortar Fretting & Recess",
+                        "explanation": "Hydraulic lime pointing weathering back along continuous bedding run, exposing vulnerable stone edges."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.35, "y_min": 0.44, "x_max": 0.35, "y_max": 0.44,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Arris Fretting & Granular Loss on Triangular Block",
+                        "explanation": "Localized mechanical wear and freeze-thaw weathering rounding the edges of triangular rubble stone."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-squared-rubble-coping-shrinkage-keystone",
+                "title": "Squared Limestone Rubble: Coping Bed Shrinkage & Upright Wedge Anomaly",
+                "description": "Well-coursed limestone rubble wall featuring a continuous longitudinal shrinkage crack along the upper bedding seam, perimeter mortar fretting around a rounded pinner, and basal iron staining.",
+                "country": "Ireland",
+                "region": "Co. Tipperary",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_30.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Longitudinal Bedding Seam Shrinkage Separation"},
+                    {"id": "mortar_erosion", "label": "Perimeter Mortar Washout Around Rounded Pinner"},
+                    {"id": "rising_damp_salt", "label": "Basal Rising Damp & Iron Oxide Leaching"},
+                    {"id": "spalling", "label": "Dressed Arris Impact Spalling"},
+                    {"id": "core_voiding", "label": "Hearting Settlement Voiding"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.45, "y_min": 0.12, "x_max": 0.45, "y_max": 0.12,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Continuous Longitudinal Bedding Seam Shrinkage Fissure",
+                        "explanation": "Differential thermal expansion between coping course and lower wall producing a continuous horizontal fissure along the bed line."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.13, "y_min": 0.31, "x_max": 0.13, "y_max": 0.31,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Perimeter Mortar Recess & Bed Void Behind Rounded Pinner",
+                        "explanation": "Loss of hydraulic lime mortar around perimeter of smooth rounded pinner stone, leaving point contacts."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.77, "x_max": 0.52, "y_max": 0.77,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Iron-Oxide Leaching & Rising Damp Tide",
+                        "explanation": "Capillary moisture carrying dissolved minerals evaporating near ground level, leaving yellowish iron staining."
+                    }
+                ]
             }
         ]
 

@@ -121,11 +121,11 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertEqual(res_bedding.status_code, 200)
         self.assertIn(b'Face-Bedding', res_bedding.data)
 
-        # 3. Verify total 32 standard catalog wall instances + 25 skill assessment instances
+        # 3. Verify total 32 standard catalog wall instances + 30 skill assessment instances
         from models import Wall
         with app.app_context():
             self.assertEqual(Wall.query.filter_by(is_skill_assessment=False).count(), 32)
-            self.assertEqual(Wall.query.filter_by(is_skill_assessment=True).count(), 25)
+            self.assertEqual(Wall.query.filter_by(is_skill_assessment=True).count(), 30)
 
         # 4. Verify Designing Buildings Wiki stonework inspection endpoints
         res_contour = self.client.get('/inspect/historic-sandstone-contour-scaling')
