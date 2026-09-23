@@ -404,9 +404,58 @@ class TestStudiosAndAuth(unittest.TestCase):
         res_grader = self.client.get('/skill-assessment/admin/grade/skill-drystone-limestone-delamination')
         self.assertEqual(res_grader.status_code, 200)
         self.assertIn(b'Ground Truth Defect Grader', res_grader.data)
+        self.assertIn(b'Specimen Dropdown', res_grader.data)
+
+        # 6. Test Setting Specimen Defect Mode Palette (with Custom Title)
+        custom_palette = [
+            {"id": "delamination_spalling", "label": "Stone Delamination / Spalling"},
+            {"id": "custom_frost_wedging_limestone", "label": "Frost Wedging of Bedded Limestone", "is_custom": True}
+        ]
+        res_modes = self.client.post(
+            '/api/skill-assessment/modes/skill-drystone-limestone-delamination',
+            json={"prioritized_modes": custom_palette}
+        )
+        self.assertEqual(res_modes.status_code, 200)
+        modes_data = res_modes.get_json()
+        self.assertTrue(modes_data['success'])
+        self.assertEqual(len(modes_data['prioritized_modes']), 2)
+        self.assertEqual(modes_data['prioritized_modes'][1]['id'], 'custom_frost_wedging_limestone')
+
+        # 7. Test Student Workstation renders Prioritised Optgroup and Custom Mode
+        res_student = self.client.get('/skill-assessment/skill-drystone-limestone-delamination')
+        self.assertEqual(res_student.status_code, 200)
+        self.assertIn(b'Specimen Relevant Defect Modes (Prioritised)', res_student.data)
+        self.assertIn(b'Frost Wedging of Bedded Limestone', res_student.data)
+
+        # 8. Test Student Evaluation with Custom Mode Pin (No hangs, proper status)
+        eval_custom_payload = {
+            "pins": [
+                {
+                    "id": "pin-c1",
+                    "x": 0.42,
+                    "y": 0.35,
+                    "category": "custom_frost_wedging_limestone",
+                    "severity": "critical"
+                }
+            ],
+            "student_name": "Field Apprentice"
+        }
+        res_eval_custom = self.client.post(
+            '/api/skill-assessment/evaluate/skill-drystone-limestone-delamination',
+            json=eval_custom_payload
+        )
+        self.assertEqual(res_eval_custom.status_code, 200)
+        eval_custom_data = res_eval_custom.get_json()
+        self.assertTrue(eval_custom_data['success'])
+        self.assertIn('evaluated_pins', eval_custom_data)
+        self.assertIn('feedback', eval_custom_data)
+        # Verify remedial_action is non-null string
+        for fb in eval_custom_data['feedback']:
+            self.assertIsNotNone(fb.get('remedial_action'))
 
 
 if __name__ == '__main__':
     unittest.main()
+
 
 

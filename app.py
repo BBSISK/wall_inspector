@@ -264,6 +264,90 @@ def calculate_center_distance(box_a, box_b):
     center_b_y = (box_b["y_min"] + box_b["y_max"]) / 2.0
     return math.hypot(center_a_x - center_b_x, center_a_y - center_b_y)
 
+def get_wall_defect_modes(wall):
+    """
+    Returns prioritized defect modes for this wall image and all defect modes.
+    1. If wall.assessment_defect_modes is configured, those are prioritized.
+    2. Otherwise, defaults prioritized modes to:
+       - The categories of any ground-truth defects on this wall.
+       - Plus 3-4 plausible distractors from SKILL_DEFECT_MODES matching this wall's wall_type.
+    3. All modes includes all SKILL_DEFECT_MODES plus any custom titles added to this wall.
+    """
+    prioritized = []
+    custom_modes = []
+    standard_map = {m["id"]: m for m in SKILL_DEFECT_MODES}
+
+    configured_modes = getattr(wall, "assessment_defect_modes", None) or []
+    if configured_modes:
+        for cm in configured_modes:
+            if isinstance(cm, dict):
+                mid = cm.get("id", "")
+                mlabel = cm.get("label", mid)
+                mhint = cm.get("hint", "")
+                if mid in standard_map:
+                    prioritized.append(standard_map[mid])
+                else:
+                    item = {"id": mid, "label": mlabel, "hint": mhint or "Specimen-specific defect mode.", "is_custom": True}
+                    prioritized.append(item)
+                    custom_modes.append(item)
+            elif isinstance(cm, str):
+                if cm in standard_map:
+                    prioritized.append(standard_map[cm])
+                else:
+                    item = {"id": cm, "label": cm.replace("_", " ").title(), "hint": "Specimen-specific defect mode.", "is_custom": True}
+                    prioritized.append(item)
+                    custom_modes.append(item)
+    else:
+        gt_cats = set()
+        wall_defects = []
+        if getattr(wall, "id", None):
+            try:
+                wall_defects = Defect.query.filter_by(wall_id=wall.id).all()
+            except Exception:
+                wall_defects = getattr(wall, "defects", []) or []
+        elif hasattr(wall, "defects"):
+            wall_defects = wall.defects or []
+
+        for d in wall_defects:
+            gt_cats.add(d.category)
+            if d.category not in standard_map:
+                item = {"id": d.category, "label": d.title or d.category.replace("_", " ").title(), "hint": d.explanation or "Pathological defect on this specimen.", "is_custom": True}
+                custom_modes.append(item)
+
+        for cat in gt_cats:
+            if cat in standard_map:
+                prioritized.append(standard_map[cat])
+            else:
+                for c in custom_modes:
+                    if c["id"] == cat and c not in prioritized:
+                        prioritized.append(c)
+
+        for m in SKILL_DEFECT_MODES:
+            if m not in prioritized:
+                if m.get("category") == wall.wall_type or m.get("category") in ["structural", "joint_decay"]:
+                    prioritized.append(m)
+            if len(prioritized) >= 6:
+                break
+
+    all_modes = list(SKILL_DEFECT_MODES)
+    existing_all_ids = set(m["id"] for m in all_modes)
+    for cm in custom_modes:
+        if cm["id"] not in existing_all_ids:
+            all_modes.append(cm)
+            existing_all_ids.add(cm["id"])
+
+    seen_p_ids = set()
+    distinct_prioritized = []
+    for pm in prioritized:
+        if pm["id"] not in seen_p_ids:
+            distinct_prioritized.append(pm)
+            seen_p_ids.add(pm["id"])
+
+    return {
+        "prioritized": distinct_prioritized,
+        "all": all_modes
+    }
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -294,6 +378,12 @@ def create_app(config_class=Config):
             if "is_skill_assessment" not in wall_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE walls ADD COLUMN is_skill_assessment BOOLEAN DEFAULT FALSE;"))
+                    conn.commit()
+
+            if "assessment_defect_modes" not in wall_cols:
+                with db.engine.connect() as conn:
+                    col_type = "JSON" if db.engine.dialect.name == "postgresql" else "TEXT"
+                    conn.execute(text(f"ALTER TABLE walls ADD COLUMN assessment_defect_modes {col_type};"))
                     conn.commit()
 
             if db.engine.dialect.name == "postgresql":
@@ -4592,15 +4682,18 @@ def create_app(config_class=Config):
         """Student Skill Assessment Interactive Workstation: Point and click defect tagging."""
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True, is_published=True).first_or_404()
         ground_truth_count = Defect.query.filter_by(wall_id=wall.id).count()
+        modes_bundle = get_wall_defect_modes(wall)
         return render_template(
             "skill_assessment_workstation.html",
             wall=wall.to_dict(),
             ground_truth_count=ground_truth_count,
-            defect_modes=SKILL_DEFECT_MODES,
+            prioritized_modes=modes_bundle["prioritized"],
+            all_modes=modes_bundle["all"],
+            defect_modes=modes_bundle["all"],
             remedial_options=REMEDIAL_OPTIONS
         )
 
-    @app.route("/api/skill-assessment/evaluate/<slug>", methods=["POST"])
+    @app.route("/api/skill-assessment/evaluate/<slug>", methods=["POST"], strict_slashes=False)
     def api_skill_assessment_evaluate(slug):
         """
         Evaluates student submitted defect pins against professional ground-truth defects.
@@ -4609,7 +4702,7 @@ def create_app(config_class=Config):
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
         data = request.get_json(silent=True) or {}
         submitted_pins = data.get("pins", [])
-        student_name = data.get("student_name", "Inspector Candidate").strip()
+        student_name = data.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
         cohort_code = data.get("cohort_code", "SKILLS").strip().upper() or "SKILLS"
         session_id = data.get("session_id", uuid.uuid4().hex[:8])
 
@@ -4627,8 +4720,8 @@ def create_app(config_class=Config):
         for pin in submitted_pins:
             px = float(pin.get("x", 0.0))
             py = float(pin.get("y", 0.0))
-            p_cat = (pin.get("category") or "").strip()
-            p_sev = (pin.get("severity") or "moderate").strip()
+            p_cat = str(pin.get("category") or "").strip()
+            p_sev = str(pin.get("severity") or "moderate").strip()
 
             best_gt = None
             best_dist = 999.0
@@ -4644,19 +4737,27 @@ def create_app(config_class=Config):
                     best_gt = gt
 
             if best_gt:
-                category_match = (p_cat == best_gt["category"])
-                severity_match = (p_sev == best_gt.get("severity", "moderate"))
+                gt_cat = str(best_gt.get("category") or "").strip()
+                gt_title = str(best_gt.get("title") or "Structural Defect").strip()
+                gt_remedial = str(best_gt.get("remedial_action") or "repoint_lime").strip()
+
+                category_match = (
+                    p_cat.lower() == gt_cat.lower()
+                    or p_cat.lower() == gt_title.lower()
+                    or p_cat.lower().replace("_", " ") == gt_cat.lower().replace("_", " ")
+                )
+                severity_match = (p_sev.lower() == str(best_gt.get("severity", "moderate")).lower())
 
                 if category_match:
                     matched_gt_ids.add(best_gt["id"])
                     earned_points += 1.0
                     pin_status = "correct"
-                    explanation = f"Accurate identification ({best_gt.get('title')}). Distance: {round(best_dist*100, 1)}% (within tolerance). {best_gt.get('explanation', '')}"
+                    explanation = f"Accurate identification ({gt_title}). Distance: {round(best_dist*100, 1)}% (within tolerance). {best_gt.get('explanation', '')}"
                 else:
                     partial_gt_ids.add(best_gt["id"])
                     earned_points += 0.60
                     pin_status = "partial"
-                    explanation = f"Location identified ({round(best_dist*100, 1)}% offset), but defect mode mismatch. Tagged as '{p_cat}', professional diagnosis: '{best_gt.get('category')} - {best_gt.get('title')}'. {best_gt.get('explanation', '')}"
+                    explanation = f"Location identified ({round(best_dist*100, 1)}% offset), but defect mode mismatch. Tagged as '{p_cat.replace('_', ' ').title()}', professional diagnosis: '{gt_title}'. {best_gt.get('explanation', '')}"
 
                 evaluated_pins.append({
                     "x": px,
@@ -4665,18 +4766,18 @@ def create_app(config_class=Config):
                     "severity": p_sev,
                     "status": pin_status,
                     "distance": round(best_dist, 4),
-                    "matched_gt_title": best_gt["title"],
-                    "expected_category": best_gt["category"],
-                    "remedial_action": best_gt.get("remedial_action", "repoint_lime"),
+                    "matched_gt_title": gt_title,
+                    "expected_category": gt_cat,
+                    "remedial_action": gt_remedial,
                     "explanation": explanation
                 })
 
                 feedback_items.append({
-                    "title": best_gt["title"],
-                    "category": best_gt["category"],
-                    "student_category": p_cat,
-                    "severity": best_gt.get("severity", "moderate"),
-                    "remedial_action": best_gt.get("remedial_action", "repoint_lime"),
+                    "title": gt_title,
+                    "category": gt_cat,
+                    "student_category": p_cat.replace('_', ' ').title(),
+                    "severity": best_gt.get("severity", "moderate") or "moderate",
+                    "remedial_action": gt_remedial,
                     "status": pin_status,
                     "explanation": explanation
                 })
@@ -4690,7 +4791,8 @@ def create_app(config_class=Config):
                     "status": "false_positive",
                     "distance": None,
                     "matched_gt_title": None,
-                    "explanation": f"False positive at ({round(px*100)}%, {round(py*100)}%). No pathological defect verified at this position."
+                    "remedial_action": "none",
+                    "explanation": f"False positive at ({round(px*100)}%, {round(py*100)}%). No verified pathology at this position."
                 })
 
         total_gt = len(gt_dicts)
@@ -4701,13 +4803,17 @@ def create_app(config_class=Config):
         for gt in gt_dicts:
             if gt["id"] not in matched_gt_ids and gt["id"] not in partial_gt_ids:
                 missed_count += 1
+                gt_title = str(gt.get("title") or "Structural Defect").strip()
+                gt_cat = str(gt.get("category") or "unspecified").strip()
+                gt_remedial = str(gt.get("remedial_action") or "repoint_lime").strip()
                 feedback_items.append({
-                    "title": gt["title"],
-                    "category": gt["category"],
-                    "severity": gt.get("severity", "moderate"),
-                    "remedial_action": gt.get("remedial_action", "repoint_lime"),
+                    "title": gt_title,
+                    "category": gt_cat,
+                    "student_category": "None (Missed)",
+                    "severity": gt.get("severity", "moderate") or "moderate",
+                    "remedial_action": gt_remedial,
                     "status": "missed",
-                    "explanation": f"Unidentified pathology: {gt.get('title')} ({gt.get('severity', 'moderate')}). {gt.get('explanation', '')}"
+                    "explanation": f"Unidentified pathology: {gt_title} ({gt.get('severity', 'moderate')}). {gt.get('explanation', '')}"
                 })
 
         if total_gt > 0:
@@ -4727,27 +4833,30 @@ def create_app(config_class=Config):
 
         passed = score >= 70.0
 
-        attempt = AssessmentAttempt(
-            wall_id=wall.id,
-            student_session_id=session_id,
-            cohort_code=cohort_code,
-            assignment_code="SKILL-ASSESS",
-            student_name=student_name,
-            submitted_markers=submitted_pins,
-            true_positives=full_hits + partial_hits,
-            false_positives=false_positives,
-            false_negatives=missed_count,
-            score_percentage=score,
-            passed=passed,
-            feedback_notes={
-                "grade": grade,
-                "earned_points": round(earned_points, 2),
-                "total_gt": total_gt,
-                "items": feedback_items
-            }
-        )
-        db.session.add(attempt)
-        db.session.commit()
+        try:
+            attempt = AssessmentAttempt(
+                wall_id=wall.id,
+                student_session_id=session_id,
+                cohort_code=cohort_code,
+                assignment_code="SKILL-ASSESS",
+                student_name=student_name,
+                submitted_markers=submitted_pins,
+                true_positives=full_hits + partial_hits,
+                false_positives=false_positives,
+                false_negatives=missed_count,
+                score_percentage=score,
+                passed=passed,
+                feedback_notes={
+                    "grade": grade,
+                    "earned_points": round(earned_points, 2),
+                    "total_gt": total_gt,
+                    "items": feedback_items
+                }
+            )
+            commit_with_retry(attempt)
+        except Exception as attempt_err:
+            db.session.rollback()
+            print(f"Notice: Skill assessment attempt logging recovered: {attempt_err}")
 
         gt_overlay = []
         for gt in gt_dicts:
@@ -4755,12 +4864,12 @@ def create_app(config_class=Config):
                 "id": gt["id"],
                 "x": (gt["x_min"] + gt["x_max"]) / 2.0,
                 "y": (gt["y_min"] + gt["y_max"]) / 2.0,
-                "tolerance_radius": gt.get("tolerance_radius", 0.08),
-                "category": gt["category"],
-                "severity": gt.get("severity", "moderate"),
-                "remedial_action": gt.get("remedial_action", "repoint_lime"),
-                "title": gt["title"],
-                "explanation": gt.get("explanation", "")
+                "tolerance_radius": gt.get("tolerance_radius", 0.08) or 0.08,
+                "category": gt.get("category") or "unspecified",
+                "severity": gt.get("severity", "moderate") or "moderate",
+                "remedial_action": gt.get("remedial_action") or "repoint_lime",
+                "title": gt.get("title") or "Ground Truth Defect",
+                "explanation": gt.get("explanation") or ""
             })
 
         return jsonify({
@@ -4879,19 +4988,43 @@ def create_app(config_class=Config):
         """
         Professional point-and-tag defect grading workstation.
         Allows instructor to place ground-truth defect pins, calibrate tolerance radius,
-        and provide expert diagnosis and remediation.
+        manage image-specific defect mode priorities and custom titles, and prescribe remediation.
         """
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
         defects = Defect.query.filter_by(wall_id=wall.id).all()
+        modes_bundle = get_wall_defect_modes(wall)
         return render_template(
             "skill_assessment_grader.html",
             wall=wall.to_dict(),
             defects=[d.to_dict() for d in defects],
-            defect_modes=SKILL_DEFECT_MODES,
+            prioritized_modes=modes_bundle["prioritized"],
+            all_modes=modes_bundle["all"],
+            defect_modes=modes_bundle["all"],
             remedial_options=REMEDIAL_OPTIONS
         )
 
-    @app.route("/api/skill-assessment/grade/<slug>", methods=["POST"])
+    @app.route("/api/skill-assessment/modes/<slug>", methods=["POST"], strict_slashes=False)
+    @admin_required
+    def api_skill_assessment_save_modes(slug):
+        """
+        Saves or updates the prioritized defect modes and custom defect titles for this wall image.
+        Configured once per image to eliminate per-defect admin overhead.
+        """
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        data = request.get_json(silent=True) or {}
+        prioritized_modes = data.get("prioritized_modes", [])
+
+        wall.assessment_defect_modes = prioritized_modes
+        commit_with_retry(wall)
+
+        modes_bundle = get_wall_defect_modes(wall)
+        return jsonify({
+            "success": True,
+            "prioritized_modes": modes_bundle["prioritized"],
+            "all_modes": modes_bundle["all"]
+        })
+
+    @app.route("/api/skill-assessment/grade/<slug>", methods=["POST"], strict_slashes=False)
     @admin_required
     def api_skill_assessment_save_defects(slug):
         """Saves or updates ground-truth defect points for an assessment specimen."""
@@ -4901,10 +5034,21 @@ def create_app(config_class=Config):
 
         Defect.query.filter_by(wall_id=wall.id).delete()
 
+        current_modes = wall.assessment_defect_modes or []
+        current_mode_ids = set()
+        for cm in current_modes:
+            if isinstance(cm, dict):
+                current_mode_ids.add(cm.get("id"))
+            elif isinstance(cm, str):
+                current_mode_ids.add(cm)
+
         for d in incoming_defects:
             x = float(d.get("x", 0.5))
             y = float(d.get("y", 0.5))
             tol = float(d.get("tolerance_radius", 0.08) or 0.08)
+            cat = str(d.get("category", "core_voiding")).strip()
+            title = str(d.get("title", "Ground Truth Defect")).strip()
+
             new_d = Defect(
                 wall_id=wall.id,
                 target_type="pin",
@@ -4913,15 +5057,21 @@ def create_app(config_class=Config):
                 x_max=x,
                 y_max=y,
                 tolerance_radius=tol,
-                category=d.get("category", "core_voiding"),
+                category=cat,
                 severity=d.get("severity", "moderate"),
                 remedial_action=d.get("remedial_action", "repoint_lime"),
-                title=d.get("title", "Ground Truth Defect"),
+                title=title,
                 explanation=d.get("explanation", "")
             )
             db.session.add(new_d)
 
-        db.session.commit()
+            # Auto-ensure defect mode is in wall's prioritized palette
+            if cat not in current_mode_ids:
+                current_modes.append({"id": cat, "label": title or cat.replace("_", " ").title(), "is_custom": True})
+                current_mode_ids.add(cat)
+
+        wall.assessment_defect_modes = current_modes
+        commit_with_retry()
         return jsonify({"success": True, "count": len(incoming_defects)})
 
     @app.route("/api/skill-assessment/delete/<slug>", methods=["POST"])

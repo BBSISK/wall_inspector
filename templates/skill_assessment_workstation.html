@@ -688,9 +688,24 @@
       <div class="form-group">
         <label>Defect Mode (Pathological Classification)</label>
         <select class="form-control" id="modal-category">
-          {% for mode in defect_modes %}
-            <option value="{{ mode.id }}">{{ mode.label }}</option>
-          {% endfor %}
+          {% if prioritized_modes %}
+            <optgroup label="⭐ Specimen Relevant Defect Modes (Prioritised)">
+              {% for mode in prioritized_modes %}
+                <option value="{{ mode.id }}">{{ mode.label }}</option>
+              {% endfor %}
+            </optgroup>
+            <optgroup label="All Other Architectural Pathology Modes">
+              {% for mode in all_modes %}
+                {% if mode not in prioritized_modes %}
+                  <option value="{{ mode.id }}">{{ mode.label }}</option>
+                {% endif %}
+              {% endfor %}
+            </optgroup>
+          {% else %}
+            {% for mode in all_modes %}
+              <option value="{{ mode.id }}">{{ mode.label }}</option>
+            {% endfor %}
+          {% endif %}
         </select>
         <small id="modal-hint" style="color: #94a3b8; font-size: 0.75rem; margin-top: 4px; display: block;"></small>
       </div>
@@ -938,9 +953,11 @@
 
       const mainBtn = document.getElementById('main-submit-btn');
       const topBtn = document.getElementById('top-submit-btn');
-      mainBtn.disabled = true;
-      topBtn.disabled = true;
-      mainBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Grading...';
+      if (mainBtn) {
+        mainBtn.disabled = true;
+        mainBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Grading...';
+      }
+      if (topBtn) topBtn.disabled = true;
 
       try {
         const response = await fetch(`/api/skill-assessment/evaluate/${wallSlug}`, {
@@ -952,94 +969,136 @@
           })
         });
 
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Server status ${response.status}: ${errText.substring(0, 80)}`);
+        }
+
         const data = await response.json();
-        if (data.success) {
+        if (data && data.success) {
           isEvaluated = true;
+          if (mainBtn) {
+            mainBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Assessment Evaluated';
+            mainBtn.disabled = true;
+          }
+          if (topBtn) topBtn.disabled = true;
           displayEvaluationResults(data);
         } else {
-          alert('Error evaluating pins: ' + (data.error || 'Server error'));
-          mainBtn.disabled = false;
-          topBtn.disabled = false;
+          alert('Error evaluating pins: ' + (data && data.error ? data.error : 'Server error'));
+          if (mainBtn) {
+            mainBtn.disabled = false;
+            mainBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment for Grading';
+          }
+          if (topBtn) topBtn.disabled = false;
         }
       } catch (err) {
-        console.error(err);
-        alert('Evaluation failed. Please try again.');
-        mainBtn.disabled = false;
-        topBtn.disabled = false;
+        console.error('Skill assessment submission failed:', err);
+        alert('Evaluation failed: ' + (err.message || 'Please check your connection and try again.'));
+        if (mainBtn) {
+          mainBtn.disabled = false;
+          mainBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Assessment for Grading';
+        }
+        if (topBtn) topBtn.disabled = false;
       }
     }
 
     function displayEvaluationResults(data) {
-      // 1. Color student pins
-      data.evaluated_pins.forEach((res, idx) => {
-        if (studentPins[idx]) {
-          const pinEl = document.getElementById(studentPins[idx].id);
-          if (pinEl) {
-            pinEl.classList.add(res.status);
-            pinEl.title = `${res.status.toUpperCase()}: ${res.explanation}`;
+      try {
+        // 1. Color student pins
+        if (Array.isArray(data.evaluated_pins)) {
+          data.evaluated_pins.forEach((res, idx) => {
+            if (studentPins[idx]) {
+              const pinEl = document.getElementById(studentPins[idx].id);
+              if (pinEl) {
+                pinEl.classList.add(res.status || 'neutral');
+                pinEl.title = `${(res.status || '').toUpperCase()}: ${res.explanation || ''}`;
+              }
+            }
+          });
+        }
+
+        // 2. Render Ground Truth circles on gt-layer
+        const gtLayer = document.getElementById('gt-layer');
+        if (gtLayer) {
+          gtLayer.innerHTML = '';
+          gtLayer.style.display = 'block';
+
+          if (Array.isArray(data.ground_truth)) {
+            data.ground_truth.forEach((gt) => {
+              // Outer tolerance radius circle
+              const circle = document.createElement('div');
+              circle.className = 'gt-circle';
+              const diameterPct = ((gt.tolerance_radius || 0.08) * 2) * 100;
+              circle.style.width = diameterPct + '%';
+              circle.style.height = diameterPct + '%';
+              circle.style.left = ((gt.x || 0.5) * 100) + '%';
+              circle.style.top = ((gt.y || 0.5) * 100) + '%';
+              gtLayer.appendChild(circle);
+
+              // Center GT pin
+              const gtPin = document.createElement('div');
+              gtPin.className = 'gt-pin';
+              gtPin.style.left = ((gt.x || 0.5) * 100) + '%';
+              gtPin.style.top = ((gt.y || 0.5) * 100) + '%';
+              gtPin.style.pointerEvents = 'auto';
+              gtPin.innerHTML = `
+                <div class="gt-pin-marker" title="${gt.title || 'Ground Truth'} - ${gt.explanation || ''}">
+                  <i class="fa-solid fa-flag"></i>
+                </div>
+                <div class="gt-label">${gt.title || 'Ground Truth'}</div>
+              `;
+              gtLayer.appendChild(gtPin);
+            });
           }
         }
-      });
 
-      // 2. Render Ground Truth circles on gt-layer
-      const gtLayer = document.getElementById('gt-layer');
-      gtLayer.innerHTML = '';
-      gtLayer.style.display = 'block';
+        // 3. Populate Score Modal
+        const gauge = document.getElementById('score-gauge');
+        if (gauge) {
+          gauge.className = 'score-gauge ' + (data.passed ? 'score-passed' : 'score-remedial');
+        }
+        const scoreEl = document.getElementById('modal-score-pct');
+        if (scoreEl) scoreEl.textContent = `${data.score ?? 0}%`;
+        const gradeEl = document.getElementById('modal-grade');
+        if (gradeEl) gradeEl.textContent = data.grade || 'Pending';
 
-      data.ground_truth.forEach((gt, idx) => {
-        // Outer tolerance radius circle
-        const circle = document.createElement('div');
-        circle.className = 'gt-circle';
-        const diameterPct = (gt.tolerance_radius * 2) * 100;
-        circle.style.width = diameterPct + '%';
-        circle.style.height = diameterPct + '%';
-        circle.style.left = (gt.x * 100) + '%';
-        circle.style.top = (gt.y * 100) + '%';
-        gtLayer.appendChild(circle);
+        const hitsEl = document.getElementById('metric-hits');
+        if (hitsEl) hitsEl.textContent = data.full_hits ?? 0;
+        const partEl = document.getElementById('metric-partial');
+        if (partEl) partEl.textContent = data.partial_hits ?? 0;
+        const fpEl = document.getElementById('metric-fp');
+        if (fpEl) fpEl.textContent = data.false_positives ?? 0;
+        const missEl = document.getElementById('metric-missed');
+        if (missEl) missEl.textContent = data.missed_count ?? 0;
 
-        // Center GT pin
-        const gtPin = document.createElement('div');
-        gtPin.className = 'gt-pin';
-        gtPin.style.left = (gt.x * 100) + '%';
-        gtPin.style.top = (gt.y * 100) + '%';
-        gtPin.style.pointerEvents = 'auto';
-        gtPin.innerHTML = `
-          <div class="gt-pin-marker" title="${gt.title} - ${gt.explanation}">
-            <i class="fa-solid fa-flag"></i>
-          </div>
-          <div class="gt-label">${gt.title}</div>
-        `;
-        gtLayer.appendChild(gtPin);
-      });
+        const tbody = document.getElementById('results-table-body');
+        if (tbody) {
+          tbody.innerHTML = '';
+          if (Array.isArray(data.feedback)) {
+            data.feedback.forEach(item => {
+              const tr = document.createElement('tr');
+              const statusClass = `status-${item.status || 'missed'}`;
+              const remedialStr = String(item.remedial_action || 'repoint_lime').replace(/_/g, ' ');
+              tr.innerHTML = `
+                <td><span class="badge-status ${statusClass}">${item.status || 'missed'}</span></td>
+                <td><strong>${item.title || 'Pathology Target'}</strong><br><small style="color: #94a3b8;">${item.explanation || ''}</small></td>
+                <td><code style="color: #38bdf8;">${item.student_category || 'None (Missed)'}</code></td>
+                <td><span style="color: #34d399; font-size: 0.75rem;">${remedialStr}</span></td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        }
 
-      // 3. Populate Score Modal
-      const gauge = document.getElementById('score-gauge');
-      gauge.className = 'score-gauge ' + (data.passed ? 'score-passed' : 'score-remedial');
-      document.getElementById('modal-score-pct').textContent = `${data.score}%`;
-      document.getElementById('modal-grade').textContent = data.grade;
-
-      document.getElementById('metric-hits').textContent = data.full_hits;
-      document.getElementById('metric-partial').textContent = data.partial_hits;
-      document.getElementById('metric-fp').textContent = data.false_positives;
-      document.getElementById('metric-missed').textContent = data.missed_count;
-
-      const tbody = document.getElementById('results-table-body');
-      tbody.innerHTML = '';
-
-      data.feedback.forEach(item => {
-        const tr = document.createElement('tr');
-        const statusClass = `status-${item.status}`;
-        tr.innerHTML = `
-          <td><span class="badge-status ${statusClass}">${item.status}</span></td>
-          <td><strong>${item.title}</strong><br><small style="color: #94a3b8;">${item.explanation}</small></td>
-          <td><code style="color: #38bdf8;">${item.student_category || 'None (Missed)'}</code></td>
-          <td><span style="color: #34d399; font-size: 0.75rem;">${item.remedial_action.replace('_', ' ')}</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('score-modal').style.display = 'flex';
-      renderSidebar();
+        const scoreModal = document.getElementById('score-modal');
+        if (scoreModal) {
+          scoreModal.style.display = 'flex';
+        }
+        renderSidebar();
+      } catch (renderErr) {
+        console.error('Error rendering evaluation results:', renderErr);
+        alert('Results calculated but error displaying modal: ' + renderErr.message);
+      }
     }
   </script>
 

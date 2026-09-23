@@ -256,6 +256,102 @@
       gap: 0.5rem;
     }
 
+    /* Sidebar Navigation Tabs */
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-dark);
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem 0.5rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .tab-btn.active {
+      color: #00f2fe;
+      border-bottom-color: #00f2fe;
+      background: rgba(0, 242, 254, 0.05);
+    }
+
+    /* Specimen Defect Mode Palette */
+    .palette-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-left: 3px solid #00f2fe;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.45rem;
+      font-size: 0.82rem;
+      color: #f1f5f9;
+      gap: 8px;
+    }
+    .palette-chip.custom {
+      border-left-color: #f59e0b;
+    }
+    .chip-badge-custom {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .palette-chip-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .priority-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      border-radius: 4px;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      cursor: pointer;
+    }
+    .priority-btn:hover {
+      color: #00f2fe;
+      border-color: #00f2fe;
+    }
+    .btn-remove-chip {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .btn-remove-chip:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
     /* Modal for pin configuration */
     #grade-modal {
       display: none;
@@ -382,17 +478,96 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2><i class="fa-solid fa-flag" style="color: #00f2fe;"></i> Ground Truth Targets</h2>
-        <span class="defect-count-badge" id="gt-count-badge">0 Targets</span>
+      <div class="sidebar-tabs">
+        <button type="button" class="tab-btn active" id="tab-btn-targets" onclick="switchSidebarTab('targets')">
+          <i class="fa-solid fa-crosshairs"></i> Defect Targets (<span id="gt-tab-count">0</span>)
+        </button>
+        <button type="button" class="tab-btn" id="tab-btn-palette" onclick="switchSidebarTab('palette')">
+          <i class="fa-solid fa-list-check"></i> Specimen Dropdown (<span id="palette-tab-count">0</span>)
+        </button>
       </div>
 
-      <div class="sidebar-content" id="gt-list"></div>
+      <!-- Tab 1: Defect Targets -->
+      <div id="tab-content-targets" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+        <div class="sidebar-header">
+          <h2><i class="fa-solid fa-flag" style="color: #00f2fe;"></i> Ground Truth Targets</h2>
+          <span class="defect-count-badge" id="gt-count-badge">0 Targets</span>
+        </div>
 
-      <div class="sidebar-footer">
-        <button type="button" class="btn-top btn-save-all" style="justify-content: center; padding: 0.75rem;" onclick="saveAllDefects()">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish Specimen Defects
-        </button>
+        <div class="sidebar-content" id="gt-list"></div>
+
+        <div class="sidebar-footer">
+          <button type="button" class="btn-top btn-save-all" style="justify-content: center; padding: 0.75rem;" onclick="saveAllDefects()">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish Specimen Defects
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Specimen Defect Mode Palette -->
+      <div id="tab-content-palette" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
+        <div class="sidebar-header">
+          <h2><i class="fa-solid fa-layer-group" style="color: #00f2fe;"></i> Dropdown Palette</h2>
+          <span id="palette-save-status" style="font-size: 0.72rem; color: #34d399; display: flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-circle-check"></i> Synced
+          </span>
+        </div>
+
+        <div class="sidebar-content" style="gap: 1rem;">
+          <!-- Informational Banner -->
+          <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">
+            <strong style="color: #38bdf8; display: block; margin-bottom: 2px;">
+              <i class="fa-solid fa-circle-info"></i> Image-Level Defect Dropdown
+            </strong>
+            Prioritised defect modes appear at the top of the student's dropdown menu for this image. Configured once per wall to prevent admin overhead.
+          </div>
+
+          <!-- Add Custom Defect Mode Title -->
+          <div style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.85rem;">
+            <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #cbd5e1; margin-bottom: 0.4rem;">
+              <i class="fa-solid fa-plus" style="color: #38bdf8;"></i> Add Custom Defect Mode Title
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="new-custom-title" class="form-control" placeholder="e.g. Bed Joint Lime Washout" style="font-size: 0.82rem;" onkeydown="if(event.key==='Enter') addCustomModeTitle()">
+              <button type="button" class="btn-top btn-save-all" style="padding: 0.5rem 0.85rem; font-size: 0.78rem; white-space: nowrap;" onclick="addCustomModeTitle()">
+                <i class="fa-solid fa-plus"></i> Add
+              </button>
+            </div>
+            <small style="color: #64748b; font-size: 0.7rem; margin-top: 4px; display: block;">Adds a new pathology classification title unique to this wall specimen.</small>
+          </div>
+
+          <!-- Add Standard Mode to Prioritized Palette -->
+          <div style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.85rem;">
+            <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #cbd5e1; margin-bottom: 0.4rem;">
+              <i class="fa-solid fa-star" style="color: #f59e0b;"></i> Prioritise Existing Mode
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <select id="select-add-mode" class="form-control" style="font-size: 0.82rem;"></select>
+              <button type="button" class="btn-top btn-save-all" style="padding: 0.5rem 0.85rem; font-size: 0.78rem; white-space: nowrap; background: #0284c7; border-color: #38bdf8;" onclick="addSelectedStandardMode()">
+                <i class="fa-solid fa-star"></i> Prioritise
+              </button>
+            </div>
+            <small style="color: #64748b; font-size: 0.7rem; margin-top: 4px; display: block;">Elevates a standard defect mode into this specimen's top dropdown group.</small>
+          </div>
+
+          <!-- Prioritized Modes List -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">
+                Prioritised Specimen Modes (<span id="palette-count-inline">0</span>)
+              </span>
+              <button type="button" onclick="resetToDefaultModes()" style="background: transparent; border: none; color: #94a3b8; font-size: 0.7rem; cursor: pointer;" title="Reset to auto-detected Ground Truth + distractors">
+                <i class="fa-solid fa-rotate-left"></i> Reset Defaults
+              </button>
+            </div>
+            <div id="palette-chip-list"></div>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <button type="button" class="btn-top btn-save-all" style="justify-content: center; padding: 0.75rem;" onclick="saveModesPalette()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Specimen Dropdown Palette
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -409,12 +584,21 @@
       </div>
 
       <div class="form-group">
-        <label>Defect Mode (Standard Taxonomy)</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+          <label style="margin-bottom: 0;">Defect Mode (Pathological Classification)</label>
+          <a href="javascript:void(0)" onclick="toggleInlineModalCustomMode()" style="color: #00f2fe; font-size: 0.75rem; text-decoration: none; font-weight: 600;">
+            <i class="fa-solid fa-plus-circle"></i> + Add Custom Title
+          </a>
+        </div>
         <select class="form-control" id="modal-category">
-          {% for mode in defect_modes %}
-            <option value="{{ mode.id }}">{{ mode.label }}</option>
-          {% endfor %}
         </select>
+        <div id="modal-inline-custom-box" style="display: none; margin-top: 8px; padding: 8px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: 6px;">
+          <input type="text" id="modal-inline-title" class="form-control" placeholder="Enter custom defect mode title..." style="font-size: 0.82rem; margin-bottom: 6px;" onkeydown="if(event.key==='Enter') submitModalInlineCustomMode()">
+          <div style="display: flex; justify-content: flex-end; gap: 6px;">
+            <button type="button" class="btn-cancel" style="padding: 3px 8px; font-size: 0.75rem;" onclick="toggleInlineModalCustomMode(false)">Cancel</button>
+            <button type="button" class="btn-top btn-save-all" style="padding: 3px 10px; font-size: 0.75rem;" onclick="submitModalInlineCustomMode()">Add & Select</button>
+          </div>
+        </div>
       </div>
 
       <div class="form-group">
@@ -459,15 +643,16 @@
   <script>
     const wallSlug = {{ wall.slug|tojson }};
     const initialDefects = {{ defects|tojson }};
-    const defectModesData = {{ defect_modes|tojson }};
+    let prioritizedModes = {{ prioritized_modes|tojson }} || [];
+    let allModes = {{ all_modes|tojson }} || [];
     const modeLookup = {};
-    defectModesData.forEach(m => { modeLookup[m.id] = m; });
+    allModes.forEach(m => { modeLookup[m.id] = m; });
 
     let defectList = [];
     let editingIndex = -1;
     let pendingCoords = null;
 
-    // Load initial defects
+    // Load initial ground truth defects
     initialDefects.forEach(d => {
       const cx = (d.x_min + d.x_max) / 2.0;
       const cy = (d.y_min + d.y_max) / 2.0;
@@ -481,9 +666,281 @@
         title: d.title || 'Ground Truth Defect',
         explanation: d.explanation || ''
       });
+      // Register title/mode into modeLookup if missing
+      if (!modeLookup[d.category]) {
+        const item = { id: d.category, label: d.title || d.category, is_custom: true };
+        modeLookup[d.category] = item;
+        allModes.push(item);
+      }
     });
 
+    // Initial renders
     renderAll();
+    renderPaletteUI();
+    renderModalCategorySelect();
+
+    function switchSidebarTab(tabName) {
+      const isTargets = tabName === 'targets';
+      document.getElementById('tab-btn-targets').classList.toggle('active', isTargets);
+      document.getElementById('tab-btn-palette').classList.toggle('active', !isTargets);
+      document.getElementById('tab-content-targets').style.display = isTargets ? 'flex' : 'none';
+      document.getElementById('tab-content-palette').style.display = isTargets ? 'none' : 'flex';
+    }
+
+    function renderPaletteUI() {
+      // 1. Tab badges
+      const gtCount = defectList.length;
+      document.getElementById('gt-tab-count').textContent = gtCount;
+      const palCount = prioritizedModes.length;
+      document.getElementById('palette-tab-count').textContent = palCount;
+      document.getElementById('palette-count-inline').textContent = palCount;
+
+      // 2. Render chip list
+      const chipContainer = document.getElementById('palette-chip-list');
+      chipContainer.innerHTML = '';
+
+      if (prioritizedModes.length === 0) {
+        chipContainer.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem 1rem; border: 1px dashed var(--border-dark); border-radius: 6px;">
+            <i class="fa-solid fa-layer-group" style="font-size: 1.5rem; color: #334155; margin-bottom: 0.35rem;"></i>
+            <div style="font-size: 0.78rem;">No prioritized modes set.</div>
+            <small style="color: #64748b;">All standard modes will show alphabetically in the student workstation.</small>
+          </div>
+        `;
+      } else {
+        prioritizedModes.forEach((mode, idx) => {
+          const chip = document.createElement('div');
+          chip.className = 'palette-chip' + (mode.is_custom ? ' custom' : '');
+          chip.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+              <span style="font-size: 0.7rem; font-weight: 800; color: #38bdf8; width: 16px;">#${idx + 1}</span>
+              <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mode.label}">${mode.label}</span>
+              ${mode.is_custom ? '<span class="chip-badge-custom">Custom</span>' : ''}
+            </div>
+            <div class="palette-chip-actions">
+              ${idx > 0 ? `<button type="button" class="priority-btn" onclick="moveModePriority('${mode.id}', -1)" title="Move Up"><i class="fa-solid fa-chevron-up"></i></button>` : ''}
+              ${idx < prioritizedModes.length - 1 ? `<button type="button" class="priority-btn" onclick="moveModePriority('${mode.id}', 1)" title="Move Down"><i class="fa-solid fa-chevron-down"></i></button>` : ''}
+              <button type="button" class="btn-remove-chip" onclick="removeModeFromPalette('${mode.id}')" title="Remove from prioritized list">&times;</button>
+            </div>
+          `;
+          chipContainer.appendChild(chip);
+        });
+      }
+
+      // 3. Render select for unprioritized modes
+      const selectAdd = document.getElementById('select-add-mode');
+      selectAdd.innerHTML = '';
+      const prioritizedIds = new Set(prioritizedModes.map(m => m.id));
+      const availableToAdd = allModes.filter(m => !prioritizedIds.has(m.id));
+
+      if (availableToAdd.length === 0) {
+        selectAdd.innerHTML = '<option disabled>All modes already prioritized</option>';
+      } else {
+        availableToAdd.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.label + (m.is_custom ? ' (Custom)' : '');
+          selectAdd.appendChild(opt);
+        });
+      }
+    }
+
+    function renderModalCategorySelect(selectedId = null) {
+      const select = document.getElementById('modal-category');
+      const curVal = selectedId || select.value;
+      select.innerHTML = '';
+
+      const prioritizedIds = new Set(prioritizedModes.map(m => m.id));
+
+      if (prioritizedModes.length > 0) {
+        const grpPrio = document.createElement('optgroup');
+        grpPrio.label = '⭐ Specimen Relevant Defect Modes (Prioritised)';
+        prioritizedModes.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.label + (m.is_custom ? ' (Custom)' : '');
+          grpPrio.appendChild(opt);
+        });
+        select.appendChild(grpPrio);
+
+        const grpOther = document.createElement('optgroup');
+        grpOther.label = 'All Other Architectural Pathology Modes';
+        allModes.filter(m => !prioritizedIds.has(m.id)).forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.label;
+          grpOther.appendChild(opt);
+        });
+        select.appendChild(grpOther);
+      } else {
+        allModes.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.label;
+          select.appendChild(opt);
+        });
+      }
+
+      if (curVal && Array.from(select.options).some(o => o.value === curVal)) {
+        select.value = curVal;
+      }
+    }
+
+    function addCustomModeTitle() {
+      const input = document.getElementById('new-custom-title');
+      const title = input.value.trim();
+      if (!title) return;
+
+      const slugId = 'custom_' + title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      const existing = allModes.find(m => m.id === slugId || m.label.toLowerCase() === title.toLowerCase());
+      if (existing) {
+        if (!prioritizedModes.some(m => m.id === existing.id)) {
+          prioritizedModes.push(existing);
+        }
+      } else {
+        const newMode = {
+          id: slugId,
+          label: title,
+          hint: 'Custom defect mode for this wall specimen.',
+          is_custom: true
+        };
+        allModes.push(newMode);
+        modeLookup[newMode.id] = newMode;
+        prioritizedModes.push(newMode);
+      }
+
+      input.value = '';
+      renderPaletteUI();
+      renderModalCategorySelect(slugId);
+      saveModesPalette();
+    }
+
+    function addSelectedStandardMode() {
+      const selectAdd = document.getElementById('select-add-mode');
+      const chosenId = selectAdd.value;
+      if (!chosenId) return;
+
+      const mode = allModes.find(m => m.id === chosenId);
+      if (mode && !prioritizedModes.some(m => m.id === chosenId)) {
+        prioritizedModes.push(mode);
+        renderPaletteUI();
+        renderModalCategorySelect();
+        saveModesPalette();
+      }
+    }
+
+    function removeModeFromPalette(modeId) {
+      prioritizedModes = prioritizedModes.filter(m => m.id !== modeId);
+      renderPaletteUI();
+      renderModalCategorySelect();
+      saveModesPalette();
+    }
+
+    function moveModePriority(modeId, direction) {
+      const idx = prioritizedModes.findIndex(m => m.id === modeId);
+      if (idx < 0) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= prioritizedModes.length) return;
+
+      const temp = prioritizedModes[idx];
+      prioritizedModes[idx] = prioritizedModes[targetIdx];
+      prioritizedModes[targetIdx] = temp;
+
+      renderPaletteUI();
+      renderModalCategorySelect();
+      saveModesPalette();
+    }
+
+    function resetToDefaultModes() {
+      if (!confirm('Reset palette to ground-truth targets and standard specimen distractors?')) return;
+      prioritizedModes = [];
+      // Re-add categories of existing GT defects
+      const seen = new Set();
+      defectList.forEach(d => {
+        if (!seen.has(d.category)) {
+          seen.add(d.category);
+          const m = modeLookup[d.category] || { id: d.category, label: d.title || d.category, is_custom: true };
+          prioritizedModes.push(m);
+        }
+      });
+      renderPaletteUI();
+      renderModalCategorySelect();
+      saveModesPalette();
+    }
+
+    async function saveModesPalette() {
+      const statusEl = document.getElementById('palette-save-status');
+      if (statusEl) {
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        statusEl.style.color = '#38bdf8';
+      }
+
+      try {
+        const response = await fetch(`/api/skill-assessment/modes/${wallSlug}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prioritized_modes: prioritizedModes })
+        });
+        const res = await response.json();
+        if (res && res.success) {
+          if (statusEl) {
+            statusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> Synced';
+            statusEl.style.color = '#34d399';
+          }
+        } else {
+          if (statusEl) {
+            statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sync error';
+            statusEl.style.color = '#ef4444';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync defect modes palette:', err);
+        if (statusEl) {
+          statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Offline';
+          statusEl.style.color = '#ef4444';
+        }
+      }
+    }
+
+    function toggleInlineModalCustomMode(forceState) {
+      const box = document.getElementById('modal-inline-custom-box');
+      const show = forceState !== undefined ? forceState : (box.style.display === 'none');
+      box.style.display = show ? 'block' : 'none';
+      if (show) {
+        const input = document.getElementById('modal-inline-title');
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    function submitModalInlineCustomMode() {
+      const input = document.getElementById('modal-inline-title');
+      const title = input.value.trim();
+      if (!title) return;
+
+      const slugId = 'custom_' + title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      const existing = allModes.find(m => m.id === slugId || m.label.toLowerCase() === title.toLowerCase());
+      if (existing) {
+        if (!prioritizedModes.some(m => m.id === existing.id)) {
+          prioritizedModes.push(existing);
+        }
+      } else {
+        const newMode = {
+          id: slugId,
+          label: title,
+          hint: 'Custom defect mode for this wall specimen.',
+          is_custom: true
+        };
+        allModes.push(newMode);
+        modeLookup[newMode.id] = newMode;
+        prioritizedModes.push(newMode);
+      }
+
+      toggleInlineModalCustomMode(false);
+      renderPaletteUI();
+      renderModalCategorySelect(slugId);
+      saveModesPalette();
+    }
 
     function updateTolerancePreview(val) {
       document.getElementById('tol-val').textContent = Math.round(val * 100) + '%';
@@ -504,6 +961,8 @@
       document.getElementById('modal-explanation').value = '';
       document.getElementById('modal-tol').value = 0.08;
       updateTolerancePreview(0.08);
+      toggleInlineModalCustomMode(false);
+      renderModalCategorySelect();
 
       document.getElementById('grade-modal').style.display = 'flex';
     }
@@ -514,12 +973,13 @@
       pendingCoords = { x: d.x, y: d.y };
 
       document.getElementById('modal-title').value = d.title;
-      document.getElementById('modal-category').value = d.category;
+      renderModalCategorySelect(d.category);
       document.getElementById('modal-severity').value = d.severity;
       document.getElementById('modal-remedial').value = d.remedial_action;
       document.getElementById('modal-tol').value = d.tolerance_radius;
       document.getElementById('modal-explanation').value = d.explanation;
       updateTolerancePreview(d.tolerance_radius);
+      toggleInlineModalCustomMode(false);
 
       document.getElementById('grade-modal').style.display = 'flex';
     }
@@ -528,6 +988,7 @@
       document.getElementById('grade-modal').style.display = 'none';
       pendingCoords = null;
       editingIndex = -1;
+      toggleInlineModalCustomMode(false);
     }
 
     function saveCurrentDefect() {
@@ -556,13 +1017,23 @@
         defectList.push(item);
       }
 
+      // Automatically ensure that this defect mode is in the prioritized palette
+      if (!prioritizedModes.some(m => m.id === category)) {
+        const m = modeLookup[category] || { id: category, label: title, is_custom: true };
+        prioritizedModes.push(m);
+        renderPaletteUI();
+        saveModesPalette();
+      }
+
       closeGradeModal();
       renderAll();
+      renderPaletteUI();
     }
 
     function deleteDefect(index) {
       defectList.splice(index, 1);
       renderAll();
+      renderPaletteUI();
     }
 
     function renderAll() {
@@ -592,7 +1063,9 @@
       // 2. Render on Sidebar
       const sidebarList = document.getElementById('gt-list');
       const badge = document.getElementById('gt-count-badge');
-      badge.textContent = `${defectList.length} Targets`;
+      if (badge) badge.textContent = `${defectList.length} Targets`;
+      const tabBadge = document.getElementById('gt-tab-count');
+      if (tabBadge) tabBadge.textContent = defectList.length;
 
       sidebarList.innerHTML = '';
       if (defectList.length === 0) {
@@ -605,7 +1078,7 @@
         `;
       } else {
         defectList.forEach((d, idx) => {
-          const mode = modeLookup[d.category] || { label: d.category };
+          const mode = modeLookup[d.category] || { label: d.title || d.category };
           const card = document.createElement('div');
           card.className = 'gt-card-item';
           card.innerHTML = `
@@ -638,10 +1111,12 @@
           body: JSON.stringify({ defects: defectList })
         });
         const res = await response.json();
-        if (res.success) {
+        if (res && res.success) {
           alert('Ground truth defects saved successfully (' + res.count + ' targets)!');
+          // Also sync modes palette
+          saveModesPalette();
         } else {
-          alert('Error saving defects: ' + (res.error || 'Unknown error'));
+          alert('Error saving defects: ' + (res && res.error ? res.error : 'Unknown error'));
         }
       } catch (err) {
         console.error(err);
@@ -652,3 +1127,4 @@
 
 </body>
 </html>
+

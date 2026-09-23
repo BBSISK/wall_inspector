@@ -21,6 +21,7 @@ class Wall(db.Model):
     image_url_direct = db.Column(db.String(500), nullable=True)
     is_published = db.Column(db.Boolean, default=True)
     is_skill_assessment = db.Column(db.Boolean, default=False)
+    assessment_defect_modes = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -44,7 +45,8 @@ class Wall(db.Model):
             "image_filename": self.image_filename,
             "image_url": url,
             "is_published": self.is_published,
-            "is_skill_assessment": bool(self.is_skill_assessment)
+            "is_skill_assessment": bool(self.is_skill_assessment),
+            "assessment_defect_modes": self.assessment_defect_modes or []
         }
 
 class Defect(db.Model):
