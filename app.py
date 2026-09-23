@@ -6880,6 +6880,97 @@ def create_app(config_class=Config):
             "next_specimen_url": next_url
         })
 
+    @app.route("/api/skill-assessment/cohort-heatmap/<slug>", methods=["GET"], strict_slashes=False)
+    def api_skill_assessment_cohort_heatmap(slug):
+        """
+        Aggregates all student submitted inspection pins across the cohort for this specimen,
+        computing heatmap density points, overall accuracy metrics, and hit-rates per ground-truth target.
+        """
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        cohort_filter = (request.args.get("cohort") or "").strip().upper()
+
+        query = AssessmentAttempt.query.filter_by(wall_id=wall.id)
+        if cohort_filter and cohort_filter != "ALL":
+            query = query.filter_by(cohort_code=cohort_filter)
+
+        attempts = query.order_by(AssessmentAttempt.created_at.desc()).all()
+
+        gt_defects = Defect.query.filter_by(wall_id=wall.id).all()
+        gt_list = []
+        for gt in gt_defects:
+            gt_cx = (gt.x_min + gt.x_max) / 2.0
+            gt_cy = (gt.y_min + gt.y_max) / 2.0
+            tol = getattr(gt, 'tolerance_radius', 0.08) or 0.08
+            gt_list.append({
+                "id": gt.id,
+                "title": gt.title,
+                "category": gt.category,
+                "severity": gt.severity,
+                "x": gt_cx,
+                "y": gt_cy,
+                "tolerance_radius": tol,
+                "hits": 0,
+                "hit_rate_pct": 0.0
+            })
+
+        total_attempts = len(attempts)
+        unique_students = len(set(a.student_id or a.student_session_id or a.student_name for a in attempts))
+        total_score_sum = sum(a.score_percentage or 0.0 for a in attempts)
+        avg_score = round(total_score_sum / total_attempts, 1) if total_attempts > 0 else 0.0
+
+        all_points = []
+        category_distribution = {}
+
+        for attempt in attempts:
+            markers = attempt.submitted_markers or []
+            if not isinstance(markers, list):
+                continue
+
+            attempt_hit_gt_ids = set()
+
+            for m in markers:
+                if not isinstance(m, dict):
+                    continue
+                try:
+                    px = float(m.get("x", 0.0))
+                    py = float(m.get("y", 0.0))
+                    cat = str(m.get("category", "unspecified")).strip()
+
+                    all_points.append({
+                        "x": round(px, 4),
+                        "y": round(py, 4),
+                        "category": cat,
+                        "weight": 1.0
+                    })
+
+                    category_distribution[cat] = category_distribution.get(cat, 0) + 1
+
+                    for gt in gt_list:
+                        if gt["id"] not in attempt_hit_gt_ids:
+                            dist = math.hypot(px - gt["x"], py - gt["y"])
+                            if dist <= gt["tolerance_radius"]:
+                                gt["hits"] += 1
+                                attempt_hit_gt_ids.add(gt["id"])
+                except (ValueError, TypeError):
+                    continue
+
+        if total_attempts > 0:
+            for gt in gt_list:
+                gt["hit_rate_pct"] = round((gt["hits"] / total_attempts) * 100.0, 1)
+
+        return jsonify({
+            "success": True,
+            "wall_slug": wall.slug,
+            "wall_title": wall.title,
+            "total_attempts": total_attempts,
+            "unique_students": unique_students,
+            "avg_score": avg_score,
+            "total_pins": len(all_points),
+            "points": all_points,
+            "gt_stats": gt_list,
+            "category_distribution": category_distribution
+        })
+
     def generate_ai_defect_suggestions(wall):
         """
         Suggests masonry defects for an assessment specimen using Gemini Vision

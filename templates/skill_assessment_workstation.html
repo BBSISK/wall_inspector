@@ -704,11 +704,45 @@
     <!-- Viewport Container -->
     <div class="viewport-container" id="viewport">
       
-      <!-- Pan / Zoom HUD Controls -->
+      <!-- Pan / Zoom & Overlay HUD Controls -->
       <div class="hud-controls">
         <button type="button" class="btn-hud" onclick="zoomIn()" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
         <button type="button" class="btn-hud" onclick="zoomOut()" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
         <button type="button" class="btn-hud" onclick="resetZoom()" title="Reset View"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <button type="button" class="btn-hud" id="btn-cohort-heatmap" onclick="toggleCohortHeatmap()" title="Toggle Cohort Inspection Heatmap" style="color: #f59e0b;"><i class="fa-solid fa-fire-flame-curved"></i></button>
+      </div>
+
+      <!-- Floating Cohort Insights HUD Panel (Visible when Heatmap is Active) -->
+      <div id="cohort-insights-hud" style="display: none; position: absolute; top: 16px; right: 16px; width: 300px; background: rgba(15, 23, 42, 0.94); border: 1px solid #f59e0b; border-radius: 12px; padding: 1rem; backdrop-filter: blur(10px); z-index: 60; box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+          <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-fire-flame-curved"></i> Cohort Inspection Heatmap
+          </strong>
+          <button type="button" onclick="toggleCohortHeatmap(false)" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 0.75rem; text-align: center;">
+          <div style="background: #090e1a; padding: 6px; border-radius: 6px; border: 1px solid var(--border-dark);">
+            <div id="heatmap-sub-count" style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">0</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Class Submissions</div>
+          </div>
+          <div style="background: #090e1a; padding: 6px; border-radius: 6px; border: 1px solid var(--border-dark);">
+            <div id="heatmap-avg-score" style="font-size: 1.15rem; font-weight: 800; color: #34d399;">0%</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Avg Accuracy</div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.72rem; color: #cbd5e1; margin-bottom: 4px; font-weight: 700;">Target Hit Rates Across Cohort:</div>
+        <div id="heatmap-targets-list" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 0.75rem;">
+          <div style="color: var(--text-muted); font-size: 0.72rem;">Loading cohort data...</div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-dark); padding-top: 6px;">
+          <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px; display: flex; justify-content: space-between;">
+            <span>Low Click Density</span>
+            <span style="color: #f87171; font-weight: 700;">Hotspot</span>
+          </div>
+          <div style="height: 8px; border-radius: 4px; background: linear-gradient(to right, #00f0b4, #ffe600, #ff8c00, #ff0050);"></div>
+        </div>
       </div>
 
       <div class="hud-hint">
@@ -722,6 +756,8 @@
         <div id="pins-layer" style="position: absolute; inset: 0; pointer-events: none;"></div>
         <!-- Evaluated Ground Truth Layer (hidden until submit) -->
         <div id="gt-layer" style="position: absolute; inset: 0; pointer-events: none; display: none;"></div>
+        <!-- Cohort Heatmap Canvas Overlay -->
+        <canvas id="cohort-heatmap-canvas" style="position: absolute; inset: 0; pointer-events: none; display: none; z-index: 22; width: 100%; height: 100%;"></canvas>
       </div>
     </div>
 
@@ -851,6 +887,9 @@
       <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
         <button type="button" class="btn-top btn-exit" onclick="closeScoreModal()">
           <i class="fa-solid fa-eye"></i> Inspect Solution Overlay
+        </button>
+        <button type="button" class="btn-top" id="btn-modal-heatmap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;" onclick="openHeatmapFromModal()">
+          <i class="fa-solid fa-fire-flame-curved"></i> Compare with Cohort Heatmap
         </button>
         <button type="button" class="btn-top" style="background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8;" onclick="retakeAssessment()">
           <i class="fa-solid fa-arrows-rotate"></i> Retake Specimen
@@ -1655,6 +1694,148 @@
         alert('Results calculated: ' + renderErr.message);
       }
     }
+
+    // --- Cohort Heatmap Overlay Engine ---
+    let cohortHeatmapActive = false;
+    let cohortHeatmapData = null;
+
+    async function fetchCohortHeatmap(force = false) {
+      if (cohortHeatmapData && !force) return cohortHeatmapData;
+      try {
+        const response = await fetch(`/api/skill-assessment/cohort-heatmap/${wallSlug}`);
+        const data = await response.json();
+        if (data && data.success) {
+          cohortHeatmapData = data;
+          return data;
+        }
+      } catch (err) {
+        console.error('Error fetching cohort heatmap:', err);
+      }
+      return null;
+    }
+
+    function openHeatmapFromModal() {
+      closeScoreModal();
+      toggleCohortHeatmap(true);
+    }
+
+    async function toggleCohortHeatmap(explicitState = null) {
+      cohortHeatmapActive = explicitState !== null ? explicitState : !cohortHeatmapActive;
+      const canvas = document.getElementById('cohort-heatmap-canvas');
+      const hud = document.getElementById('cohort-insights-hud');
+      const btn = document.getElementById('btn-cohort-heatmap');
+
+      if (!cohortHeatmapActive) {
+        if (canvas) canvas.style.display = 'none';
+        if (hud) hud.style.display = 'none';
+        if (btn) {
+          btn.style.background = 'transparent';
+          btn.style.color = '#94a3b8';
+        }
+        return;
+      }
+
+      // Activate
+      if (btn) {
+        btn.style.background = 'rgba(245, 158, 11, 0.2)';
+        btn.style.color = '#fbbf24';
+      }
+      if (hud) hud.style.display = 'block';
+      if (canvas) canvas.style.display = 'block';
+
+      const data = await fetchCohortHeatmap();
+      if (data) {
+        updateCohortHeatmapHud(data);
+        drawCohortHeatmap(data);
+      }
+    }
+
+    function updateCohortHeatmapHud(data) {
+      const subCount = document.getElementById('heatmap-sub-count');
+      const avgScore = document.getElementById('heatmap-avg-score');
+      const list = document.getElementById('heatmap-targets-list');
+
+      if (subCount) subCount.textContent = data.total_attempts || 0;
+      if (avgScore) avgScore.textContent = `${data.avg_score || 0}%`;
+
+      if (list) {
+        list.innerHTML = '';
+        if (!data.gt_stats || data.gt_stats.length === 0) {
+          list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.72rem;">No ground truth targets configured.</div>';
+        } else if (data.total_attempts === 0) {
+          list.innerHTML = '<div style="color: #94a3b8; font-size: 0.72rem; padding: 4px 0;">Be the first apprentice to complete inspection on this specimen!</div>';
+        } else {
+          data.gt_stats.forEach((gt, idx) => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.justifyContent = 'space-between';
+            row.style.alignItems = 'center';
+            row.style.background = 'rgba(2, 6, 23, 0.6)';
+            row.style.padding = '4px 6px';
+            row.style.borderRadius = '4px';
+            row.style.fontSize = '0.72rem';
+
+            const hitPct = gt.hit_rate_pct || 0;
+            let color = '#34d399';
+            if (hitPct < 50) color = '#f87171';
+            else if (hitPct < 75) color = '#fbbf24';
+
+            row.innerHTML = `
+              <span style="color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;" title="${gt.title}">#${idx + 1} ${gt.title}</span>
+              <strong style="color: ${color};">${hitPct}%</strong>
+            `;
+            list.appendChild(row);
+          });
+        }
+      }
+    }
+
+    function drawCohortHeatmap(data) {
+      const canvas = document.getElementById('cohort-heatmap-canvas');
+      const img = document.getElementById('target-image');
+      if (!canvas || !img || !data) return;
+
+      const w = img.clientWidth || img.naturalWidth || 800;
+      const h = img.clientHeight || img.naturalHeight || 600;
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const points = data.points || [];
+      if (points.length === 0) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+
+      const radius = Math.max(28, w * 0.055);
+
+      points.forEach(p => {
+        const cx = p.x * w;
+        const cy = p.y * h;
+
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        grad.addColorStop(0.0, 'rgba(255, 0, 80, 0.45)');
+        grad.addColorStop(0.3, 'rgba(255, 140, 0, 0.30)');
+        grad.addColorStop(0.6, 'rgba(255, 230, 0, 0.18)');
+        grad.addColorStop(0.85, 'rgba(0, 240, 180, 0.08)');
+        grad.addColorStop(1.0, 'rgba(0, 100, 255, 0.0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    window.addEventListener('resize', () => {
+      if (cohortHeatmapActive && cohortHeatmapData) {
+        drawCohortHeatmap(cohortHeatmapData);
+      }
+    });
   </script>
 
 </body>
