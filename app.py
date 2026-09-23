@@ -1937,6 +1937,251 @@ def create_app(config_class=Config):
                         "explanation": "Persistent capillary rising damp along lower course with localized weed seedling germination in degraded bottom bedding seams."
                     }
                 ]
+            },
+            {
+                "slug": "skill-coursed-rubble-surface-spalling",
+                "title": "Coursed Limestone Rubble: Selective Surface Spalling & Lime Bed Joint Fretting",
+                "description": "Sub-coursed carboniferous limestone rubble wall featuring differential surface contour spalling on porous facies, flush lime pointing fretting along bed lines, and salt sub-florescence.",
+                "country": "Ireland",
+                "region": "Co. Tipperary",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_16.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "spalling", "label": "Differential Surface Spalling & Contour Flaking"},
+                    {"id": "mortar_erosion", "label": "Lime Bed Joint Fretting & Weathering"},
+                    {"id": "rising_damp_salt", "label": "Salt Sub-florescence & Granular Disaggregation"},
+                    {"id": "stepped_crack", "label": "Stepped Settlement Fissure"},
+                    {"id": "biological_colonisation", "label": "Superficial Biofilm & Lichen"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.53, "y_min": 0.47, "x_max": 0.53, "y_max": 0.47,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Differential Surface Spall & Contour Weathering on Porous Facies",
+                        "explanation": "Iron-stained porous limestone unit experiencing accelerated surface granular exfoliation and contour loss compared to denser surrounding blue-grey limestone."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.38, "y_min": 0.35, "x_max": 0.38, "y_max": 0.35,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Flush Lime Pointing Fretting & Horizontal Bed Recess",
+                        "explanation": "Weathering and wash-out of flush hydraulic lime pointing along horizontal bed course, exposing vulnerable upper stone arrises."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.08, "y_min": 0.62, "x_max": 0.08, "y_max": 0.62,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Salt Sub-Florescence & Granular Disaggregation",
+                        "explanation": "Sub-surface salt crystallization within light-coloured limestone block causing powdery surface friability and edge decay."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-carboniferous-limestone-calcite-leachate",
+                "title": "Squared Carboniferous Ashlar: Severe Calcite Runoff & Lime Leachate Streaking",
+                "description": "High-grade squared carboniferous limestone masonry suffering from active calcium carbonate (calcite) leaching, vertical lime runoff streaks staining dark rock faces, and joint perimeter washing.",
+                "country": "Ireland",
+                "region": "Co. Galway",
+                "wall_type": "ashlar_stone",
+                "structural_function": "retaining",
+                "difficulty": "foundational",
+                "image_filename": "skill_specimen_17.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "efflorescence_salts", "label": "Calcite Leachate Runoff / Carbonate Staining"},
+                    {"id": "mortar_washout", "label": "Perpendicular Joint Weathering & Mortar Recess"},
+                    {"id": "delamination_exfoliation", "label": "Sub-surface Cryptoflorescence / Bedding Separation"},
+                    {"id": "spalling", "label": "Arris Compressive Spall & Impact Fracture"},
+                    {"id": "stepped_crack", "label": "Stepped Joint Shear Fissure"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.63, "y_min": 0.18, "x_max": 0.63, "y_max": 0.18,
+                        "tolerance_radius": 0.08,
+                        "category": "efflorescence_salts", "severity": "critical",
+                        "remedial_action": "biocide_clean",
+                        "title": "Vertical Calcite Leachate Run & Carbonate Crust",
+                        "explanation": "Water percolating through saturated core masonry dissolves free calcium hydroxide (lime), redepositing it as hard insoluble calcite runoff crusts across dark stone faces."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.21, "y_min": 0.58, "x_max": 0.21, "y_max": 0.58,
+                        "tolerance_radius": 0.08,
+                        "category": "efflorescence_salts", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Curtain Leachate Deposition & Lime Runoff",
+                        "explanation": "Extensive sheet runoff of dissolved calcium salts emanating from bed joint, obscuring the natural quarry-tooled texture of the ashlar face."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.46, "x_max": 0.52, "y_max": 0.46,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "minor",
+                        "remedial_action": "repoint_lime",
+                        "title": "Perpendicular Joint Mortar Recess & Water Entry Path",
+                        "explanation": "Erosion of hydraulic lime pointing along perpendicular joint allowing rainwater infiltration directly behind facing stones."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-squared-ashlar-calcite-staining-perp-gap",
+                "title": "Dark Limestone Coursed Ashlar: Open Perpendicular Void & Calcite Runoff",
+                "description": "Coursed dark limestone ashlar with an unbonded open perpendicular joint gap/weep aperture, severe vertical calcium carbonate leachate runs, and surface salt crusting.",
+                "country": "Ireland",
+                "region": "Co. Clare",
+                "wall_type": "ashlar_stone",
+                "structural_function": "retaining",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_18.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "mortar_washout", "label": "Open Perpendicular Joint Aperture / Voiding"},
+                    {"id": "efflorescence_salts", "label": "Vertical Calcite Runoff / Carbonate Staining"},
+                    {"id": "delamination_exfoliation", "label": "Sedimentary Layer Exfoliation"},
+                    {"id": "spalling", "label": "Dressed Arris Impact Spalling"},
+                    {"id": "stepped_crack", "label": "Stepped Joint Shear Fissure"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.50, "y_min": 0.37, "x_max": 0.50, "y_max": 0.37,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Open Perpendicular Joint Aperture & Deep Cavity Void",
+                        "explanation": "Missing mortar creating an open perpendicular aperture between dressed stone blocks, funneling surface runoff straight into the structural core."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.31, "y_min": 0.73, "x_max": 0.31, "y_max": 0.73,
+                        "tolerance_radius": 0.08,
+                        "category": "efflorescence_salts", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Vertical Calcite Leachate Streamer",
+                        "explanation": "Active leaching of calcium hydroxide from bedding mortar crystallizing as white calcium carbonate streaks across the dark limestone ashlar face."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.83, "y_min": 0.78, "x_max": 0.83, "y_max": 0.78,
+                        "tolerance_radius": 0.08,
+                        "category": "efflorescence_salts", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Localized Carbonate Washout & Salt Encrustation",
+                        "explanation": "Surface accumulation of insoluble carbonate salts washing down from saturated upper bedding planes."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-limestone-rubble-biofilm-joint-recess",
+                "title": "Limestone Rubble Retaining Wall: Crustose Lichen Colonisation & Severe Bed Washout",
+                "description": "Historic limestone rubble retaining wall in damp microclimate exhibiting extensive crustose lichen colonization, invasive woody vegetation shoots, and deep hydraulic lime bed washout.",
+                "country": "Ireland",
+                "region": "Co. Cork",
+                "wall_type": "rubble",
+                "structural_function": "retaining",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_19.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "biological_colonisation", "label": "Crustose Lichen Colonization & Microbial Biofilm"},
+                    {"id": "vegetation_root_jacking", "label": "Invasive Vegetation Shoot Infiltration"},
+                    {"id": "mortar_washout", "label": "Deep Bed Joint Washout (>30mm Recess)"},
+                    {"id": "core_voiding", "label": "Loose Interstitial Pinning Stones"},
+                    {"id": "spalling", "label": "Freeze-Thaw Surface Flaking"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.81, "y_min": 0.06, "x_max": 0.81, "y_max": 0.06,
+                        "tolerance_radius": 0.08,
+                        "category": "biological_colonisation", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Crustose Lichen Thallus Colonization",
+                        "explanation": "Lichen rhizines penetrating porous micro-pores of limestone capstone, causing biological weathering through oxalic acid excretion."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.07, "y_min": 0.30, "x_max": 0.07, "y_max": 0.30,
+                        "tolerance_radius": 0.08,
+                        "category": "vegetation_root_jacking", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Invasive Woody Ivy Shoot & Foliage Encroachment",
+                        "explanation": "Creeping ivy runner penetrating vertical cross-joint seam, threatening progressive joint expansion and mortar loss."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.47, "y_min": 0.47, "x_max": 0.47, "y_max": 0.47,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Severe Bed Joint Washout & Structural Recessing (>30mm)",
+                        "explanation": "Hydraulic lime mortar washed out beyond 30mm depth along continuous horizontal bedding plane, jeopardizing gravity bearing stability."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-random-rubble-differential-weathering",
+                "title": "Random Limestone Rubble: Differential Petrological Decay & Mortar Bed Fretting",
+                "description": "Random uncoursed limestone rubble wall demonstrating petrological heterogeneity, with selective cavernous fretting on argillaceous limestone, flush mortar micro-fissuring, and localized soot/algal encrustation.",
+                "country": "Ireland",
+                "region": "Co. Dublin",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_20.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "spalling", "label": "Differential Stone Decay & Alveolar Surface Fretting"},
+                    {"id": "mortar_erosion", "label": "Mortar Joint Shrinkage Micro-cracks & Fretting"},
+                    {"id": "biological_colonisation", "label": "Atmospheric Soot Deposition & Microbial Patina"},
+                    {"id": "rising_damp_salt", "label": "Basal Damp Ingress & Salt Crypto-florescence"},
+                    {"id": "core_voiding", "label": "Core Settlement Voiding"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.28, "y_min": 0.51, "x_max": 0.28, "y_max": 0.51,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Differential Petrological Weathering & Alveolar Surface Decay",
+                        "explanation": "Argillaceous (clay-rich) limestone unit weathering selectively faster than adjacent compact crinoidal limestone, creating surface hollows and loss of face relief."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.74, "y_min": 0.16, "x_max": 0.74, "y_max": 0.16,
+                        "tolerance_radius": 0.08,
+                        "category": "biological_colonisation", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Atmospheric Soot Encrustation & Biogenic Patina",
+                        "explanation": "Deposition of airborne carbonaceous particles and microbial biofilm forming an adherent dark crust across upper stone faces."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.48, "y_min": 0.57, "x_max": 0.48, "y_max": 0.57,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Bed Joint Mortar Shrinkage Fissure & Border Fretting",
+                        "explanation": "Horizontal lime bedding joint showing fine longitudinal shrinkage separation and border erosion, allowing micro-capillary water ingress."
+                    }
+                ]
             }
         ]
 
