@@ -449,8 +449,14 @@
     <div class="specimen-info">
       <a href="/skill-assessment/admin" class="btn-top btn-exit"><i class="fa-solid fa-arrow-left"></i> Queue</a>
       <h1 title="{{ wall.title }}"><i class="fa-solid fa-pen-ruler" style="color: #00f2fe;"></i> {{ wall.title }}</h1>
+      <span id="ai-reviewed-badge" class="badge-ai-reviewed" style="{% if not wall.is_ai_reviewed %}display: none;{% else %}display: inline-flex;{% endif %} background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; padding: 3px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; align-items: center; gap: 5px;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Reviewed
+      </span>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <button type="button" id="btn-ai-suggest" class="btn-top" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; border: 1px solid #a78bfa; font-weight: 700;" onclick="triggerAiSuggestions()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Suggest Defects
+      </button>
       <a href="/skill-assessment/{{ wall.slug }}" target="_blank" class="btn-top btn-exit" title="Open student view">
         <i class="fa-solid fa-eye"></i> Test Student View
       </a>
@@ -1084,7 +1090,10 @@
           card.innerHTML = `
             <div class="gt-card-header">
               <strong style="color: #00f2fe; font-size: 0.85rem;">#${idx + 1} • ${d.title}</strong>
-              <button type="button" class="btn-del-gt" onclick="deleteDefect(${idx})" title="Delete target">&times;</button>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                ${d.is_ai_suggested ? '<span style="font-size: 0.65rem; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid #a855f7; border-radius: 4px; padding: 1px 5px; font-weight: 700;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI</span>' : ''}
+                <button type="button" class="btn-del-gt" onclick="deleteDefect(${idx})" title="Delete target">&times;</button>
+              </div>
             </div>
             <div style="font-size: 0.78rem; color: #cbd5e1;">${mode.label}</div>
             <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; gap: 8px;">
@@ -1121,6 +1130,71 @@
       } catch (err) {
         console.error(err);
         alert('Save failed.');
+      }
+    }
+
+    async function triggerAiSuggestions() {
+      const btn = document.getElementById('btn-ai-suggest');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (defectList.length > 0) {
+        const conf = confirm(`Specimen already has ${defectList.length} defect point(s). Running AI suggestion will analyze the specimen and propose updated defect targets for you to review and edit. Proceed?`);
+        if (!conf) return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
+      }
+
+      try {
+        const response = await fetch(`/api/skill-assessment/ai-suggest/${wallSlug}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await response.json();
+        if (res && res.success) {
+          // Update defectList with suggested targets
+          defectList = (res.defects || []).map(d => ({
+            x: (d.x_min + d.x_max) / 2.0,
+            y: (d.y_min + d.y_max) / 2.0,
+            tolerance_radius: d.tolerance_radius || 0.08,
+            category: d.category,
+            severity: d.severity || 'moderate',
+            remedial_action: d.remedial_action || 'repoint_lime',
+            title: d.title || 'AI Suggested Defect',
+            explanation: d.explanation || '',
+            is_ai_suggested: true
+          }));
+
+          // Register new modes if provided
+          if (res.all_modes) {
+            allModes = res.all_modes;
+            allModes.forEach(m => { modeLookup[m.id] = m; });
+          }
+          if (res.prioritized_modes) {
+            prioritizedModes = res.prioritized_modes;
+          }
+
+          // Show AI Reviewed badge
+          const badge = document.getElementById('ai-reviewed-badge');
+          if (badge) badge.style.display = 'inline-flex';
+
+          renderAll();
+          renderPaletteUI();
+          renderModalCategorySelect();
+
+          alert(`🤖 AI Analysis Complete!\n${res.count} defect targets suggested.\n\nYou can click, drag, or edit any pin settings, adjust severities/tolerances, delete pins, or add new ones before saving.`);
+        } else {
+          alert('AI Suggestion note: ' + (res && res.error ? res.error : 'Could not generate suggestions'));
+        }
+      } catch (err) {
+        console.error('AI suggestion error:', err);
+        alert('Network or server error during AI suggestion.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
   </script>

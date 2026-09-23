@@ -21,6 +21,8 @@ class Wall(db.Model):
     image_url_direct = db.Column(db.String(500), nullable=True)
     is_published = db.Column(db.Boolean, default=True)
     is_skill_assessment = db.Column(db.Boolean, default=False)
+    is_ai_reviewed = db.Column(db.Boolean, default=False)
+    ai_reviewed_at = db.Column(db.DateTime, nullable=True)
     assessment_defect_modes = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -46,6 +48,8 @@ class Wall(db.Model):
             "image_url": url,
             "is_published": self.is_published,
             "is_skill_assessment": bool(self.is_skill_assessment),
+            "is_ai_reviewed": bool(self.is_ai_reviewed),
+            "ai_reviewed_at": self.ai_reviewed_at.strftime("%Y-%m-%d %H:%M") if self.ai_reviewed_at else None,
             "assessment_defect_modes": self.assessment_defect_modes or []
         }
 

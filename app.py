@@ -410,6 +410,17 @@ def create_app(config_class=Config):
                     conn.execute(text("ALTER TABLE walls ADD COLUMN is_skill_assessment BOOLEAN DEFAULT FALSE;"))
                     conn.commit()
 
+            if "is_ai_reviewed" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN is_ai_reviewed BOOLEAN DEFAULT FALSE;"))
+                    conn.commit()
+
+            if "ai_reviewed_at" not in wall_cols:
+                with db.engine.connect() as conn:
+                    col_type = "TIMESTAMP" if db.engine.dialect.name == "postgresql" else "DATETIME"
+                    conn.execute(text(f"ALTER TABLE walls ADD COLUMN ai_reviewed_at {col_type};"))
+                    conn.commit()
+
             if "assessment_defect_modes" not in wall_cols:
                 with db.engine.connect() as conn:
                     col_type = "JSON" if db.engine.dialect.name == "postgresql" else "TEXT"
@@ -6869,6 +6880,328 @@ def create_app(config_class=Config):
             "next_specimen_url": next_url
         })
 
+    def generate_ai_defect_suggestions(wall):
+        """
+        Suggests masonry defects for an assessment specimen using Gemini Vision
+        (if GEMINI_API_KEY or GOOGLE_API_KEY is available) or expert clinical masonry heuristics.
+        Creates Defect records, adds categories to prioritized modes, tags wall as is_ai_reviewed=True,
+        and persists changes.
+        """
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        suggestions = []
+
+        # 1. Attempt Gemini Vision API if key is present
+        if api_key:
+            try:
+                import urllib.request
+                import urllib.error
+                import json
+                import base64
+
+                image_bytes = None
+                mime_type = "image/jpeg"
+                if wall.image_filename:
+                    for folder in [app.config.get("ASSESSMENT_FOLDER"), app.config.get("UPLOAD_FOLDER")]:
+                        if folder:
+                            p = os.path.join(folder, wall.image_filename)
+                            if os.path.exists(p):
+                                with open(p, "rb") as img_f:
+                                    image_bytes = img_f.read()
+                                if wall.image_filename.lower().endswith(".png"):
+                                    mime_type = "image/png"
+                                break
+
+                if not image_bytes and wall.image_url_direct:
+                    try:
+                        req_img = urllib.request.Request(
+                            wall.image_url_direct,
+                            headers={"User-Agent": "Mozilla/5.0"}
+                        )
+                        with urllib.request.urlopen(req_img, timeout=5) as resp:
+                            image_bytes = resp.read()
+                    except Exception:
+                        image_bytes = None
+
+                if image_bytes:
+                    b64_img = base64.b64encode(image_bytes).decode("utf-8")
+                    prompt_text = (
+                        f"You are a professional historical masonry conservation expert. "
+                        f"Analyze this masonry specimen image. Wall archetype: '{wall.wall_type}', title: '{wall.title}', context: '{wall.description or ''}'. "
+                        f"Identify 2 to 4 notable structural or material defects (e.g. mortar washout, spalling, stepped diagonal crack, core voiding, salt efflorescence, lateral bulging, or coping displacement). "
+                        f"Return ONLY a valid JSON array of objects. Each object must have these exact keys:\n"
+                        f"- 'x': float between 0.08 and 0.92 (normalized horizontal position, 0.0=left, 1.0=right)\n"
+                        f"- 'y': float between 0.08 and 0.92 (normalized vertical position, 0.0=top, 1.0=bottom)\n"
+                        f"- 'category': string (e.g. mortar_erosion, spalling, stepped_crack, rubble_voiding, rising_damp_salt, coping_displacement, lateral_bulge, vegetation_root_jacking, efflorescence, ashlar_spall, hydrostatic_bulge, inappropriate_cement_strap)\n"
+                        f"- 'title': concise descriptive title (e.g. 'Bed Joint Mortar Washout')\n"
+                        f"- 'severity': 'minor', 'moderate', or 'critical'\n"
+                        f"- 'tolerance_radius': float between 0.06 and 0.12 (default 0.08)\n"
+                        f"- 'remedial_action': conservation code (e.g. 'repoint_lime', 'helical_stitch', 'stone_indent')\n"
+                        f"- 'explanation': 1-2 sentence clinical explanation of the pathology mechanism."
+                    )
+                    payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": prompt_text},
+                                    {
+                                        "inlineData": {
+                                            "mimeType": mime_type,
+                                            "data": b64_img
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "generationConfig": {
+                            "temperature": 0.2,
+                            "responseMimeType": "application/json"
+                        }
+                    }
+                    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    req = urllib.request.Request(
+                        endpoint,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={"Content-Type": "application/json"}
+                    )
+                    with urllib.request.urlopen(req, timeout=8) as res:
+                        resp_data = json.loads(res.read().decode("utf-8"))
+                        text_resp = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(text_resp)
+                        if isinstance(parsed, list) and len(parsed) > 0:
+                            for item in parsed:
+                                if isinstance(item, dict) and "x" in item and "y" in item:
+                                    suggestions.append(item)
+            except Exception as g_err:
+                print(f"Gemini API suggestion note (falling back to clinical rules): {g_err}")
+
+        # 2. Clinical Masonry Heuristic Fallback
+        if not suggestions:
+            wtype = (wall.wall_type or "").lower()
+            if "dry" in wtype or "dry_stone" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.52, "y": 0.44, "tolerance_radius": 0.08,
+                        "category": "lateral_bulge", "severity": "critical",
+                        "remedial_action": "structural_pinning",
+                        "title": "Lateral Bulge & Wythe Separation",
+                        "explanation": "Out-of-plumb displacement where outer stone wythe has pushed outwards from internal rubble pressure without sufficient through-stones."
+                    },
+                    {
+                        "x": 0.48, "y": 0.18, "tolerance_radius": 0.08,
+                        "category": "coping_displacement", "severity": "moderate",
+                        "remedial_action": "stone_indent",
+                        "title": "Coping Stone Dislodgement",
+                        "explanation": "Weathered or shifted top capping stones allowing rain to penetrate directly down into the dry stone hearting."
+                    },
+                    {
+                        "x": 0.32, "y": 0.62, "tolerance_radius": 0.08,
+                        "category": "rubble_voiding", "severity": "moderate",
+                        "remedial_action": "packing_pinnings",
+                        "title": "Hearting Core Stone Voiding",
+                        "explanation": "Loss and migration of small interstitial packing pinning stones between larger face boulders, destabilising course transfer."
+                    }
+                ]
+            elif "lime" in wtype or "lime_mortar" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.42, "y": 0.48, "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Bed Joint Lime Mortar Washout",
+                        "explanation": "Deep dissolution and recession of historic sacrificial lime bedding exceeding 25mm depth behind the arris line."
+                    },
+                    {
+                        "x": 0.65, "y": 0.58, "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Stepped Joint Shear Fracture",
+                        "explanation": "Diagonal shear crack following weakened bed and perpend joints caused by differential ground movement or rotation."
+                    },
+                    {
+                        "x": 0.35, "y": 0.78, "tolerance_radius": 0.07,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "stone_indent",
+                        "title": "Arris Surface Spalling",
+                        "explanation": "Exfoliation and face bursting along stone arrises due to freeze-thaw expansion of trapped pore water."
+                    }
+                ]
+            elif "rubble" in wtype or "stone_rubble" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.38, "y": 0.50, "tolerance_radius": 0.08,
+                        "category": "rubble_voiding", "severity": "critical",
+                        "remedial_action": "lime_grout_injection",
+                        "title": "Interstitial Matrix Cavitation",
+                        "explanation": "Severe internal binder washout between irregular rounded rubble stones resulting in unsupported load bridging."
+                    },
+                    {
+                        "x": 0.60, "y": 0.35, "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Stepped Bed Joint Rupture",
+                        "explanation": "Structural diagonal fracture running through irregular perpend joints indicating shear stress under foundation settlement."
+                    },
+                    {
+                        "x": 0.50, "y": 0.20, "tolerance_radius": 0.08,
+                        "category": "coping_displacement", "severity": "moderate",
+                        "remedial_action": "stone_indent",
+                        "title": "Parapet Coping Dislodgement",
+                        "explanation": "Dislodged cap stones opening horizontal ingress channels directly into the rubble wall core."
+                    }
+                ]
+            elif "ashlar" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.45, "y": 0.45, "tolerance_radius": 0.08,
+                        "category": "ashlar_spall", "severity": "critical",
+                        "remedial_action": "cramp_replacement",
+                        "title": "Ashlar Cramp Jacking & Spall",
+                        "explanation": "Oxidation and volumetric expansion of embedded ferrous iron cramps popping precision dressed stone arrises."
+                    },
+                    {
+                        "x": 0.68, "y": 0.60, "tolerance_radius": 0.07,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Diagonal Shear Joint Fracture",
+                        "explanation": "Precision joint hairline shear fracture traversing dressed ashlar courses due to foundation rotation."
+                    },
+                    {
+                        "x": 0.30, "y": 0.72, "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "moderate",
+                        "remedial_action": "salt_poultice",
+                        "title": "Subflorescence & Salt Decay",
+                        "explanation": "Sub-surface crystallisation of soluble salts causing granular disintegration and blistering of basal stone."
+                    }
+                ]
+            elif "brick" in wtype or "cavity" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.40, "y": 0.42, "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "critical",
+                        "remedial_action": "brick_replacement",
+                        "title": "Frost-Thaw Brick Face Spalling",
+                        "explanation": "Detachment of outer brick vitrified face due to frost heave behind moisture-saturated low-fire clay units."
+                    },
+                    {
+                        "x": 0.62, "y": 0.55, "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Stepped Settlement Shear Crack",
+                        "explanation": "Stair-step diagonal fracture tracking through bed and perpend mortar joints indicating ground settlement."
+                    },
+                    {
+                        "x": 0.35, "y": 0.75, "tolerance_radius": 0.09,
+                        "category": "efflorescence", "severity": "minor",
+                        "remedial_action": "dry_brush_neutralize",
+                        "title": "Crystalline Salt Efflorescence",
+                        "explanation": "White surface salt deposits leached to the face by evaporating moisture rising through capillary action."
+                    }
+                ]
+            elif "cob" in wtype or "earth" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.45, "y": 0.82, "tolerance_radius": 0.09,
+                        "category": "rising_damp_salt", "severity": "critical",
+                        "remedial_action": "stone_plinth_underpin",
+                        "title": "Basal Rain-Splash Coving Notch",
+                        "explanation": "Undercutting erosion of unbaked subsoil mass at ground level from rainwater splashback, eroding the earth plinth."
+                    },
+                    {
+                        "x": 0.55, "y": 0.45, "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "clay_straw_stitch",
+                        "title": "Vertical Desiccation & Shear Fracture",
+                        "explanation": "Deep shrinkage fracture through clay matrix exacerbated by unequal drying and structural loading."
+                    }
+                ]
+            elif "retaining" in wtype:
+                suggestions = [
+                    {
+                        "x": 0.50, "y": 0.48, "tolerance_radius": 0.09,
+                        "category": "hydrostatic_bulge", "severity": "critical",
+                        "remedial_action": "drainage_relief",
+                        "title": "Hydrostatic Outward Bulge",
+                        "explanation": "Out-of-plumb lateral bow caused by entrapped groundwater pressure behind the wall with blocked or missing weep holes."
+                    },
+                    {
+                        "x": 0.38, "y": 0.65, "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Mortar Leaching & Joint Voiding",
+                        "explanation": "Percolating water washing out joint binder across the lower courses of the retaining structure."
+                    }
+                ]
+            else:
+                suggestions = [
+                    {
+                        "x": 0.45, "y": 0.45, "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Joint Mortar Washout / Loss",
+                        "explanation": "Progressive recession of jointing material destabilising stone bearing."
+                    },
+                    {
+                        "x": 0.65, "y": 0.55, "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Stepped Joint Shear Fracture",
+                        "explanation": "Diagonal fracture following bedding lines under differential ground movement."
+                    }
+                ]
+
+        # 3. Apply suggestions to Database
+        # Clean existing defects for this wall
+        Defect.query.filter_by(wall_id=wall.id).delete()
+
+        created_defects = []
+        current_modes = wall.assessment_defect_modes or []
+        current_mode_ids = set()
+        for cm in current_modes:
+            if isinstance(cm, dict):
+                current_mode_ids.add(cm.get("id"))
+            elif isinstance(cm, str):
+                current_mode_ids.add(cm)
+
+        for s in suggestions:
+            try:
+                x = max(0.05, min(0.95, float(s.get("x", 0.5))))
+                y = max(0.05, min(0.95, float(s.get("y", 0.5))))
+                tol = max(0.04, min(0.15, float(s.get("tolerance_radius", 0.08) or 0.08)))
+                cat = str(s.get("category", "mortar_erosion")).strip()
+                title = str(s.get("title", "AI Suggested Defect")).strip()
+                sev = str(s.get("severity", "moderate")).strip()
+                rem = str(s.get("remedial_action", "repoint_lime")).strip()
+                exp = str(s.get("explanation", "")).strip()
+
+                d = Defect(
+                    wall_id=wall.id,
+                    target_type="pin",
+                    x_min=x,
+                    y_min=y,
+                    x_max=x,
+                    y_max=y,
+                    tolerance_radius=tol,
+                    category=cat,
+                    severity=sev,
+                    remedial_action=rem,
+                    title=title,
+                    explanation=exp
+                )
+                db.session.add(d)
+                created_defects.append(d)
+
+                if cat not in current_mode_ids:
+                    current_modes.append({"id": cat, "label": title or cat.replace("_", " ").title(), "is_custom": True})
+                    current_mode_ids.add(cat)
+            except Exception as item_err:
+                print(f"Error creating defect pin: {item_err}")
+
+        wall.assessment_defect_modes = current_modes
+        wall.is_ai_reviewed = True
+        wall.ai_reviewed_at = datetime.now(timezone.utc)
+        commit_with_retry(wall)
+        return created_defects
+
     # --- Professional Controlled Ingestion & Grading Interface ---
     @app.route("/skill-assessment/admin")
     @admin_required
@@ -6954,6 +7287,12 @@ def create_app(config_class=Config):
                 is_skill_assessment=True
             )
             commit_with_retry(wall)
+
+            # Auto-suggest defects using AI immediately so pins are pre-loaded for grading
+            try:
+                generate_ai_defect_suggestions(wall)
+            except Exception as ai_err:
+                print(f"Notice: AI suggestion during upload encountered: {ai_err}")
 
             grade_action = request.form.get("grade_action", "now")
             if grade_action == "now":
@@ -7054,6 +7393,27 @@ def create_app(config_class=Config):
         wall.assessment_defect_modes = current_modes
         commit_with_retry()
         return jsonify({"success": True, "count": len(incoming_defects)})
+
+    @app.route("/api/skill-assessment/ai-suggest/<slug>", methods=["POST"], strict_slashes=False)
+    @admin_required
+    def api_skill_assessment_ai_suggest(slug):
+        """
+        Generates or re-runs AI defect suggestions for an assessment specimen.
+        Populates Defect records, tags wall with is_ai_reviewed = True,
+        and returns suggested defect list and updated modes palette.
+        """
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        suggested_defects = generate_ai_defect_suggestions(wall)
+        modes_bundle = get_wall_defect_modes(wall)
+        return jsonify({
+            "success": True,
+            "count": len(suggested_defects),
+            "defects": [d.to_dict() for d in suggested_defects],
+            "prioritized_modes": modes_bundle["prioritized"],
+            "all_modes": modes_bundle["all"],
+            "is_ai_reviewed": bool(wall.is_ai_reviewed),
+            "ai_reviewed_at": wall.ai_reviewed_at.strftime("%Y-%m-%d %H:%M") if wall.ai_reviewed_at else None
+        })
 
     @app.route("/api/skill-assessment/delete/<slug>", methods=["POST"])
     @admin_required

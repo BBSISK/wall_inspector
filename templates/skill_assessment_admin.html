@@ -621,8 +621,11 @@
           </div>
 
           <button type="submit" class="btn-submit-upload">
-            <i class="fa-solid fa-arrow-right"></i> Upload & Proceed to Defect Tagging
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Upload & Auto-Suggest Defects (AI Reviewed)
           </button>
+          <div style="font-size: 0.72rem; color: #a855f7; text-align: center; margin-top: 4px;">
+            <i class="fa-solid fa-robot"></i> Defects will be automatically analyzed and suggested upon upload.
+          </div>
         </form>
       </section>
 
@@ -664,12 +667,22 @@
                     {% else %}
                       <span class="badge-status-pending"><i class="fa-solid fa-clock"></i> Pending Pins</span>
                     {% endif %}
+                    {% if wall.is_ai_reviewed %}
+                      <span class="badge-status-ai" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #a855f7; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-left: 4px; display: inline-flex; align-items: center; gap: 4px;" title="Analyzed & suggested by AI{% if wall.ai_reviewed_at %} on {{ wall.ai_reviewed_at }}{% endif %}">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Reviewed
+                      </span>
+                    {% endif %}
                   </td>
                   <td>
                     <div class="action-btn-group">
                       <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-action-small btn-grade" title="Grade / Edit Ground Truth Pins">
                         <i class="fa-solid fa-pen-ruler"></i> Grade
                       </a>
+                      {% if not wall.is_ai_reviewed %}
+                        <button type="button" class="btn-action-small" style="background: rgba(124, 58, 237, 0.15); color: #c4b5fd; border-color: #8b5cf6;" onclick="triggerAdminAiSuggest('{{ wall.slug }}', this)" title="Suggest Defects with AI">
+                          <i class="fa-solid fa-wand-magic-sparkles"></i> AI
+                        </button>
+                      {% endif %}
                       <a href="/skill-assessment/{{ wall.slug }}" class="btn-action-small btn-test" title="Launch Student Workstation">
                         <i class="fa-solid fa-play"></i> Test
                       </a>
@@ -801,6 +814,34 @@
         preview.style.display = 'block';
       };
       reader.readAsDataURL(file);
+    }
+
+    async function triggerAdminAiSuggest(slug, btn) {
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      }
+      try {
+        const response = await fetch(`/api/skill-assessment/ai-suggest/${slug}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await response.json();
+        if (res && res.success) {
+          window.location.reload();
+        } else {
+          alert('AI Suggestion note: ' + (res && res.error ? res.error : 'Could not generate suggestions'));
+        }
+      } catch (err) {
+        console.error(err);
+        alert('AI Suggestion failed');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
     }
 
     async function deleteSpecimen(slug) {
