@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Inspection Portal & Skills Passport - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -20,7 +21,7 @@
     }
     .portal-container {
       width: 100%;
-      max-width: 860px;
+      max-width: 1100px;
     }
     .portal-tabs {
       display: flex;
@@ -139,6 +140,176 @@
     .arc-meta { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; }
     .arc-track { height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
     .arc-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #0284c7, #10b981); }
+
+    /* Skill Assessment Specimen Grid */
+    .specimen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .specimen-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .specimen-card:hover {
+      transform: translateY(-4px);
+      border-color: #38bdf8;
+      box-shadow: 0 12px 30px rgba(0, 242, 254, 0.15);
+    }
+    .specimen-thumb-wrap {
+      position: relative;
+      width: 100%;
+      height: 165px;
+      background: #020617;
+      overflow: hidden;
+    }
+    .specimen-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .specimen-card:hover .specimen-thumb {
+      transform: scale(1.05);
+    }
+    .specimen-badge-chip {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(4px);
+    }
+    .specimen-diff-chip {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      backdrop-filter: blur(4px);
+    }
+    .badge-dry_stone { background: rgba(245, 158, 11, 0.85); color: #0f172a; }
+    .badge-lime_mortar { background: rgba(14, 165, 233, 0.85); color: #0f172a; }
+    .badge-ashlar_stone { background: rgba(168, 85, 247, 0.85); color: #0f172a; }
+    .badge-rubble { background: rgba(52, 211, 153, 0.85); color: #0f172a; }
+    .diff-beginner { background: rgba(34, 197, 94, 0.9); color: #0f172a; }
+    .diff-intermediate { background: rgba(234, 179, 8, 0.9); color: #0f172a; }
+    .diff-advanced { background: rgba(239, 68, 68, 0.9); color: white; }
+
+    .specimen-body {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .btn-launch-workstation {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      text-align: center;
+      background: #0284c7;
+      color: white;
+      text-decoration: none;
+      padding: 0.65rem 1rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border: 1px solid #38bdf8;
+      cursor: pointer;
+      margin-top: auto;
+      transition: all 0.2s ease;
+    }
+    .btn-launch-workstation:hover {
+      background: #00f2fe;
+      color: #0f172a;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+    }
+
+    /* Filter Pills */
+    .pill-filter-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pill-btn {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 0.45rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pill-btn:hover {
+      color: #f8fafc;
+      border-color: #64748b;
+    }
+    .pill-btn.active {
+      background: #2563eb;
+      color: white;
+      border-color: #38bdf8;
+    }
+
+    /* All-In-One Learning Studios Hub */
+    .studios-hub-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.85rem;
+    }
+    .studio-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+    }
+    .studio-card:hover {
+      background: #243248;
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .studio-card-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .studio-card-content strong {
+      display: block;
+      font-size: 0.88rem;
+      color: #f8fafc;
+      margin-bottom: 2px;
+    }
+    .studio-card-content small {
+      display: block;
+      font-size: 0.74rem;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
   </style>
 </head>
 <body>
@@ -151,6 +322,7 @@
     <!-- Learning Studio Quick Links -->
     <div style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.25rem; flex-wrap: wrap;">
       <a href="/" style="background: #1e293b; color: #94a3b8; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #334155;">&larr; Catalog</a>
+      <a href="/skill-assessment" style="background: #0284c7; color: white; text-decoration: none; padding: 5px 14px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #38bdf8; font-weight: 700;"><i class="fa-solid fa-bullseye"></i> 🎯 Skill Assessments (10)</a>
       <a href="/field-guide" style="background: #1e293b; color: #38bdf8; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #0284c7;">📄 Field Guide (Printable)</a>
       <a href="/cards" style="background: #1e293b; color: #c084fc; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #7c3aed;">📇 Flashcards</a>
       <a href="/compare" style="background: #1e293b; color: #34d399; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #059669;">⚖️ Compare Studio</a>
@@ -158,18 +330,113 @@
       <a href="/quiz" style="background: #1e293b; color: #fbbf24; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #d97706;">⚡ Reflex Quiz</a>
     </div>
 
-    <!-- Mode Selector Tabs -->
+    <!-- Mode Selector Tabs (3 Primary Portals) -->
     <div class="portal-tabs">
-      <button type="button" class="portal-tab-btn active" id="tab-btn-exam" onclick="switchPortalTab('exam')">
-        <span>🎯 Assessment Examination Launch</span>
+      <button type="button" class="portal-tab-btn active" id="tab-btn-skills" onclick="switchPortalTab('skills')">
+        <span><i class="fa-solid fa-bullseye" style="color: #00f2fe;"></i> 🎯 Practical Skill Assessments</span>
+      </button>
+      <button type="button" class="portal-tab-btn" id="tab-btn-exam" onclick="switchPortalTab('exam')">
+        <span><i class="fa-solid fa-key" style="color: #facc15;"></i> 📝 PIN Examination Queue</span>
       </button>
       <button type="button" class="portal-tab-btn" id="tab-btn-passport" onclick="switchPortalTab('passport')">
-        <span>🎓 Skills Passport & CPD Radar</span>
+        <span><i class="fa-solid fa-graduation-cap" style="color: #34d399;"></i> 🎓 Skills Passport & CPD Radar</span>
       </button>
     </div>
 
-    <!-- TAB 1: Assessment Examination Launch -->
-    <div id="tab-panel-exam" class="portal-card">
+    <!-- TAB 1: Practical Skill Assessments (Specimen Workstation) -->
+    <div id="tab-panel-skills" class="portal-card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #334155; padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
+        <div>
+          <span style="font-size: 0.75rem; text-transform: uppercase; color: #38bdf8; font-weight: 800; letter-spacing: 0.5px;">
+            <i class="fa-solid fa-crosshairs"></i> Clinical Pathology & Defect Pinning Workstation
+          </span>
+          <h2 style="text-align: left; margin: 0.35rem 0 0.25rem; font-size: 1.75rem; color: #f8fafc;">
+            Authentic Masonry Skill Assessments
+          </h2>
+          <p style="text-align: left; margin: 0; font-size: 0.88rem; color: #94a3b8; max-width: 650px;">
+            Inspect authentic high-resolution masonry specimens, tag pathological defect modes at precise coordinates, and receive instant clinical evaluations against expert ground truth.
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <a href="/skill-assessment" class="btn" style="width: auto; margin: 0; padding: 0.6rem 1.25rem; font-size: 0.85rem; background: #0284c7; border: 1px solid #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-layer-group"></i> Full Assessment Hub &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Launch & Candidate Name Box -->
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px;">
+          <label style="margin: 0 0 0.35rem; font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">
+            <i class="fa-solid fa-user-pen"></i> Candidate Inspector Identity
+          </label>
+          <input type="text" id="portal-candidate-name" placeholder="Enter your full name (e.g. Liam Kelly)..." style="margin: 0; background: #1e293b;" oninput="syncCandidateName(this.value)">
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: flex-end; padding-top: 1.25rem;">
+          <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.25rem; font-size: 0.9rem; background: #10b981; border: 1px solid #34d399; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="launchRandomSkillAssessment()">
+            <i class="fa-solid fa-dice"></i> Launch Random Specimen
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter and Live Search Controls -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <div class="pill-filter-bar">
+          <button type="button" class="pill-btn active" onclick="filterSpecimens('all', this)">All ({{ skill_specimens|length if skill_specimens else 10 }})</button>
+          <button type="button" class="pill-btn" onclick="filterSpecimens('dry_stone', this)">Dry Stone</button>
+          <button type="button" class="pill-btn" onclick="filterSpecimens('lime_mortar', this)">Historic Lime</button>
+          <button type="button" class="pill-btn" onclick="filterSpecimens('ashlar_stone', this)">Ashlar Block</button>
+          <button type="button" class="pill-btn" onclick="filterSpecimens('rubble', this)">Rubble</button>
+        </div>
+        <div style="flex: 1; max-width: 280px; min-width: 200px;">
+          <input type="text" id="specimen-search-input" placeholder="🔍 Search specimens..." style="margin: 0; padding: 0.5rem 0.75rem; font-size: 0.85rem;" oninput="searchSpecimens(this.value)">
+        </div>
+      </div>
+
+      <!-- Specimen Grid -->
+      <div class="specimen-grid" id="specimen-grid-container">
+        {% for s in skill_specimens %}
+        <div class="specimen-card" data-type="{{ s.wall_type }}" data-title="{{ s.title|lower }}" data-desc="{{ s.description|lower }}">
+          <div class="specimen-thumb-wrap">
+            <img src="{{ s.image_url }}" alt="{{ s.title }}" class="specimen-thumb" loading="lazy">
+            <span class="specimen-badge-chip badge-{{ s.wall_type }}">{{ s.wall_type|replace('_', ' ')|title }}</span>
+            <span class="specimen-diff-chip diff-{{ s.difficulty }}">{{ s.difficulty|title }}</span>
+          </div>
+          <div class="specimen-body">
+            <h4 style="margin: 0 0 0.4rem; font-size: 0.95rem; color: #f8fafc; line-height: 1.35;">{{ s.title }}</h4>
+            <p style="margin: 0 0 0.85rem; font-size: 0.78rem; color: #94a3b8; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: left;">
+              {{ s.description }}
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.72rem; color: #64748b;">
+              <span><i class="fa-solid fa-location-dot" style="color: #38bdf8;"></i> {{ s.region or s.country }}</span>
+              <span style="color: #00f2fe; font-weight: 700;"><i class="fa-solid fa-bullseye"></i> {{ s.defect_count }} Targets</span>
+            </div>
+            <button type="button" class="btn-launch-workstation" onclick="launchSpecimen('{{ s.slug }}')">
+              <i class="fa-solid fa-play"></i> Start Inspection Workstation &rarr;
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Photography Standards Quick HUD Banner -->
+      <div style="margin-top: 2rem; background: rgba(14, 165, 233, 0.06); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 10px; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <strong style="color: #38bdf8; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-camera"></i> Controlled Image Ingestion Protocol
+          </strong>
+          <small style="color: #94a3b8; display: block; margin-top: 2px;">
+            All assessment specimens are captured under rigid diffuse daylight, 90° normal orthogonal angles, and coursing scale rules.
+          </small>
+        </div>
+        <a href="/skill-assessment/admin" style="color: #38bdf8; font-size: 0.8rem; font-weight: 700; text-decoration: none; white-space: nowrap;">
+          Instructor Ingestion Console &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- TAB 2: Assessment Examination Launch (Classroom Assignments) -->
+    <div id="tab-panel-exam" class="portal-card" style="display: none;">
       <h2>Assessment Exam Login</h2>
       <p>Enter your student identity and assignment PIN code to begin your timed or diagnostic assessment queue.</p>
 
@@ -271,17 +538,123 @@
         <div id="passport-certs-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
       </div>
     </div>
+
+    <!-- All-In-One Student Learning & Diagnostic Studios Hub -->
+    <div style="margin-top: 2.5rem; border-top: 1px solid #334155; padding-top: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <span style="font-size: 0.75rem; text-transform: uppercase; color: #38bdf8; font-weight: 800; letter-spacing: 0.5px;">
+            <i class="fa-solid fa-shapes"></i> Comprehensive Suite
+          </span>
+          <h3 style="margin: 0.25rem 0 0; font-size: 1.35rem; color: #f8fafc;">Diagnostic & Learning Studios Hub</h3>
+          <p style="margin: 0.25rem 0 0; font-size: 0.82rem; color: #94a3b8;">
+            Access all practical tools, comparative studies, flashcard drills, and field documentation kits in one unified console.
+          </p>
+        </div>
+        <span style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid #0284c7; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;">
+          8 Integrated Studios
+        </span>
+      </div>
+
+      <div class="studios-hub-grid">
+        <!-- Studio 1: Skill Assessments -->
+        <a href="javascript:void(0)" onclick="switchPortalTab('skills'); window.scrollTo({top: 180, behavior: 'smooth'});" class="studio-card">
+          <div class="studio-card-icon" style="color: #00f2fe;">🎯</div>
+          <div class="studio-card-content">
+            <strong>Practical Skill Workstations</strong>
+            <small>10 high-resolution authentic specimens with point defect tagging, ground truth cross-checks, and clinical accuracy scoring.</small>
+          </div>
+        </a>
+
+        <!-- Studio 2: Reflex Diagnostic Quiz -->
+        <a href="/quiz" class="studio-card">
+          <div class="studio-card-icon" style="color: #fbbf24;">⚡</div>
+          <div class="studio-card-content">
+            <strong>Reflex Diagnostic Quiz</strong>
+            <small>Timed rapid-fire identification challenges across mortar decay, stone weathering, and structural movements.</small>
+          </div>
+        </a>
+
+        <!-- Studio 3: Flashcards Studio -->
+        <a href="/cards" class="studio-card">
+          <div class="studio-card-icon" style="color: #c084fc;">📇</div>
+          <div class="studio-card-content">
+            <strong>Pathology Flashcards Studio</strong>
+            <small>Spaced-repetition study deck covering all 11 archetype failure modes and historic lime/drystone criteria.</small>
+          </div>
+        </a>
+
+        <!-- Studio 4: Compare Studio -->
+        <a href="/compare" class="studio-card">
+          <div class="studio-card-icon" style="color: #34d399;">⚖️</div>
+          <div class="studio-card-content">
+            <strong>Dual-Specimen Compare Studio</strong>
+            <small>Synchronized side-by-side inspection comparing sound masonry against deteriorated mortar and washouts.</small>
+          </div>
+        </a>
+
+        <!-- Studio 5: Pathology Map Atlas -->
+        <a href="/map" class="studio-card">
+          <div class="studio-card-icon" style="color: #38bdf8;">🗺️</div>
+          <div class="studio-card-content">
+            <strong>Pathology Map Atlas</strong>
+            <small>Spatial geographical distribution of heritage walls, regional geology, weathering zones, and quarry stone types.</small>
+          </div>
+        </a>
+
+        <!-- Studio 6: Field Guide -->
+        <a href="/field-guide" class="studio-card">
+          <div class="studio-card-icon" style="color: #38bdf8;">📄</div>
+          <div class="studio-card-content">
+            <strong>Printable Field Guide</strong>
+            <small>Pocket diagnostic handbook and field inspection protocol sheets formatted for on-site conservation surveying.</small>
+          </div>
+        </a>
+
+        <!-- Studio 7: Mobile PWA -->
+        <a href="/mobile/student" class="studio-card">
+          <div class="studio-card-icon" style="color: #f472b6;">📲</div>
+          <div class="studio-card-content">
+            <strong>Mobile Student PWA (Field Kit)</strong>
+            <small>Offline-ready mobile field kit with Mason Plumb line HUD, phone camera defect logging, and instant syncing.</small>
+          </div>
+        </a>
+
+        <!-- Studio 8: Wall Catalog -->
+        <a href="/" class="studio-card">
+          <div class="studio-card-icon" style="color: #cbd5e1;">🏛️</div>
+          <div class="studio-card-content">
+            <strong>Heritage Wall Catalog & Records</strong>
+            <small>Comprehensive digital archive of masonry structures, structural cross-sections, and conservation reports.</small>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 
   <script>
     function switchPortalTab(tab) {
+      const isSkills = tab === 'skills';
       const isExam = tab === 'exam';
-      document.getElementById('tab-btn-exam').classList.toggle('active', isExam);
-      document.getElementById('tab-btn-passport').classList.toggle('active', !isExam);
-      document.getElementById('tab-panel-exam').style.display = isExam ? 'block' : 'none';
-      document.getElementById('tab-panel-passport').style.display = isExam ? 'none' : 'block';
+      const isPassport = tab === 'passport';
 
-      if (!isExam && !window.hasLoadedPassport) {
+      const btnSkills = document.getElementById('tab-btn-skills');
+      const btnExam = document.getElementById('tab-btn-exam');
+      const btnPassport = document.getElementById('tab-btn-passport');
+
+      if (btnSkills) btnSkills.classList.toggle('active', isSkills);
+      if (btnExam) btnExam.classList.toggle('active', isExam);
+      if (btnPassport) btnPassport.classList.toggle('active', isPassport);
+
+      const panelSkills = document.getElementById('tab-panel-skills');
+      const panelExam = document.getElementById('tab-panel-exam');
+      const panelPassport = document.getElementById('tab-panel-passport');
+
+      if (panelSkills) panelSkills.style.display = isSkills ? 'block' : 'none';
+      if (panelExam) panelExam.style.display = isExam ? 'block' : 'none';
+      if (panelPassport) panelPassport.style.display = isPassport ? 'block' : 'none';
+
+      if (isPassport && !window.hasLoadedPassport) {
         loadPassportData();
       }
     }
@@ -454,7 +827,96 @@
       `).join('');
     }
 
+    function syncCandidateName(val) {
+      const trimmed = val ? val.trim() : '';
+      if (trimmed) {
+        localStorage.setItem('wall_candidate_name', trimmed);
+      }
+      const examNameInput = document.getElementById('exam-student-name');
+      if (examNameInput && examNameInput.value !== val) {
+        examNameInput.value = val;
+      }
+      const passportInput = document.getElementById('passport-search-input');
+      if (passportInput && !passportInput.value) {
+        passportInput.value = val;
+      }
+    }
+
+    function launchSpecimen(slug) {
+      const nameInput = document.getElementById('portal-candidate-name');
+      const name = (nameInput && nameInput.value.trim()) || localStorage.getItem('wall_candidate_name') || 'Inspector Candidate';
+      window.location.href = `/skill-assessment/${slug}?student_name=${encodeURIComponent(name)}`;
+    }
+
+    function launchRandomSkillAssessment() {
+      const cards = document.querySelectorAll('.specimen-card');
+      if (!cards.length) return;
+      const visibleCards = Array.from(cards).filter(c => c.style.display !== 'none');
+      const pool = visibleCards.length ? visibleCards : Array.from(cards);
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      const btn = chosen.querySelector('.btn-launch-workstation');
+      if (btn) {
+        btn.click();
+      }
+    }
+
+    function filterSpecimens(type, btnEl) {
+      document.querySelectorAll('.pill-filter-bar .pill-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      const cards = document.querySelectorAll('.specimen-card');
+      const searchVal = (document.getElementById('specimen-search-input')?.value || '').toLowerCase().trim();
+
+      cards.forEach(card => {
+        const cardType = (card.getAttribute('data-type') || '').toLowerCase();
+        const cardTitle = (card.getAttribute('data-title') || '').toLowerCase();
+        const cardDesc = (card.getAttribute('data-desc') || '').toLowerCase();
+
+        const matchesType = (type === 'all') || (cardType === type);
+        const matchesSearch = !searchVal || cardTitle.includes(searchVal) || cardDesc.includes(searchVal);
+
+        card.style.display = (matchesType && matchesSearch) ? 'flex' : 'none';
+      });
+    }
+
+    function searchSpecimens(query) {
+      const q = (query || '').toLowerCase().trim();
+      const activePill = document.querySelector('.pill-filter-bar .pill-btn.active');
+      const currentType = activePill ? (activePill.getAttribute('onclick') || '').match(/'([^']+)'/)?.[1] || 'all' : 'all';
+
+      const cards = document.querySelectorAll('.specimen-card');
+      cards.forEach(card => {
+        const cardType = (card.getAttribute('data-type') || '').toLowerCase();
+        const cardTitle = (card.getAttribute('data-title') || '').toLowerCase();
+        const cardDesc = (card.getAttribute('data-desc') || '').toLowerCase();
+
+        const matchesType = (currentType === 'all') || (cardType === currentType);
+        const matchesSearch = !q || cardTitle.includes(q) || cardDesc.includes(q);
+
+        card.style.display = (matchesType && matchesSearch) ? 'flex' : 'none';
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+      // Restore candidate name if previously saved
+      const savedName = localStorage.getItem('wall_candidate_name');
+      if (savedName) {
+        const candidateInput = document.getElementById('portal-candidate-name');
+        if (candidateInput) candidateInput.value = savedName;
+        const examName = document.getElementById('exam-student-name');
+        if (examName) examName.value = savedName;
+        const passSearch = document.getElementById('passport-search-input');
+        if (passSearch && !passSearch.value) passSearch.value = savedName;
+      }
+
+      // Check URL tab parameter (?tab=skills, ?tab=exam, ?tab=passport)
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedTab = urlParams.get('tab');
+      if (requestedTab === 'exam' || requestedTab === 'passport' || requestedTab === 'skills') {
+        switchPortalTab(requestedTab);
+      }
+
+      // QR Code generation for mobile student app
       const studentUrl = `${window.location.origin}/mobile/student`;
       const qrEl = document.getElementById("portal-qr-img");
       if (qrEl) {

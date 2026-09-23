@@ -1846,14 +1846,50 @@ def create_app(config_class=Config):
     # --- Student Assignment Portal ---
     @app.route("/portal", methods=["GET", "POST"])
     def student_portal():
+        skill_specimens_query = Wall.query.filter_by(is_skill_assessment=True, is_published=True).all()
+        skill_specimens = []
+        for s in skill_specimens_query:
+            d_count = Defect.query.filter_by(wall_id=s.id).count()
+            data = s.to_dict()
+            data["defect_count"] = d_count
+            skill_specimens.append(data)
+
         if request.method == "POST":
             code = request.form.get("assignment_code", "").strip().upper()
-            student_name = request.form.get("student_name", "Inspector Candidate").strip()
+            student_name = request.form.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
+            specimen_slug = request.form.get("specimen_slug", "").strip()
+
+            # 1. Direct launch from specimen cards or quick action
+            if specimen_slug:
+                return redirect(url_for("skill_assessment_workstation", slug=specimen_slug, student_name=student_name))
+
+            # 2. If student typed SKILLS or ASSESSMENT, send to skill assessment hub
+            if code in ["SKILL", "SKILLS", "ASSESSMENT", "ASSESS", "EXAM", "PRACTICAL"]:
+                return redirect(url_for("skill_assessment_hub"))
+
+            # 3. If code matches a skill assessment slug directly
+            matching_skill = Wall.query.filter_by(slug=code.lower(), is_skill_assessment=True).first()
+            if matching_skill:
+                return redirect(url_for("skill_assessment_workstation", slug=matching_skill.slug, student_name=student_name))
+
+            # 4. If code is a number like 1..10 or SKILL-1..10
+            clean_code = code.replace("SKILL-", "").replace("SPECIMEN-", "").strip()
+            if clean_code.isdigit():
+                idx = int(clean_code) - 1
+                if 0 <= idx < len(skill_specimens):
+                    return redirect(url_for("skill_assessment_workstation", slug=skill_specimens[idx]["slug"], student_name=student_name))
+
+            # 5. Check regular classroom assignment PIN
             assignment = Assignment.query.filter_by(code=code, is_active=True).first()
             if not assignment:
-                return render_template("student_portal.html", error="Invalid or inactive assignment code.")
+                return render_template(
+                    "student_portal.html",
+                    error="Invalid assignment code. Tip: Choose from the 10 Skill Assessment specimens below or launch a random assessment!",
+                    skill_specimens=skill_specimens
+                )
             return redirect(url_for("run_assignment", code=code, student_name=student_name))
-        return render_template("student_portal.html")
+
+        return render_template("student_portal.html", skill_specimens=skill_specimens)
 
     @app.route("/portal/run/<code>")
     def run_assignment(code):
@@ -4937,6 +4973,7 @@ def create_app(config_class=Config):
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True, is_published=True).first_or_404()
         ground_truth_count = Defect.query.filter_by(wall_id=wall.id).count()
         modes_bundle = get_wall_defect_modes(wall)
+        student_name = request.args.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
         return render_template(
             "skill_assessment_workstation.html",
             wall=wall.to_dict(),
@@ -4944,7 +4981,8 @@ def create_app(config_class=Config):
             prioritized_modes=modes_bundle["prioritized"],
             all_modes=modes_bundle["all"],
             defect_modes=modes_bundle["all"],
-            remedial_options=REMEDIAL_OPTIONS
+            remedial_options=REMEDIAL_OPTIONS,
+            student_name=student_name
         )
 
     @app.route("/api/skill-assessment/evaluate/<slug>", methods=["POST"], strict_slashes=False)

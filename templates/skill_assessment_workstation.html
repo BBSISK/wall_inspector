@@ -615,7 +615,8 @@
   <!-- Top Header Navigation -->
   <header class="workstation-nav">
     <div class="specimen-info">
-      <a href="/skill-assessment" class="btn-top btn-exit"><i class="fa-solid fa-arrow-left"></i> Hub</a>
+      <a href="/portal" class="btn-top btn-exit" title="Back to Student Portal"><i class="fa-solid fa-graduation-cap"></i> Portal</a>
+      <a href="/skill-assessment" class="btn-top btn-exit" title="Back to Skills Hub"><i class="fa-solid fa-arrow-left"></i> Hub</a>
       <span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span>
       <h1 title="{{ wall.title }}">{{ wall.title }}</h1>
     </div>
@@ -965,7 +966,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pins: studentPins,
-            student_name: 'Inspector Candidate'
+            student_name: {{ (student_name or 'Inspector Candidate')|tojson }}
           })
         });
 
