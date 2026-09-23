@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Assessment Ingestion & Photographic Guidelines - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #090e1a;
+      --panel-dark: #0f172a;
+      --card-dark: #1e293b;
+      --border-dark: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0284c7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --emerald: #059669;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* Top Nav */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-dark);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+    .brand i { color: #34d399; }
+    .badge-admin {
+      background: #064e3b;
+      color: #6ee7b7;
+      border: 1px solid #059669;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .btn-nav {
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .btn-back { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+    .btn-back:hover { color: #f8fafc; border-color: #64748b; }
+
+    /* Layout */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 4rem;
+    }
+
+    /* Photographic Guidelines HUD Banner */
+    .guidelines-hud {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+      border: 2px solid #0284c7;
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-dark);
+      padding-bottom: 0.75rem;
+    }
+    .hud-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+    .hud-pill {
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid #38bdf8;
+      color: #7dd3fc;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* 4 Guidelines Cards Grid */
+    .guidelines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .guide-card {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      position: relative;
+    }
+    .guide-card:hover { border-color: #38bdf8; }
+    .guide-card-icon {
+      font-size: 1.4rem;
+      color: #38bdf8;
+      margin-bottom: 2px;
+    }
+    .guide-card h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #f8fafc;
+      font-weight: 700;
+    }
+    .guide-card ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .guide-card li { margin-bottom: 4px; }
+    .guide-card li strong { color: #f1f5f9; }
+
+    /* Interactive Pre-Flight Checklist */
+    .checklist-wrap {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px dashed #38bdf8;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-top: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .checklist-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .checklist-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .chk-label {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .chk-label input { accent-color: #059669; }
+
+    /* Upload & Specimen Manager Split */
+    .section-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    /* Upload Card */
+    .upload-card {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .upload-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed #38bdf8;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 10px;
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .dropzone:hover {
+      background: rgba(56, 189, 248, 0.05);
+      border-color: #7dd3fc;
+    }
+    .dropzone i { font-size: 2.2rem; color: #38bdf8; }
+    .dropzone-prompt { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+    .dropzone-prompt strong { color: #f8fafc; }
+    .dropzone-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .form-control {
+      background: #090e1a;
+      border: 1px solid var(--border-dark);
+      color: var(--text-main);
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-control:focus { border-color: #38bdf8; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .btn-submit-upload {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      border: 1px solid #10b981;
+      padding: 0.85rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+      margin-top: 0.5rem;
+    }
+    .btn-submit-upload:hover { filter: brightness(1.15); }
+
+    /* Specimen Queue Table Card */
+    .queue-card {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .queue-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .specimen-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .specimen-table th {
+      background: #090e1a;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .specimen-table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+      vertical-align: middle;
+    }
+    .specimen-table tr:hover td {
+      background: rgba(30, 41, 59, 0.4);
+    }
+    .table-thumb {
+      width: 60px;
+      height: 45px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #020617;
+      display: block;
+    }
+
+    .badge-status-graded {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid #10b981;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .badge-status-pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid #f59e0b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .action-btn-group {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .btn-action-small {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn-grade { background: #0284c7; color: white; border-color: #38bdf8; }
+    .btn-test { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+    .btn-test:hover { color: #f8fafc; border-color: #64748b; }
+    .btn-del { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: #ef4444; }
+
+    @media (max-width: 1024px) {
+      .section-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="/skill-assessment" class="brand">
+        <i class="fa-solid fa-camera"></i>
+        Professional Skill Assessment Ingestion
+      </a>
+      <span class="badge-admin">Admin Control</span>
+    </div>
+    <div class="nav-actions">
+      <a href="/skill-assessment" class="btn-nav btn-back"><i class="fa-solid fa-arrow-left"></i> Student Hub</a>
+      <a href="/dashboard" class="btn-nav btn-back"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+      <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-house"></i> Main Catalog</a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- PHOTOGRAPHY GUIDELINES HUD -->
+    <section class="guidelines-hud">
+      <div class="hud-header">
+        <h2 class="hud-title">
+          <i class="fa-solid fa-camera-viewfinder"></i> Photographic Capture Standards & Ingestion Protocol
+        </h2>
+        <span class="hud-pill"><i class="fa-solid fa-shield-halved"></i> Calibrated Ingestion Spec</span>
+      </div>
+
+      <div class="guidelines-grid">
+        <!-- 1. Lighting Requirements -->
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-sun-cloud"></i></div>
+          <h4>1. Lighting & Illumination</h4>
+          <ul>
+            <li><strong>Diffuse Overcast Daylight:</strong> Recommended 5000K–6500K overcast sky to eliminate harsh shadow masking and specular hot spots.</li>
+            <li><strong>Controlled Raking Light:</strong> Use 15°–30° shallow oblique sun ONLY when recording face bulges, delamination blisters, or contour scaling.</li>
+            <li><strong>Avoid Direct Midday Sun:</strong> Prevents deep shadows inside open bed and perpend joints.</li>
+          </ul>
+        </div>
+
+        <!-- 2. Orthogonal Camera Alignment -->
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-arrows-to-eye"></i></div>
+          <h4>2. Orthogonal Normal Angle</h4>
+          <ul>
+            <li><strong>Strict 90° Normal Angle:</strong> Position optical axis perpendicular to wall face plane.</li>
+            <li><strong>0° Pitch & 0° Roll Tilt:</strong> Eliminates trapezoidal keystoning, perspective tilt, and dimensional compression.</li>
+            <li><strong>Sensor Parallel:</strong> Maintain sensor plane strictly parallel to continuous bed courses.</li>
+          </ul>
+        </div>
+
+        <!-- 3. Scope & Spatial Framing -->
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-ruler-combined"></i></div>
+          <h4>3. Scope, Coursing & Scale</h4>
+          <ul>
+            <li><strong>3 to 5 Courses:</strong> Frame must capture 3 to 5 continuous horizontal courses to establish masonry bond rhythm.</li>
+            <li><strong>1.5m to 2.5m Width:</strong> Provides adequate structural context across the wythe.</li>
+            <li><strong>Visible Datum & Scale:</strong> Include plinth base/coping or place a 1m survey rule/scale coin at frame margin.</li>
+          </ul>
+        </div>
+
+        <!-- 4. Resolution & Focus -->
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-bullseye-pointer"></i></div>
+          <h4>4. Resolution & Depth of Field</h4>
+          <ul>
+            <li><strong>Minimum 1080p (2MP+):</strong> Native 4K / 8MP+ recommended for zoomable arris inspection.</li>
+            <li><strong>Arris Focus Lock:</strong> Lock autofocus sharply on bed and perpend joint arrises.</li>
+            <li><strong>Aperture f/5.6 – f/8:</strong> Deep depth of field ensures both proud and recessed stones remain in razor focus.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Pre-flight Checklist -->
+      <div class="checklist-wrap">
+        <div class="checklist-title">
+          <i class="fa-solid fa-list-check"></i> Pre-Flight Field Verification:
+        </div>
+        <div class="checklist-items">
+          <label class="chk-label"><input type="checkbox" checked> 90° Orthogonal Alignment (No Keystoning)</label>
+          <label class="chk-label"><input type="checkbox" checked> Diffuse / Oblique Raking Light Verified</label>
+          <label class="chk-label"><input type="checkbox" checked> 3–5 Courses Framed with Datum</label>
+          <label class="chk-label"><input type="checkbox" checked> Joint Arrises in Razor Sharp Focus</label>
+          <label class="chk-label"><input type="checkbox" checked> Scale Marker Placed at Margin</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Upload & Queue Management -->
+    <div class="section-grid">
+
+      <!-- Upload Ingestion Form -->
+      <section class="upload-card">
+        <h3><i class="fa-solid fa-cloud-arrow-up" style="color: #38bdf8;"></i> Ingest Assessment Specimen</h3>
+
+        <form action="/skill-assessment/admin/upload" method="POST" enctype="multipart/form-data" id="upload-form">
+
+          <!-- Dropzone with Live Camera / File Input -->
+          <div class="dropzone" id="dropzone" onclick="document.getElementById('wall-image-input').click()">
+            <i class="fa-solid fa-camera"></i>
+            <div class="dropzone-prompt">
+              <strong>Tap to capture with Camera</strong> or drag and drop image file<br>
+              <small>Adhering to 90° orthogonal, diffuse light guidelines</small>
+            </div>
+            <img id="preview-img" class="dropzone-img" alt="Preview">
+          </div>
+          <!-- Hidden inputs for Camera and File selection -->
+          <input type="file" id="wall-image-input" name="wall_image" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelected(event)" required>
+
+          <div class="form-group">
+            <label>Specimen Title</label>
+            <input type="text" class="form-control" name="title" placeholder="e.g. Limestone Field Boundary: Pinning Loss" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Masonry Archetype</label>
+              <select class="form-control" name="wall_type">
+                {% for t in wall_types %}
+                  <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Difficulty Tier</label>
+              <select class="form-control" name="difficulty">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Country / Location</label>
+              <input type="text" class="form-control" name="country" value="Ireland">
+            </div>
+            <div class="form-group">
+              <label>Region / County</label>
+              <input type="text" class="form-control" name="region" placeholder="e.g. Co. Clare">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Structural Function</label>
+            <select class="form-control" name="structural_function">
+              <option value="boundary">Boundary / Field Wall</option>
+              <option value="retaining">Retaining Structure</option>
+              <option value="load_bearing">Load Bearing Masonry</option>
+              <option value="freestanding">Freestanding Enclosure</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Field Survey Notes & Historical Context</label>
+            <textarea class="form-control" name="description" rows="2" placeholder="Record mortar composition, exposure, bedding plane orientation..."></textarea>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <label>Next Step Workflow:</label>
+            <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: #cbd5e1;">
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="radio" name="grade_action" value="now" checked accent-color="#059669">
+                <strong>Grade Defect Points Now</strong> (Open Canvas)
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="radio" name="grade_action" value="later" accent-color="#059669">
+                Save & Grade Later
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit-upload">
+            <i class="fa-solid fa-arrow-right"></i> Upload & Proceed to Defect Tagging
+          </button>
+        </form>
+      </section>
+
+      <!-- Specimen Queue Table -->
+      <section class="queue-card">
+        <div class="queue-header">
+          <h3><i class="fa-solid fa-layer-group" style="color: #34d399;"></i> Assessment Specimen Queue ({{ specimens|length }})</h3>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Published & Candidate Specimens</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="specimen-table">
+            <thead>
+              <tr>
+                <th>Specimen</th>
+                <th>Archetype</th>
+                <th>Difficulty</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for wall in specimens %}
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <img src="{{ wall.image_url }}" alt="" class="table-thumb" onerror="this.src='https://placehold.co/100x75/1e293b/94a3b8?text=Specimen'">
+                      <div>
+                        <strong style="color: #f8fafc; font-size: 0.88rem;">{{ wall.title }}</strong><br>
+                        <small style="color: var(--text-muted);">{{ wall.country }}{% if wall.region %}, {{ wall.region }}{% endif %}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span style="font-size: 0.78rem; color: #cbd5e1;">{{ wall.wall_type.replace('_', ' ').title() }}</span></td>
+                  <td><span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span></td>
+                  <td>
+                    {% if wall.defect_count > 0 %}
+                      <span class="badge-status-graded"><i class="fa-solid fa-check"></i> {{ wall.defect_count }} Defect Pins</span>
+                    {% else %}
+                      <span class="badge-status-pending"><i class="fa-solid fa-clock"></i> Pending Pins</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="action-btn-group">
+                      <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-action-small btn-grade" title="Grade / Edit Ground Truth Pins">
+                        <i class="fa-solid fa-pen-ruler"></i> Grade
+                      </a>
+                      <a href="/skill-assessment/{{ wall.slug }}" class="btn-action-small btn-test" title="Launch Student Workstation">
+                        <i class="fa-solid fa-play"></i> Test
+                      </a>
+                      <button type="button" class="btn-action-small btn-del" onclick="deleteSpecimen('{{ wall.slug }}')" title="Delete Specimen">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <script>
+    function handleFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('preview-img');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function deleteSpecimen(slug) {
+      if (!confirm('Are you sure you want to permanently delete this assessment specimen and all associated ground-truth defects?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/skill-assessment/delete/${slug}`, {
+          method: 'POST'
+        });
+        const res = await response.json();
+        if (res.success) {
+          window.location.reload();
+        } else {
+          alert('Error deleting specimen');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Delete failed');
+      }
+    }
+  </script>
+
+</body>
+</html>

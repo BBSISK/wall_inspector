@@ -121,10 +121,11 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertEqual(res_bedding.status_code, 200)
         self.assertIn(b'Face-Bedding', res_bedding.data)
 
-        # 3. Verify total 32 wall instances in DB
+        # 3. Verify total 32 standard catalog wall instances + 5 skill assessment instances
         from models import Wall
         with app.app_context():
-            self.assertEqual(Wall.query.count(), 32)
+            self.assertEqual(Wall.query.filter_by(is_skill_assessment=False).count(), 32)
+            self.assertEqual(Wall.query.filter_by(is_skill_assessment=True).count(), 5)
 
         # 4. Verify Designing Buildings Wiki stonework inspection endpoints
         res_contour = self.client.get('/inspect/historic-sandstone-contour-scaling')
@@ -345,6 +346,64 @@ class TestStudiosAndAuth(unittest.TestCase):
             fp = os.path.join(app.config["UPLOAD_FOLDER"], fn)
             if os.path.exists(fp):
                 os.remove(fp)
+
+    def test_skill_assessment_module(self):
+        """Verify Student Skill Assessment Hub, interactive workstation, evaluation scoring, and photography guidelines admin."""
+        # 1. Test Hub route
+        res_hub = self.client.get('/skill-assessment')
+        self.assertEqual(res_hub.status_code, 200)
+        self.assertIn(b'Skill Assessment', res_hub.data)
+        self.assertIn(b'Limestone Dry-Stone Wall', res_hub.data)
+        self.assertIn(b'Coursed Sandstone Wall', res_hub.data)
+
+        # 2. Test Student Workstation
+        res_ws = self.client.get('/skill-assessment/skill-drystone-limestone-delamination')
+        self.assertEqual(res_ws.status_code, 200)
+        self.assertIn(b'Limestone Dry-Stone Wall: Core Voiding', res_ws.data)
+        self.assertIn(b'Core Voids', res_ws.data)
+
+        # 3. Test Student Pin Evaluation API with precise hit test
+        eval_payload = {
+            "student_name": "Test Candidate",
+            "cohort_code": "SKILLS_TEST",
+            "pins": [
+                # Pin 1: Exact hit on hearting_washout (GT at 0.52, 0.38)
+                {"x": 0.52, "y": 0.38, "category": "hearting_washout", "severity": "moderate"},
+                # Pin 2: Location hit on lichen (GT at 0.34, 0.62) but category mismatch
+                {"x": 0.35, "y": 0.61, "category": "mortar_erosion", "severity": "minor"},
+                # Pin 3: False positive pin away from any defect
+                {"x": 0.10, "y": 0.10, "category": "stepped_crack", "severity": "minor"}
+            ]
+        }
+        res_eval = self.client.post(
+            '/api/skill-assessment/evaluate/skill-drystone-limestone-delamination',
+            json=eval_payload
+        )
+        self.assertEqual(res_eval.status_code, 200)
+        eval_data = res_eval.get_json()
+        self.assertTrue(eval_data['success'])
+        self.assertEqual(eval_data['full_hits'], 1)
+        self.assertEqual(eval_data['partial_hits'], 1)
+        self.assertEqual(eval_data['false_positives'], 1)
+        self.assertGreater(eval_data['score'], 0.0)
+        self.assertIn('evaluated_pins', eval_data)
+        self.assertIn('ground_truth', eval_data)
+        self.assertEqual(len(eval_data['ground_truth']), 3)
+
+        # 4. Test Instructor Admin and Photography Guidelines HUD
+        with self.client.session_transaction() as sess:
+            sess['is_admin'] = True
+
+        res_admin = self.client.get('/skill-assessment/admin')
+        self.assertEqual(res_admin.status_code, 200)
+        self.assertIn(b'Photographic Capture Standards', res_admin.data)
+        self.assertIn(b'Diffuse Overcast Daylight', res_admin.data)
+        self.assertIn(b'Orthogonal Normal Angle', res_admin.data)
+
+        # 5. Test Grader Canvas
+        res_grader = self.client.get('/skill-assessment/admin/grade/skill-drystone-limestone-delamination')
+        self.assertEqual(res_grader.status_code, 200)
+        self.assertIn(b'Ground Truth Defect Grader', res_grader.data)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Skill Assessment Portal - Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #090e1a;
+      --panel-dark: #0f172a;
+      --card-dark: #1e293b;
+      --border-dark: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0284c7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --emerald: #059669;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* Top Nav Bar */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-dark);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+    .brand i { color: var(--emerald); }
+    .brand span { color: var(--emerald); }
+    .nav-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn-nav {
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .btn-nav:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-back { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+    .btn-admin { background: #064e3b; color: #6ee7b7; border-color: #059669; }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(5, 150, 105, 0.18) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border-bottom: 1px solid rgba(5, 150, 105, 0.3);
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .hero-title {
+      font-size: 2.1rem;
+      font-weight: 800;
+      margin: 0 0 0.75rem 0;
+      background: linear-gradient(135deg, #f8fafc 30%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+      margin: 0 auto 1.5rem;
+      max-width: 720px;
+    }
+
+    /* Key Metrics Strip */
+    .metrics-strip {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .metric-chip {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-dark);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .metric-chip strong { color: #34d399; font-size: 1.1rem; }
+
+    /* Main Content Container */
+    .main-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Assessment Protocol Banner */
+    .protocol-card {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-left: 4px solid var(--emerald);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+    .protocol-step {
+      display: flex;
+      gap: 12px;
+    }
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(5, 150, 105, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .step-content h4 {
+      margin: 0 0 4px 0;
+      font-size: 0.92rem;
+      color: #f1f5f9;
+    }
+    .step-content p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .filter-select {
+      background: #090e1a;
+      border: 1px solid var(--border-dark);
+      color: var(--text-main);
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .filter-select:focus { border-color: var(--emerald); }
+
+    /* Grid of Specimen Cards */
+    .specimen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+    .specimen-card {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .specimen-card:hover {
+      border-color: #059669;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .card-thumb-wrap {
+      position: relative;
+      height: 220px;
+      background: #020617;
+      overflow: hidden;
+    }
+    .card-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .specimen-card:hover .card-thumb {
+      transform: scale(1.04);
+    }
+    .badge-diff {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .diff-beginner { background: #065f46; color: #a7f3d0; border: 1px solid #10b981; }
+    .diff-intermediate { background: #92400e; color: #fde68a; border: 1px solid #f59e0b; }
+    .diff-advanced { background: #991b1b; color: #fecaca; border: 1px solid #ef4444; }
+
+    .badge-count {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .card-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 0.6rem;
+    }
+    .badge-sub {
+      background: #1e293b;
+      color: #cbd5e1;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      border: 1px solid #334155;
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      color: #f8fafc;
+      line-height: 1.35;
+    }
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0 0 1.25rem 0;
+      line-height: 1.5;
+      flex-grow: 1;
+    }
+    .card-footer {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: auto;
+    }
+    .btn-start {
+      flex: 1;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      text-decoration: none;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid #10b981;
+    }
+    .btn-start:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+    }
+    .btn-preview {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-preview:hover { color: #f8fafc; border-color: #64748b; }
+
+    /* Photography Guidelines Modal Trigger Banner */
+    .guideline-callout {
+      background: linear-gradient(90deg, rgba(30, 58, 138, 0.3), rgba(15, 23, 42, 0.6));
+      border: 1px solid #3b82f6;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-top: 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .guideline-callout h3 {
+      margin: 0 0 4px 0;
+      font-size: 1.05rem;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .guideline-callout p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 1.6rem; }
+      .specimen-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav">
+    <a href="/" class="brand">
+      <i class="fa-solid fa-bullseye"></i>
+      Global Wall Inspector <span>Skill Assessment</span>
+    </a>
+    <div class="nav-actions">
+      <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-arrow-left"></i> Main Catalog</a>
+      <a href="/handbook" class="btn-nav btn-back"><i class="fa-solid fa-book-open"></i> Handbook</a>
+      <a href="/portal" class="btn-nav btn-back"><i class="fa-solid fa-graduation-cap"></i> Student Portal</a>
+      {% if is_admin %}
+        <a href="/skill-assessment/admin" class="btn-nav btn-admin"><i class="fa-solid fa-camera"></i> Ingest & Grade Specimens</a>
+      {% else %}
+        <a href="/admin/login?next=/skill-assessment/admin" class="btn-nav btn-admin"><i class="fa-solid fa-lock"></i> Instructor Ingestion</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-banner">
+    <div class="hero-container">
+      <div class="hero-badge"><i class="fa-solid fa-certificate"></i> Authentic Field Workstation</div>
+      <h1 class="hero-title">Student Skill Assessment & Defect Tagging</h1>
+      <p class="hero-desc">
+        Examine authentic high-resolution masonry specimens captured under rigorous photographic standards.
+        Pinpoint pathological defects directly on the wall and classify each defect mode using the standard taxonomy.
+      </p>
+
+      <div class="metrics-strip">
+        <div class="metric-chip">
+          <i class="fa-solid fa-images" style="color: #38bdf8;"></i>
+          <span>Available Specimens: <strong>{{ total_specimens }}</strong></span>
+        </div>
+        <div class="metric-chip">
+          <i class="fa-solid fa-list-check" style="color: #34d399;"></i>
+          <span>Taxonomy Modes: <strong>{{ defect_modes|length }}</strong></span>
+        </div>
+        <div class="metric-chip">
+          <i class="fa-solid fa-crosshairs" style="color: #f59e0b;"></i>
+          <span>Tolerance Radius: <strong>&plusmn;8% Frame</strong></span>
+        </div>
+        <div class="metric-chip">
+          <i class="fa-solid fa-award" style="color: #ec4899;"></i>
+          <span>Passing Threshold: <strong>70% Merit</strong></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workstation View -->
+  <main class="main-container">
+
+    <!-- Protocol Guidance -->
+    <div class="protocol-card">
+      <div class="protocol-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Inspect & Zoom</h4>
+          <p>Pan across the high-resolution wythe face to inspect bed joints, perpen joints, arrises, and face stones.</p>
+        </div>
+      </div>
+      <div class="protocol-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Click to Drop Pin</h4>
+          <p>Tap precisely on the pathological distress location. A pin with glowing target ring will be placed.</p>
+        </div>
+      </div>
+      <div class="protocol-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Select Defect Mode</h4>
+          <p>Choose the matching defect mode from the dropdown menu (e.g. core voiding, ribbon pointing, spalling).</p>
+        </div>
+      </div>
+      <div class="protocol-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Submit for Evaluation</h4>
+          <p>Receive instant Euclidean distance hit analysis, score percentage, and view the instructor ground-truth overlay.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <span class="filter-label"><i class="fa-solid fa-filter"></i> Filter:</span>
+        <select class="filter-select" id="filter-type" onchange="filterSpecimens()">
+          <option value="all">All Wall Archetypes</option>
+          {% for t in wall_types %}
+            <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+          {% endfor %}
+        </select>
+        <select class="filter-select" id="filter-difficulty" onchange="filterSpecimens()">
+          <option value="all">All Difficulties</option>
+          {% for d in difficulties %}
+            <option value="{{ d }}">{{ d.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Showing <strong id="visible-count" style="color: var(--text-main);">{{ specimens|length }}</strong> specimen assessments
+      </div>
+    </div>
+
+    <!-- Specimen Cards Grid -->
+    <div class="specimen-grid" id="specimen-container">
+      {% for wall in specimens %}
+        <div class="specimen-card" data-type="{{ wall.wall_type }}" data-diff="{{ wall.difficulty }}">
+          <div class="card-thumb-wrap">
+            <img class="card-thumb" src="{{ wall.image_url }}" alt="{{ wall.title }}" loading="lazy" onerror="this.src='https://placehold.co/800x600/1e293b/94a3b8?text=Image+Loading'">
+            <span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span>
+            <span class="badge-count"><i class="fa-solid fa-crosshairs"></i> {{ wall.defect_count }} Targets</span>
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="badge-sub"><i class="fa-solid fa-layer-group"></i> {{ wall.wall_type.replace('_', ' ').title() }}</span>
+              <span class="badge-sub"><i class="fa-solid fa-location-dot"></i> {{ wall.country }}{% if wall.region %}, {{ wall.region }}{% endif %}</span>
+              {% if wall.structural_function %}
+                <span class="badge-sub">{{ wall.structural_function.replace('_', ' ').title() }}</span>
+              {% endif %}
+            </div>
+            <h3 class="card-title">{{ wall.title }}</h3>
+            <p class="card-desc">{{ wall.description or 'Authentic field specimen for structural defect tagging and condition assessment.' }}</p>
+            <div class="card-footer">
+              <a href="/skill-assessment/{{ wall.slug }}" class="btn-start">
+                <i class="fa-solid fa-play"></i> Start Assessment
+              </a>
+              {% if is_admin %}
+                <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-preview" title="Edit Ground Truth Pins">
+                  <i class="fa-solid fa-pen-ruler"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Photographic Protocol Callout -->
+    <div class="guideline-callout">
+      <div>
+        <h3><i class="fa-solid fa-camera-retro"></i> Professional Photographic Ingestion Standards</h3>
+        <p>All assessment specimens must adhere to our 90° orthogonal, diffuse light, 3–5 course framing standard.</p>
+      </div>
+      <a href="/skill-assessment/admin" class="btn-nav" style="background: #2563eb; color: white;">
+        <i class="fa-solid fa-book-bookmark"></i> Review Capture Guidelines
+      </a>
+    </div>
+
+  </main>
+
+  <script>
+    function filterSpecimens() {
+      const typeFilter = document.getElementById('filter-type').value;
+      const diffFilter = document.getElementById('filter-difficulty').value;
+      const cards = document.querySelectorAll('.specimen-card');
+      let visible = 0;
+
+      cards.forEach(card => {
+        const typeMatch = (typeFilter === 'all' || card.getAttribute('data-type') === typeFilter);
+        const diffMatch = (diffFilter === 'all' || card.getAttribute('data-diff') === diffFilter);
+        if (typeMatch && diffMatch) {
+          card.style.display = 'flex';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      document.getElementById('visible-count').textContent = visible;
+    }
+  </script>
+
+</body>
+</html>

@@ -118,6 +118,129 @@ REMEDIAL_OPTIONS = [
     {"id": "chimney_rebuild", "label": "Chimney Stack Deconstruction & Flaunching Rebuild"}
 ]
 
+SKILL_DEFECT_MODES = [
+    {
+        "id": "core_voiding",
+        "label": "Core Voids / Cavitation",
+        "category": "dry_stone",
+        "hint": "Internal hearting or pinning stones settled or washed out, leaving cavernous structural voids between wall leaves."
+    },
+    {
+        "id": "delamination_exfoliation",
+        "label": "Delamination / Exfoliation / Contour Scaling",
+        "category": "sedimentary_decay",
+        "hint": "Flaking or splitting of sedimentary rock parallel to natural bedding planes due to sub-florescence or frost expansion."
+    },
+    {
+        "id": "biological_colonisation",
+        "label": "Biological Colonisation (Lichen / Moss / Macroflora)",
+        "category": "biological",
+        "hint": "Crustose or foliose lichen/moss producing oxalic and carbonic acids, etching stone pores and retaining destructive moisture."
+    },
+    {
+        "id": "pinning_loss",
+        "label": "Pinning Stone Loss / Gallet Dislodgement",
+        "category": "dry_stone",
+        "hint": "Missing wedge gallets or pinning spalls that transfer bearing weight between irregular rubble units."
+    },
+    {
+        "id": "bed_joint_slump",
+        "label": "Bed Joint Slump / Structural Settlement",
+        "category": "structural",
+        "hint": "Downward dipping of masonry courses from differential sub-base consolidation or shear failure."
+    },
+    {
+        "id": "inappropriate_cement_strap",
+        "label": "Inappropriate Cement Strap / Ribbon Pointing",
+        "category": "pointing_defect",
+        "hint": "Hard, impermeable Portland cement ribbon profile projecting proud of stone face, trapping dampness and inducing edge spalling."
+    },
+    {
+        "id": "mortar_erosion",
+        "label": "Mortar Erosion / Joint Washout",
+        "category": "joint_decay",
+        "hint": "Binder dissolution and sand washout deeper than 15-25mm from wall face, destabilising stone support."
+    },
+    {
+        "id": "stepped_crack",
+        "label": "Stepped Bed Joint Fracture / Shear Crack",
+        "category": "structural",
+        "hint": "Diagonal stair-step fracture following weakened bed and perpend joints due to ground movement or settlement."
+    },
+    {
+        "id": "expansion_failure",
+        "label": "Continuous Vertical Joint Shear / Expansion Rupture",
+        "category": "structural",
+        "hint": "Unbonded straight vertical joints spanning courses, creating a continuous split line vulnerable to lateral collapse."
+    },
+    {
+        "id": "spalling",
+        "label": "Arris Fretting / Surface Spalling",
+        "category": "surface_loss",
+        "hint": "Detachment of outer stone or brick arrises from concentrated compressive stresses or freeze-thaw bursting."
+    },
+    {
+        "id": "rubble_voiding",
+        "label": "Interstitial Matrix Cavitation / Rubble Voiding",
+        "category": "core_defect",
+        "hint": "Severe loss of bedding binder between irregular rounded boulders leaving unbonded bridging voids."
+    },
+    {
+        "id": "rising_damp_salt",
+        "label": "Basal Moisture Ingress / Salt Efflorescence",
+        "category": "moisture",
+        "hint": "Capillary suction from ground level leaving powdery mineral salt blooms and decaying lower arrises."
+    },
+    {
+        "id": "coping_displacement",
+        "label": "Coping Stone Displacement / Weathering",
+        "category": "capping_defect",
+        "hint": "Dislodged, tipped, or missing capping stones allowing driving rain into core masonry."
+    },
+    {
+        "id": "lateral_bulge",
+        "label": "Lateral Bulge / Wythe Separation",
+        "category": "structural",
+        "hint": "Out-of-plumb displacement where outer face pushes outwards away from core due to missing through-stones."
+    },
+    {
+        "id": "through_stone_failure",
+        "label": "Missing Through-Stones / Tie Defect",
+        "category": "structural",
+        "hint": "Absence of transverse tie stones spanning the full thickness of the wall, reducing composite structural stability."
+    },
+    {
+        "id": "efflorescence",
+        "label": "Cryptoflorescence / Salt Crystallisation",
+        "category": "chemical",
+        "hint": "Sub-surface salt growth expanding inside pores and busting stone matrix apart."
+    },
+    {
+        "id": "ashlar_spall",
+        "label": "Ashlar Cramp Jacking / Surface Rupture",
+        "category": "corrosion",
+        "hint": "Corrosion of embedded ferrous iron ties/cramps expanding up to 7x original volume and popping stone faces."
+    },
+    {
+        "id": "flint_unseating",
+        "label": "Flint Unseating / Gallet Loss",
+        "category": "masonry_loss",
+        "hint": "Loss of glassy nodules or flint knappings from the matrix due to decomposed lime bedding."
+    },
+    {
+        "id": "hydrostatic_bulge",
+        "label": "Hydrostatic Bulge / Retaining Failure",
+        "category": "hydrostatic",
+        "hint": "Surcharge of trapped groundwater behind retaining structure with non-functioning or missing weep holes."
+    },
+    {
+        "id": "vegetation_root_jacking",
+        "label": "Vegetation & Woody Root Jacking",
+        "category": "biological",
+        "hint": "Invasive woody roots (ivy, elder, buddleja) expanding within joints and dislodging blocks."
+    }
+]
+
 def calculate_iou(box_a, box_b):
     x_left = max(box_a["x_min"], box_b["x_min"])
     y_top = max(box_a["y_min"], box_b["y_min"])
@@ -148,6 +271,9 @@ def create_app(config_class=Config):
     upload_folder = os.path.join(app.root_path, "static", "img", "walls")
     os.makedirs(upload_folder, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = upload_folder
+    assessment_folder = os.path.join(app.root_path, "static", "img", "assessments")
+    os.makedirs(assessment_folder, exist_ok=True)
+    app.config["ASSESSMENT_FOLDER"] = assessment_folder
     audio_folder = os.path.join(app.root_path, "static", "audio")
     os.makedirs(audio_folder, exist_ok=True)
     app.config["AUDIO_FOLDER"] = audio_folder
@@ -165,6 +291,11 @@ def create_app(config_class=Config):
                     conn.execute(text("ALTER TABLE walls ADD COLUMN image_url_direct VARCHAR(500);"))
                     conn.commit()
 
+            if "is_skill_assessment" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN is_skill_assessment BOOLEAN DEFAULT FALSE;"))
+                    conn.commit()
+
             if db.engine.dialect.name == "postgresql":
                 with db.engine.connect() as conn:
                     try:
@@ -177,6 +308,10 @@ def create_app(config_class=Config):
             if "remedial_action" not in defect_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE defects ADD COLUMN remedial_action VARCHAR(150) DEFAULT 'repoint_lime';"))
+                    conn.commit()
+            if "tolerance_radius" not in defect_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE defects ADD COLUMN tolerance_radius FLOAT DEFAULT 0.06;"))
                     conn.commit()
 
             attempt_cols = [c["name"] for c in inspector.get_columns("assessment_attempts")]
@@ -1003,6 +1138,266 @@ def create_app(config_class=Config):
                         explanation=d["explanation"]
                     )
                     db.session.add(gt)
+            db.session.commit()
+
+        # Seed initial 5 authentic Student Skill Assessment specimens
+        skill_assessment_seeds = [
+            {
+                "slug": "skill-drystone-limestone-delamination",
+                "title": "Limestone Dry-Stone Wall: Core Voiding & Lichen Encrustation",
+                "description": "Rural Irish limestone dry-stone boundary wall exhibiting coping displacement, hearting matrix voiding, and extensive Xanthoria parietina lichen encrustation.",
+                "country": "Ireland",
+                "region": "Co. Galway (Burren / Connemara border)",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_01.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.38, "x_max": 0.52, "y_max": 0.38,
+                        "tolerance_radius": 0.08,
+                        "category": "hearting_washout", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Core Stone Voiding & Cavitation",
+                        "explanation": "Missing internal hearting pinning stones create hollow cavity between double wythes, reducing structural frictional interlock."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.34, "y_min": 0.62, "x_max": 0.34, "y_max": 0.62,
+                        "tolerance_radius": 0.08,
+                        "category": "cryptogamic_lichen_attack", "severity": "minor",
+                        "remedial_action": "monitor",
+                        "title": "Biogenic Crustose Lichen Colonization",
+                        "explanation": "Xanthoria parietina orange crustose lichens secreting oxalic acids that chemically pit limestone surface minerals."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.66, "y_min": 0.72, "x_max": 0.66, "y_max": 0.72,
+                        "tolerance_radius": 0.08,
+                        "category": "lateral_bulge", "severity": "critical",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Face Wythe Delamination & Slump",
+                        "explanation": "Outward movement of lower facing courses due to unarrested lateral soil pressure and lack of through-stones."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-drystone-field-boundary-slump",
+                "title": "Limestone Field Boundary: Bedding Slump & Pinning Loss",
+                "description": "Agricultural field wall with uneven stone bedding, loss of small chinking/pinning stones, and localized shear slump.",
+                "country": "Ireland",
+                "region": "Co. Clare",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "beginner",
+                "image_filename": "skill_specimen_02.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.65, "y_min": 0.38, "x_max": 0.65, "y_max": 0.38,
+                        "tolerance_radius": 0.08,
+                        "category": "hearting_washout", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Loss of Chinking & Wedging Pinners",
+                        "explanation": "Dislodged wedging stones permit unconstrained micro-rotation under live livestock loading."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.56, "y_min": 0.52, "x_max": 0.56, "y_max": 0.52,
+                        "tolerance_radius": 0.08,
+                        "category": "coping_displacement", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Bed Joint Slump & Unseated Facing Stone",
+                        "explanation": "Uneven horizontal bedding angle causing stone arris shear and focal load concentration."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.38, "y_min": 0.71, "x_max": 0.38, "y_max": 0.71,
+                        "tolerance_radius": 0.08,
+                        "category": "cryptogamic_lichen_attack", "severity": "minor",
+                        "remedial_action": "monitor",
+                        "title": "Crustose Lichen Colonization",
+                        "explanation": "Superficial biological colonization across stone bedding arrises."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-sandstone-strap-pointing-trap",
+                "title": "Coursed Sandstone Wall: Cement Strap Pointing Trap",
+                "description": "Sandstone coursed rubble masonry suffering from impermeable hard Portland cement ribbon pointing, causing perimeter stone spalling and moisture trapping.",
+                "country": "Ireland",
+                "region": "Co. Wicklow",
+                "wall_type": "lime_mortar",
+                "structural_function": "retaining",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_03.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.48, "y_min": 0.46, "x_max": 0.48, "y_max": 0.46,
+                        "tolerance_radius": 0.08,
+                        "category": "inappropriate_cement_strap", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Impermeable Ribbon Pointing & Edge Water Trap",
+                        "explanation": "Dense 1:3 Portland cement strap standing proud of stone face, preventing vapor breathability and driving moisture into softer sandstone arrises."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.78, "y_min": 0.52, "x_max": 0.78, "y_max": 0.52,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Bed Joint Recession & Binder Washout",
+                        "explanation": "Lime mortar washout behind broken cement crusts exposing unbacked core matrix."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.28, "y_min": 0.54, "x_max": 0.28, "y_max": 0.54,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Stepped Bed Joint Settlement Fracture",
+                        "explanation": "Differential ground settlement creating diagonal stair-step shear along weakened joint planes."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-sandstone-continuous-vertical-joint",
+                "title": "Sandstone Pier: Continuous Vertical Joint Shear",
+                "description": "Detail of sandstone rubble coursing showing vertical joint alignment creating an unbonded vertical shear line, paired with arris fretting.",
+                "country": "Ireland",
+                "region": "Co. Cork",
+                "wall_type": "lime_mortar",
+                "structural_function": "load_bearing",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_04.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.72, "y_min": 0.48, "x_max": 0.72, "y_max": 0.48,
+                        "tolerance_radius": 0.08,
+                        "category": "expansion_failure", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Continuous Vertical Joint Alignment",
+                        "explanation": "Failure to stagger vertical joints across courses results in a continuous straight-line shear plane vulnerable to lateral splitting."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.42, "y_min": 0.35, "x_max": 0.42, "y_max": 0.35,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Granular Arris Fretting & Contour Scaling",
+                        "explanation": "Frost-thaw crystal expansion along sedimentary bedding planes causing contour delamination."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.72, "x_max": 0.52, "y_max": 0.72,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Deep Bed Joint Mortar Washout",
+                        "explanation": "Loss of hydraulic lime mortar exceeding 25mm depth requiring joint raking and deep repointing."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-rubble-boulder-matrix-voiding",
+                "title": "Massive Boulder Rubble Wall: Core Cavitation & Joint Loss",
+                "description": "Heavy field boulder and irregular rubble wall displaying extensive mortar loss, deep interstitial cavitation, and lack of through-stones.",
+                "country": "Ireland",
+                "region": "Co. Kerry",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_05.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.54, "y_min": 0.48, "x_max": 0.54, "y_max": 0.48,
+                        "tolerance_radius": 0.08,
+                        "category": "rubble_voiding", "severity": "critical",
+                        "remedial_action": "grout_injection",
+                        "title": "Core Void & Interstitial Matrix Cavitation",
+                        "explanation": "Severe loss of bedding binder between irregular rounded glacial boulders leaving unstable bridging voids."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.68, "y_min": 0.64, "x_max": 0.68, "y_max": 0.64,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_erosion", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Extensive Mortar Joint Washout",
+                        "explanation": "Leached mortar mouths allowing rainwater entry into wall core."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.24, "y_min": 0.82, "x_max": 0.24, "y_max": 0.82,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Basal Moisture Ingress & Salt Staining",
+                        "explanation": "Capillary suction from unsealed ground level leading to mineral crystallization and joint degradation."
+                    }
+                ]
+            }
+        ]
+
+        for sseed in skill_assessment_seeds:
+            sw = Wall.query.filter_by(slug=sseed["slug"]).first()
+            if not sw:
+                sw = Wall(
+                    slug=sseed["slug"],
+                    title=sseed["title"],
+                    description=sseed["description"],
+                    country=sseed["country"],
+                    region=sseed["region"],
+                    wall_type=sseed["wall_type"],
+                    structural_function=sseed["structural_function"],
+                    difficulty=sseed["difficulty"],
+                    image_filename=sseed["image_filename"],
+                    image_url_direct=sseed["image_url_direct"],
+                    is_published=True,
+                    is_skill_assessment=True
+                )
+                db.session.add(sw)
+                db.session.commit()
+            else:
+                sw.is_skill_assessment = True
+                sw.image_filename = sseed["image_filename"]
+                db.session.commit()
+
+            for sd in sseed.get("defects", []):
+                existing_sd = Defect.query.filter_by(wall_id=sw.id, title=sd["title"]).first()
+                if not existing_sd:
+                    sgt = Defect(
+                        wall_id=sw.id,
+                        target_type=sd["target_type"],
+                        x_min=sd["x_min"],
+                        y_min=sd["y_min"],
+                        x_max=sd["x_max"],
+                        y_max=sd["y_max"],
+                        tolerance_radius=sd.get("tolerance_radius", 0.08),
+                        category=sd["category"],
+                        severity=sd["severity"],
+                        remedial_action=sd.get("remedial_action", "repoint_lime"),
+                        title=sd["title"],
+                        explanation=sd["explanation"]
+                    )
+                    db.session.add(sgt)
+                else:
+                    existing_sd.tolerance_radius = sd.get("tolerance_radius", 0.08)
             db.session.commit()
 
     def commit_with_retry(entity=None, max_retries=2):
@@ -3148,6 +3543,7 @@ def create_app(config_class=Config):
                 except Exception as cloud_err:
                     print(f"Cloudinary mobile upload notice (using local file): {cloud_err}")
 
+            is_skill_assessment = bool(request.form.get("is_skill_assessment") in ["1", "true", "True", True, "on"])
             wall = Wall(
                 slug=slug,
                 title=title,
@@ -3159,7 +3555,8 @@ def create_app(config_class=Config):
                 difficulty=request.form.get("difficulty", "beginner"),
                 image_filename=filename,
                 image_url_direct=image_url_direct,
-                is_published=True
+                is_published=True,
+                is_skill_assessment=is_skill_assessment
             )
             commit_with_retry(wall)
             return jsonify({"success": True, "wall": wall.to_dict()})
@@ -4162,6 +4559,391 @@ def create_app(config_class=Config):
                 "estimated_rate_euro": spec_data["rate"]
             }
         })
+
+    # =========================================================================
+    # STUDENT SKILL ASSESSMENT MODULE
+    # =========================================================================
+
+    @app.route("/skill-assessment")
+    def skill_assessment_hub():
+        """Student Skill Assessment Hub: Lists published assessment specimens with stats and guidelines."""
+        specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).all()
+        specimen_list = []
+        for s in specimens:
+            d_count = Defect.query.filter_by(wall_id=s.id).count()
+            data = s.to_dict()
+            data["defect_count"] = d_count
+            specimen_list.append(data)
+
+        wall_types = sorted(list(set(s.wall_type for s in specimens if s.wall_type)))
+        difficulties = ["beginner", "intermediate", "advanced"]
+
+        return render_template(
+            "skill_assessment_hub.html",
+            specimens=specimen_list,
+            total_specimens=len(specimens),
+            wall_types=wall_types,
+            difficulties=difficulties,
+            defect_modes=SKILL_DEFECT_MODES
+        )
+
+    @app.route("/skill-assessment/<slug>")
+    def skill_assessment_workstation(slug):
+        """Student Skill Assessment Interactive Workstation: Point and click defect tagging."""
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True, is_published=True).first_or_404()
+        ground_truth_count = Defect.query.filter_by(wall_id=wall.id).count()
+        return render_template(
+            "skill_assessment_workstation.html",
+            wall=wall.to_dict(),
+            ground_truth_count=ground_truth_count,
+            defect_modes=SKILL_DEFECT_MODES,
+            remedial_options=REMEDIAL_OPTIONS
+        )
+
+    @app.route("/api/skill-assessment/evaluate/<slug>", methods=["POST"])
+    def api_skill_assessment_evaluate(slug):
+        """
+        Evaluates student submitted defect pins against professional ground-truth defects.
+        Uses Euclidean hit-test with tolerance radius per defect (default 0.08 normalized).
+        """
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        data = request.get_json(silent=True) or {}
+        submitted_pins = data.get("pins", [])
+        student_name = data.get("student_name", "Inspector Candidate").strip()
+        cohort_code = data.get("cohort_code", "SKILLS").strip().upper() or "SKILLS"
+        session_id = data.get("session_id", uuid.uuid4().hex[:8])
+
+        gt_defects = Defect.query.filter_by(wall_id=wall.id).all()
+        gt_dicts = [d.to_dict() for d in gt_defects]
+
+        matched_gt_ids = set()
+        partial_gt_ids = set()
+        evaluated_pins = []
+        feedback_items = []
+        earned_points = 0.0
+        false_positives = 0
+
+        # Match each student pin to nearest ground truth within tolerance radius
+        for pin in submitted_pins:
+            px = float(pin.get("x", 0.0))
+            py = float(pin.get("y", 0.0))
+            p_cat = (pin.get("category") or "").strip()
+            p_sev = (pin.get("severity") or "moderate").strip()
+
+            best_gt = None
+            best_dist = 999.0
+
+            for gt in gt_dicts:
+                gt_cx = (gt["x_min"] + gt["x_max"]) / 2.0
+                gt_cy = (gt["y_min"] + gt["y_max"]) / 2.0
+                dist = math.hypot(px - gt_cx, py - gt_cy)
+                tol = float(gt.get("tolerance_radius", 0.08) or 0.08)
+
+                if dist <= tol and dist < best_dist:
+                    best_dist = dist
+                    best_gt = gt
+
+            if best_gt:
+                category_match = (p_cat == best_gt["category"])
+                severity_match = (p_sev == best_gt.get("severity", "moderate"))
+
+                if category_match:
+                    matched_gt_ids.add(best_gt["id"])
+                    earned_points += 1.0
+                    pin_status = "correct"
+                    explanation = f"Accurate identification ({best_gt.get('title')}). Distance: {round(best_dist*100, 1)}% (within tolerance). {best_gt.get('explanation', '')}"
+                else:
+                    partial_gt_ids.add(best_gt["id"])
+                    earned_points += 0.60
+                    pin_status = "partial"
+                    explanation = f"Location identified ({round(best_dist*100, 1)}% offset), but defect mode mismatch. Tagged as '{p_cat}', professional diagnosis: '{best_gt.get('category')} - {best_gt.get('title')}'. {best_gt.get('explanation', '')}"
+
+                evaluated_pins.append({
+                    "x": px,
+                    "y": py,
+                    "category": p_cat,
+                    "severity": p_sev,
+                    "status": pin_status,
+                    "distance": round(best_dist, 4),
+                    "matched_gt_title": best_gt["title"],
+                    "expected_category": best_gt["category"],
+                    "remedial_action": best_gt.get("remedial_action", "repoint_lime"),
+                    "explanation": explanation
+                })
+
+                feedback_items.append({
+                    "title": best_gt["title"],
+                    "category": best_gt["category"],
+                    "student_category": p_cat,
+                    "severity": best_gt.get("severity", "moderate"),
+                    "remedial_action": best_gt.get("remedial_action", "repoint_lime"),
+                    "status": pin_status,
+                    "explanation": explanation
+                })
+            else:
+                false_positives += 1
+                evaluated_pins.append({
+                    "x": px,
+                    "y": py,
+                    "category": p_cat,
+                    "severity": p_sev,
+                    "status": "false_positive",
+                    "distance": None,
+                    "matched_gt_title": None,
+                    "explanation": f"False positive at ({round(px*100)}%, {round(py*100)}%). No pathological defect verified at this position."
+                })
+
+        total_gt = len(gt_dicts)
+        full_hits = len(matched_gt_ids)
+        partial_hits = len(partial_gt_ids - matched_gt_ids)
+        missed_count = 0
+
+        for gt in gt_dicts:
+            if gt["id"] not in matched_gt_ids and gt["id"] not in partial_gt_ids:
+                missed_count += 1
+                feedback_items.append({
+                    "title": gt["title"],
+                    "category": gt["category"],
+                    "severity": gt.get("severity", "moderate"),
+                    "remedial_action": gt.get("remedial_action", "repoint_lime"),
+                    "status": "missed",
+                    "explanation": f"Unidentified pathology: {gt.get('title')} ({gt.get('severity', 'moderate')}). {gt.get('explanation', '')}"
+                })
+
+        if total_gt > 0:
+            raw_score = (earned_points / total_gt) * 100.0
+            score = max(0.0, min(100.0, round(raw_score - (false_positives * 5.0), 1)))
+        else:
+            score = 100.0 if false_positives == 0 else 0.0
+
+        if score >= 85.0:
+            grade = "Distinction"
+        elif score >= 70.0:
+            grade = "Merit (Passing)"
+        elif score >= 50.0:
+            grade = "Pass"
+        else:
+            grade = "Remedial Review Required"
+
+        passed = score >= 70.0
+
+        attempt = AssessmentAttempt(
+            wall_id=wall.id,
+            student_session_id=session_id,
+            cohort_code=cohort_code,
+            assignment_code="SKILL-ASSESS",
+            student_name=student_name,
+            submitted_markers=submitted_pins,
+            true_positives=full_hits + partial_hits,
+            false_positives=false_positives,
+            false_negatives=missed_count,
+            score_percentage=score,
+            passed=passed,
+            feedback_notes={
+                "grade": grade,
+                "earned_points": round(earned_points, 2),
+                "total_gt": total_gt,
+                "items": feedback_items
+            }
+        )
+        db.session.add(attempt)
+        db.session.commit()
+
+        gt_overlay = []
+        for gt in gt_dicts:
+            gt_overlay.append({
+                "id": gt["id"],
+                "x": (gt["x_min"] + gt["x_max"]) / 2.0,
+                "y": (gt["y_min"] + gt["y_max"]) / 2.0,
+                "tolerance_radius": gt.get("tolerance_radius", 0.08),
+                "category": gt["category"],
+                "severity": gt.get("severity", "moderate"),
+                "remedial_action": gt.get("remedial_action", "repoint_lime"),
+                "title": gt["title"],
+                "explanation": gt.get("explanation", "")
+            })
+
+        return jsonify({
+            "success": True,
+            "score": score,
+            "grade": grade,
+            "passed": passed,
+            "earned_points": round(earned_points, 2),
+            "total_gt": total_gt,
+            "full_hits": full_hits,
+            "partial_hits": partial_hits,
+            "false_positives": false_positives,
+            "missed_count": missed_count,
+            "evaluated_pins": evaluated_pins,
+            "ground_truth": gt_overlay,
+            "feedback": feedback_items
+        })
+
+    # --- Professional Controlled Ingestion & Grading Interface ---
+    @app.route("/skill-assessment/admin")
+    @admin_required
+    def skill_assessment_admin():
+        """
+        Controlled professional upload and specimen management interface.
+        Displays photography guidelines HUD (lighting, angles, scope, resolution),
+        camera/file uploader, and published/pending specimen queue.
+        """
+        specimens = Wall.query.filter_by(is_skill_assessment=True).order_by(Wall.created_at.desc()).all()
+        specimen_list = []
+        for s in specimens:
+            d_count = Defect.query.filter_by(wall_id=s.id).count()
+            data = s.to_dict()
+            data["defect_count"] = d_count
+            specimen_list.append(data)
+
+        return render_template(
+            "skill_assessment_admin.html",
+            specimens=specimen_list,
+            wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()),
+            remedial_options=REMEDIAL_OPTIONS
+        )
+
+    @app.route("/skill-assessment/admin/upload", methods=["POST"])
+    @admin_required
+    def skill_assessment_upload():
+        """
+        Handles specimen image upload via camera or file dropzone.
+        Saves locally and to Cloudinary with public access mode.
+        """
+        try:
+            file = request.files.get("wall_image")
+            if not file or not file.filename:
+                return redirect(url_for("skill_assessment_admin"))
+
+            title = request.form.get("title", "Assessment Specimen").strip()
+            slug = "skill-" + secure_filename(title.lower().replace(" ", "-")) + "-" + uuid.uuid4().hex[:6]
+            ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+            filename = f"{slug}{ext}"
+            file_bytes = file.read()
+
+            walls_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            with open(walls_path, "wb") as f_out:
+                f_out.write(file_bytes)
+
+            assess_path = os.path.join(app.config.get("ASSESSMENT_FOLDER", app.config["UPLOAD_FOLDER"]), filename)
+            if assess_path != walls_path:
+                with open(assess_path, "wb") as f_out:
+                    f_out.write(file_bytes)
+
+            db.session.remove()
+
+            image_url_direct = None
+            c_url = os.getenv("CLOUDINARY_URL", "").strip()
+            if c_url:
+                try:
+                    import io
+                    upload_result = cloudinary.uploader.upload(
+                        io.BytesIO(file_bytes),
+                        folder="wall_inspector/assessments",
+                        public_id=slug,
+                        overwrite=True,
+                        resource_type="image",
+                        access_mode="public"
+                    )
+                    image_url_direct = upload_result.get("secure_url")
+                except Exception as cloud_err:
+                    print(f"Cloudinary upload error in skill assessment: {cloud_err}")
+
+            wall = Wall(
+                slug=slug,
+                title=title,
+                description=request.form.get("description", ""),
+                country=request.form.get("country", "Ireland"),
+                region=request.form.get("region", ""),
+                wall_type=request.form.get("wall_type", "dry_stone"),
+                structural_function=request.form.get("structural_function", "boundary"),
+                difficulty=request.form.get("difficulty", "intermediate"),
+                image_filename=filename,
+                image_url_direct=image_url_direct,
+                is_published=True,
+                is_skill_assessment=True
+            )
+            commit_with_retry(wall)
+
+            grade_action = request.form.get("grade_action", "now")
+            if grade_action == "now":
+                return redirect(url_for("skill_assessment_grader", slug=wall.slug))
+            return redirect(url_for("skill_assessment_admin"))
+        except Exception as e:
+            db.session.rollback()
+            return f"Error uploading assessment specimen: {str(e)}", 500
+
+    @app.route("/skill-assessment/admin/grade/<slug>")
+    @admin_required
+    def skill_assessment_grader(slug):
+        """
+        Professional point-and-tag defect grading workstation.
+        Allows instructor to place ground-truth defect pins, calibrate tolerance radius,
+        and provide expert diagnosis and remediation.
+        """
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        defects = Defect.query.filter_by(wall_id=wall.id).all()
+        return render_template(
+            "skill_assessment_grader.html",
+            wall=wall.to_dict(),
+            defects=[d.to_dict() for d in defects],
+            defect_modes=SKILL_DEFECT_MODES,
+            remedial_options=REMEDIAL_OPTIONS
+        )
+
+    @app.route("/api/skill-assessment/grade/<slug>", methods=["POST"])
+    @admin_required
+    def api_skill_assessment_save_defects(slug):
+        """Saves or updates ground-truth defect points for an assessment specimen."""
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        data = request.get_json(silent=True) or {}
+        incoming_defects = data.get("defects", [])
+
+        Defect.query.filter_by(wall_id=wall.id).delete()
+
+        for d in incoming_defects:
+            x = float(d.get("x", 0.5))
+            y = float(d.get("y", 0.5))
+            tol = float(d.get("tolerance_radius", 0.08) or 0.08)
+            new_d = Defect(
+                wall_id=wall.id,
+                target_type="pin",
+                x_min=x,
+                y_min=y,
+                x_max=x,
+                y_max=y,
+                tolerance_radius=tol,
+                category=d.get("category", "core_voiding"),
+                severity=d.get("severity", "moderate"),
+                remedial_action=d.get("remedial_action", "repoint_lime"),
+                title=d.get("title", "Ground Truth Defect"),
+                explanation=d.get("explanation", "")
+            )
+            db.session.add(new_d)
+
+        db.session.commit()
+        return jsonify({"success": True, "count": len(incoming_defects)})
+
+    @app.route("/api/skill-assessment/delete/<slug>", methods=["POST"])
+    @admin_required
+    def api_skill_assessment_delete(slug):
+        """Deletes an assessment specimen and its defects."""
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        if wall.image_filename:
+            for folder in [app.config.get("UPLOAD_FOLDER"), app.config.get("ASSESSMENT_FOLDER")]:
+                if folder:
+                    f_path = os.path.join(folder, wall.image_filename)
+                    if os.path.exists(f_path):
+                        try:
+                            os.remove(f_path)
+                        except OSError:
+                            pass
+
+        Defect.query.filter_by(wall_id=wall.id).delete()
+        AssessmentAttempt.query.filter_by(wall_id=wall.id).delete()
+        db.session.delete(wall)
+        db.session.commit()
+        return jsonify({"success": True})
 
     return app
 

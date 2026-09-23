@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
@@ -19,6 +20,7 @@ class Wall(db.Model):
     image_filename = db.Column(db.String(255), nullable=True)
     image_url_direct = db.Column(db.String(500), nullable=True)
     is_published = db.Column(db.Boolean, default=True)
+    is_skill_assessment = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -41,7 +43,8 @@ class Wall(db.Model):
             "difficulty": self.difficulty,
             "image_filename": self.image_filename,
             "image_url": url,
-            "is_published": self.is_published
+            "is_published": self.is_published,
+            "is_skill_assessment": bool(self.is_skill_assessment)
         }
 
 class Defect(db.Model):
@@ -54,6 +57,7 @@ class Defect(db.Model):
     y_min = db.Column(db.Float, nullable=False)
     x_max = db.Column(db.Float, nullable=False)
     y_max = db.Column(db.Float, nullable=False)
+    tolerance_radius = db.Column(db.Float, default=0.06)
     category = db.Column(db.String(50), nullable=False)
     severity = db.Column(db.String(20), default="moderate")
     remedial_action = db.Column(db.String(150), default="repoint_lime")
@@ -69,6 +73,7 @@ class Defect(db.Model):
             "y_min": self.y_min,
             "x_max": self.x_max,
             "y_max": self.y_max,
+            "tolerance_radius": getattr(self, 'tolerance_radius', 0.06) or 0.06,
             "category": self.category,
             "severity": self.severity,
             "remedial_action": self.remedial_action,

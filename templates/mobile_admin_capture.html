@@ -253,6 +253,20 @@
     </div>
   </div>
 
+  <!-- Skill Assessment Direct Link Banner -->
+  <div style="width: 100%; max-width: 480px; background: linear-gradient(90deg, rgba(6, 78, 59, 0.9), rgba(5, 150, 105, 0.9)); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 1.3rem;">🎯</span>
+      <div>
+        <strong style="font-size: 0.84rem; color: #ffffff; display: block;">Student Skill Assessment</strong>
+        <small style="font-size: 0.72rem; color: #a7f3d0;">Calibrated photographic standards</small>
+      </div>
+    </div>
+    <a href="/skill-assessment/admin" style="background: #ffffff; color: #064e3b; text-decoration: none; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;">
+      Guide & Ingest
+    </a>
+  </div>
+
   <!-- Rural Offline Sync Banner -->
   <div id="offline-banner" style="display: none; width: 100%; max-width: 480px; background: linear-gradient(90deg, #065f46, #059669); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 0.75rem; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);">
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -361,6 +375,16 @@
       <div class="field-group">
         <label>Field Pathology Notes</label>
         <textarea name="description" rows="3" placeholder="Describe mortar washout, bulging, arris crushing, or exposure..."></textarea>
+      </div>
+
+      <div style="background: rgba(5, 150, 105, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 10px; margin-top: 4px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #a7f3d0; font-size: 0.82rem; font-weight: 700; margin: 0;">
+          <input type="checkbox" name="is_skill_assessment" value="1" style="width: auto; accent-color: #059669;">
+          <span>🎯 Register for Student Skill Assessment</span>
+        </label>
+        <small style="color: #94a3b8; font-size: 0.72rem; display: block; margin-top: 2px;">
+          Applies 90° orthogonal capture guidelines and enables point-and-tag defect grading.
+        </small>
       </div>
     </div>
 
