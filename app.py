@@ -1692,6 +1692,251 @@ def create_app(config_class=Config):
                         "explanation": "Broadleaf weed roots expanding into basal voids, dislodging foundation pinning stones over seasonal freeze-thaw cycles."
                     }
                 ]
+            },
+            {
+                "slug": "skill-limestone-ivy-root-jacking",
+                "title": "Semi-Coursed Limestone: Invasive Ivy Creep & Bed Joint Root-Jacking",
+                "description": "Historic semi-coursed limestone rubble masonry experiencing severe Hedera helix root-jacking, woody vine penetration into horizontal bedding planes, and joint displacement.",
+                "country": "Ireland",
+                "region": "Co. Kilkenny",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_11.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "vegetation_root_jacking", "label": "Vegetation & Woody Root Jacking"},
+                    {"id": "structural_crack", "label": "Structural Fissure / Joint Dislodgement"},
+                    {"id": "rising_damp_salt", "label": "Basal Damp Ingress / Algal Soil Wash"},
+                    {"id": "core_voiding", "label": "Core Voids / Internal Cavitation"},
+                    {"id": "mortar_erosion", "label": "Mortar Erosion / Joint Washout"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.53, "y_min": 0.42, "x_max": 0.53, "y_max": 0.42,
+                        "tolerance_radius": 0.08,
+                        "category": "vegetation_root_jacking", "severity": "critical",
+                        "remedial_action": "biocide_clean",
+                        "title": "Invasive Woody Ivy Root-Jacking & Bed Penetration",
+                        "explanation": "Hedera helix aerial rootlets penetrating deep into horizontal bed joints, exerting expansive radial growth pressure that prises apart coursed limestone blocks."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.82, "y_min": 0.46, "x_max": 0.82, "y_max": 0.46,
+                        "tolerance_radius": 0.08,
+                        "category": "structural_crack", "severity": "moderate",
+                        "remedial_action": "helical_stitch",
+                        "title": "Vertical Joint Dislodgement & Root Fissure Displacement",
+                        "explanation": "Root expansion in vertical cross-joint forcing adjacent stones apart, creating an unbonded shear gap prone to moisture accumulation."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.42, "y_min": 0.88, "x_max": 0.42, "y_max": 0.88,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Basal Moisture Accumulation & Ivy Ground Ingress",
+                        "explanation": "Dense ground ivy mantle trapping soil moisture against basal courses, inhibiting surface evaporation and sustaining perpetual wetness."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-limestone-rubble-deep-joint-recess",
+                "title": "Rough Limestone Rubble: Severe Mortar Recess & Edge Bearing Weathering",
+                "description": "Random un-coursed limestone rubble boundary wall with acute hydraulic lime mortar erosion, deep joint recessing exceeding 35mm, and surface stone flaking.",
+                "country": "Ireland",
+                "region": "Co. Clare",
+                "wall_type": "lime_mortar",
+                "structural_function": "boundary",
+                "difficulty": "foundational",
+                "image_filename": "skill_specimen_12.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "mortar_washout", "label": "Deep Joint Recess / Mortar Washout (>25mm)"},
+                    {"id": "spalling", "label": "Stone Surface Fretting & Arris Spall"},
+                    {"id": "core_voiding", "label": "Core Cavity Voiding / Hearting Settlement"},
+                    {"id": "biological_colonisation", "label": "Crustose Lichen & Microbial Biofilm"},
+                    {"id": "stepped_crack", "label": "Diagonal Stepped Joint Crack"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.51, "y_min": 0.58, "x_max": 0.51, "y_max": 0.58,
+                        "tolerance_radius": 0.08,
+                        "category": "mortar_washout", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Deep Hydraulic Lime Joint Recess & Bed Washout (>30mm)",
+                        "explanation": "Severe wind-driven rain and frost erosion have washed historic lime mortar back beyond 30mm depth, leaving facing stones perched on precarious point contacts."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.24, "y_min": 0.52, "x_max": 0.24, "y_max": 0.52,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Stone Face Surface Fretting & Arris Weathering",
+                        "explanation": "Carbonaceous limestone surface weathering resulting in contour flaking, loss of original quarry face texture, and rounded arrises."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.72, "y_min": 0.35, "x_max": 0.72, "y_max": 0.35,
+                        "tolerance_radius": 0.08,
+                        "category": "core_voiding", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Bed Joint Cavity & Loss of Bearing Contact",
+                        "explanation": "Empty voiding behind outer face where missing mortar and hearting allows localized rotational settling of overlying stones."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-squared-limestone-stepped-shear-joint",
+                "title": "Squared Limestone Blockwork: Stepped Shear & Basal Foliage Creep",
+                "description": "Finely squared carboniferous limestone coursed blockwork exhibiting diagonal stepped shear fractures along perpendicular joints, rotational stone movement, and basal ivy shoots.",
+                "country": "Ireland",
+                "region": "Co. Limerick",
+                "wall_type": "ashlar_stone",
+                "structural_function": "retaining",
+                "difficulty": "advanced",
+                "image_filename": "skill_specimen_13.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Stepped Joint Shear Fracture / Foundation Settlement"},
+                    {"id": "expansion_failure", "label": "Rotational Block Displacement / Perp Joint Gapping"},
+                    {"id": "vegetation_root_jacking", "label": "Basal Ivy Infiltration & Runner Creep"},
+                    {"id": "delamination_exfoliation", "label": "Sedimentary Bedding Exfoliation"},
+                    {"id": "spalling", "label": "Arris Compressive Spall"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.22, "y_min": 0.38, "x_max": 0.22, "y_max": 0.38,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "helical_stitch",
+                        "title": "Diagonal Stepped Shear Joint Fracturing",
+                        "explanation": "Differential foundation settlement or subgrade movement propagating diagonal stepped shear displacement through alternating vertical and horizontal joints."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.48, "y_min": 0.45, "x_max": 0.48, "y_max": 0.45,
+                        "tolerance_radius": 0.08,
+                        "category": "expansion_failure", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Rotational Block Displacement & Perp Gap Aperture",
+                        "explanation": "Outward tilting and rotational slip of central dressed block resulting in open perp joints and loss of bearing contact."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.42, "y_min": 0.72, "x_max": 0.42, "y_max": 0.72,
+                        "tolerance_radius": 0.08,
+                        "category": "vegetation_root_jacking", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Climbing Ivy Runner Infiltration across Bed Joints",
+                        "explanation": "Young juvenile ivy runners establishing holdfast pads and creeping across coursing beds, initiating long-term root-jacking damage."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-rubble-masonry-adventitious-root-web",
+                "title": "Weathered Rubble Masonry: Dense Adventitious Rootlet Network & Oblique Joint Run",
+                "description": "Historic field rubble wall enveloped in a dense web of dormant adventitious rootlets, showing continuous oblique joint alignment and loss of small pinning gallets.",
+                "country": "Ireland",
+                "region": "Co. Mayo",
+                "wall_type": "dry_stone",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_14.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "stepped_crack", "label": "Continuous Oblique Joint Run / Alignment Shear"},
+                    {"id": "vegetation_root_jacking", "label": "Adventitious Root Web & Fibrous Holdfast Encroachment"},
+                    {"id": "core_voiding", "label": "Loss of Interstitial Gallet Pinners / Cavitation"},
+                    {"id": "delamination_exfoliation", "label": "Sedimentary Exfoliation & Surface Flaking"},
+                    {"id": "biological_colonisation", "label": "Lichen & Algal Biofilm Colonization"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.40, "y_min": 0.65, "x_max": 0.40, "y_max": 0.65,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack", "severity": "critical",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Continuous Oblique Joint Plane & Bearing Shift",
+                        "explanation": "Vertical alignment of joints across multiple courses creating a continuous cleavage plane vulnerable to lateral slippage and outward blowout."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.55, "y_min": 0.32, "x_max": 0.55, "y_max": 0.32,
+                        "tolerance_radius": 0.08,
+                        "category": "vegetation_root_jacking", "severity": "moderate",
+                        "remedial_action": "biocide_clean",
+                        "title": "Dense Adventitious Root Web & Fibrous Holdfast Encroachment",
+                        "explanation": "Extensive network of dead and living aerial rootlets adhering to the stone surface, secreting organic acids and wedging open fine micro-fissures."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.36, "y_min": 0.40, "x_max": 0.36, "y_max": 0.40,
+                        "tolerance_radius": 0.08,
+                        "category": "core_voiding", "severity": "moderate",
+                        "remedial_action": "rebuild_drystone",
+                        "title": "Loss of Interstitial Gallet Pinning & Open Cavity",
+                        "explanation": "Dislodgement of small packing stones (gallets) leaving open gaps between irregular stones and reducing structural contact area."
+                    }
+                ]
+            },
+            {
+                "slug": "skill-fieldstone-rubble-cement-strap-pointing",
+                "title": "Glacial Fieldstone Rubble: Incompatible Portland Cement Ribbon Pointing Trap",
+                "description": "Historic rounded glacial fieldstone rubble wall damaged by dense Portland cement ribbon/strap pointing, creating moisture entrapment, perimeter stone fretting, and basal damp rings.",
+                "country": "Ireland",
+                "region": "Co. Galway",
+                "wall_type": "rubble",
+                "structural_function": "boundary",
+                "difficulty": "intermediate",
+                "image_filename": "skill_specimen_15.jpg",
+                "image_url_direct": None,
+                "is_skill_assessment": True,
+                "assessment_defect_modes": [
+                    {"id": "inappropriate_repointing", "label": "Incompatible Portland Cement Ribbon / Strap Pointing"},
+                    {"id": "spalling", "label": "Differential Perimeter Fretting & Boulder Spall"},
+                    {"id": "rising_damp_salt", "label": "Basal Damp Ingress & Moisture Ringing"},
+                    {"id": "mortar_erosion", "label": "Under-Mortar Core Deterioration"},
+                    {"id": "biological_colonisation", "label": "Localized Algal Growth"}
+                ],
+                "defects": [
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.52, "y_min": 0.48, "x_max": 0.52, "y_max": 0.48,
+                        "tolerance_radius": 0.08,
+                        "category": "inappropriate_repointing", "severity": "critical",
+                        "remedial_action": "repoint_lime",
+                        "title": "Incompatible Portland Cement Smeared Strap Pointing",
+                        "explanation": "Hard, impermeable 1:3 Portland cement ribbon pointing applied over porous fieldstone, preventing breathability and trapping water within the wall matrix."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.24, "y_min": 0.68, "x_max": 0.24, "y_max": 0.68,
+                        "tolerance_radius": 0.08,
+                        "category": "spalling", "severity": "moderate",
+                        "remedial_action": "repoint_lime",
+                        "title": "Differential Moisture Ring & Perimeter Spall on Rounded Boulder",
+                        "explanation": "Moisture trapped behind rigid cement straps forces water through softer stone edges, causing accelerated freeze-thaw spalling around stone perimeters."
+                    },
+                    {
+                        "target_type": "pin",
+                        "x_min": 0.54, "y_min": 0.94, "x_max": 0.54, "y_max": 0.94,
+                        "tolerance_radius": 0.08,
+                        "category": "rising_damp_salt", "severity": "minor",
+                        "remedial_action": "biocide_clean",
+                        "title": "Basal Salt Efflorescence & Damp Washout Boundary",
+                        "explanation": "Persistent capillary rising damp along lower course with localized weed seedling germination in degraded bottom bedding seams."
+                    }
+                ]
             }
         ]
 
