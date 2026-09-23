@@ -550,11 +550,14 @@
           </div>
           <div>
             <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Student Diagnostic Dashboard</div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name">
                 {{ student_name if student_name else 'Inspector Candidate' }}
               </span>
               <input type="text" id="candidate-name-input" value="{{ student_name }}" placeholder="Switch Candidate Name..." style="background: #090e1a; border: 1px solid #334155; color: #38bdf8; font-size: 0.8rem; padding: 3px 8px; border-radius: 6px; outline: none; max-width: 200px;" oninput="onCandidateNameChange(this.value)">
+              <button type="button" onclick="syncOrClaimRecentAttempts()" id="btn-sync-hub" title="Sync progress or claim any recent assessments completed on this device" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-arrows-rotate"></i> Sync Progress
+              </button>
             </div>
           </div>
         </div>
@@ -768,6 +771,36 @@
       document.getElementById('visible-count').textContent = visible;
     }
 
+    function getCandidateToken() {
+      let token = typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_token') : null;
+      if (!token) {
+        token = 'cand_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('wall_candidate_token', token);
+        }
+      }
+      return token;
+    }
+
+    function updateAllCardLinks(candidateName) {
+      const name = candidateName || localStorage.getItem('wall_candidate_name') || 'Inspector Candidate';
+      const enc = encodeURIComponent(name);
+      const cards = document.querySelectorAll('.specimen-card');
+      cards.forEach(card => {
+        const slug = card.getAttribute('data-slug');
+        const btn = document.getElementById(`btn-${slug}`);
+        if (btn && btn.href) {
+          try {
+            const u = new URL(btn.href, window.location.origin);
+            u.searchParams.set('student_name', name);
+            btn.href = u.pathname + u.search;
+          } catch(e) {
+            btn.href = `/skill-assessment/${slug}?student_name=${enc}`;
+          }
+        }
+      });
+    }
+
     function onCandidateNameChange(val) {
       const trimmed = val ? val.trim() : '';
       if (trimmed) {
@@ -777,19 +810,47 @@
       if (dashName) {
         dashName.textContent = trimmed || 'Inspector Candidate';
       }
+      updateAllCardLinks(trimmed || 'Inspector Candidate');
 
       clearTimeout(candidateRefreshTimer);
       candidateRefreshTimer = setTimeout(() => {
         refreshStudentProgress(trimmed);
-      }, 350);
+      }, 300);
     }
 
-    async function refreshStudentProgress(candidateName) {
+    async function syncOrClaimRecentAttempts() {
+      const name = (document.getElementById('candidate-name-input') ? document.getElementById('candidate-name-input').value.trim() : '') || localStorage.getItem('wall_candidate_name') || '';
+      if (!name || name === 'Inspector Candidate') {
+        const entered = prompt("Enter your candidate name to sync and claim your assessment attempts:", "");
+        if (entered && entered.trim()) {
+          const clean = entered.trim();
+          localStorage.setItem('wall_candidate_name', clean);
+          const inp = document.getElementById('candidate-name-input');
+          if (inp) inp.value = clean;
+          onCandidateNameChange(clean);
+          return;
+        } else {
+          return;
+        }
+      }
+      const btn = document.getElementById('btn-sync-hub');
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+      await refreshStudentProgress(name, true);
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-check"></i> Synced!';
+      setTimeout(() => {
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Sync Progress';
+      }, 2000);
+    }
+
+    async function refreshStudentProgress(candidateName, claimRecent = false) {
       const name = candidateName || localStorage.getItem('wall_candidate_name') || '';
       if (!name) return;
 
       try {
-        const res = await fetch(`/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}`);
+        const token = getCandidateToken();
+        let url = `/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}&candidate_token=${encodeURIComponent(token)}`;
+        if (claimRecent) url += '&claim_recent=1';
+        const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
         if (data.success) {
@@ -830,7 +891,7 @@
       // Update specimen cards
       const bySlug = data.by_slug || {};
       const cards = document.querySelectorAll('.specimen-card');
-      const candidateName = data.student_name || 'Inspector Candidate';
+      const candidateName = data.student_name || localStorage.getItem('wall_candidate_name') || 'Inspector Candidate';
 
       cards.forEach(card => {
         const slug = card.getAttribute('data-slug');
@@ -896,7 +957,10 @@
       if (resolvedName) {
         const input = document.getElementById('candidate-name-input');
         if (input) input.value = resolvedName;
+        updateAllCardLinks(resolvedName);
         refreshStudentProgress(resolvedName);
+      } else {
+        updateAllCardLinks('Inspector Candidate');
       }
     });
 

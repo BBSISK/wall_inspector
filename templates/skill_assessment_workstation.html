@@ -658,14 +658,23 @@
   <!-- Top Header Navigation -->
   <header class="workstation-nav">
     <div class="specimen-info">
-      <a href="/portal" class="btn-top btn-exit" title="Back to Student Portal"><i class="fa-solid fa-graduation-cap"></i> Portal</a>
-      <a href="/skill-assessment" class="btn-top btn-exit" title="Back to Skills Hub"><i class="fa-solid fa-arrow-left"></i> Hub</a>
+      <a href="/portal{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-portal-btn" title="Back to Student Portal"><i class="fa-solid fa-graduation-cap"></i> Portal</a>
+      <a href="/skill-assessment{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-hub-btn" title="Back to Skills Hub"><i class="fa-solid fa-arrow-left"></i> Hub</a>
       <span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span>
       <h1 title="{{ wall.title }}">{{ wall.title }}</h1>
     </div>
     <div class="nav-actions">
+      <!-- Candidate Name Display & Switcher -->
+      <div class="candidate-pill-badge" style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem;">
+        <i class="fa-solid fa-user-graduate" style="color: #38bdf8;"></i>
+        <span style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; font-weight: 600;">Candidate:</span>
+        <span id="workstation-candidate-display" style="color: #f8fafc; font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ student_name }}</span>
+        <button type="button" onclick="editCandidateName()" title="Edit Candidate Name" style="background: transparent; border: none; color: #38bdf8; cursor: pointer; padding: 2px; font-size: 0.75rem;">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+      </div>
       {% if prev_wall %}
-        <a href="/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-exit" title="Previous Specimen: {{ prev_wall.title }}">
+        <a href="/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-exit" id="top-prev-btn" title="Previous Specimen: {{ prev_wall.title }}">
           <i class="fa-solid fa-arrow-left"></i> Prev
         </a>
       {% endif %}
@@ -843,8 +852,11 @@
         <button type="button" class="btn-top" style="background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8;" onclick="retakeAssessment()">
           <i class="fa-solid fa-arrows-rotate"></i> Retake Specimen
         </button>
-        <a href="/portal" class="btn-top btn-exit">
+        <a href="/portal{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="modal-portal-btn">
           <i class="fa-solid fa-graduation-cap"></i> Student Portal
+        </a>
+        <a href="/skill-assessment{% if student_name %}?student_name={{ student_name|urlencode }}{% endif %}" class="btn-top btn-exit" id="modal-hub-btn">
+          <i class="fa-solid fa-layer-group"></i> Skills Hub
         </a>
         {% if next_wall %}
           <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}" class="btn-top btn-submit" id="modal-next-btn" style="background: #0284c7; border-color: #38bdf8;">
@@ -862,17 +874,117 @@
   <script>
     const wallSlug = {{ wall.slug|tojson }};
     const initialStudentName = {{ student_name|tojson }};
-    const studentName = initialStudentName || (typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_name') : '') || '';
-    let nextSpecimenUrl = {% if next_wall %}"/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}"{% else %}""{% endif %};
-    if (studentName && nextSpecimenUrl) {
-      if (nextSpecimenUrl.includes('student_name=')) {
-        nextSpecimenUrl = nextSpecimenUrl.replace(/student_name=[^&]*/, 'student_name=' + encodeURIComponent(studentName));
-      } else {
-        nextSpecimenUrl += (nextSpecimenUrl.includes('?') ? '&' : '?') + 'student_name=' + encodeURIComponent(studentName);
+
+    function getStoredCandidateToken() {
+      let token = typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_token') : null;
+      if (!token) {
+        token = 'cand_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('wall_candidate_token', token);
+        }
       }
-      const topNextLink = document.getElementById('top-next-btn');
-      if (topNextLink) topNextLink.href = nextSpecimenUrl;
+      return token;
     }
+    const candidateToken = getStoredCandidateToken();
+
+    function resolveCandidateName() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlName = (urlParams.get('student_name') || '').trim();
+      const localName = (typeof localStorage !== 'undefined' ? (localStorage.getItem('wall_candidate_name') || '') : '').trim();
+      const jinjaName = (initialStudentName || '').trim();
+
+      // Priority 1: URL parameter (if explicitly provided and not default)
+      if (urlName && urlName !== 'Inspector Candidate') {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('wall_candidate_name', urlName);
+        return urlName;
+      }
+      // Priority 2: Stored localStorage candidate name (e.g. "Barry Sisk")
+      if (localName && localName !== 'Inspector Candidate') {
+        return localName;
+      }
+      // Priority 3: Server template candidate name (if not default)
+      if (jinjaName && jinjaName !== 'Inspector Candidate') {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('wall_candidate_name', jinjaName);
+        return jinjaName;
+      }
+      // Priority 4: Any non-empty stored name, or default
+      return localName || jinjaName || 'Inspector Candidate';
+    }
+
+    let studentName = resolveCandidateName();
+
+    function updateAllNavigationLinks(name) {
+      if (!name) name = studentName || 'Inspector Candidate';
+      const enc = encodeURIComponent(name);
+
+      const disp = document.getElementById('workstation-candidate-display');
+      if (disp) disp.textContent = name;
+
+      const portalBtn = document.getElementById('top-portal-btn');
+      if (portalBtn) portalBtn.href = `/portal?student_name=${enc}`;
+
+      const hubBtn = document.getElementById('top-hub-btn');
+      if (hubBtn) hubBtn.href = `/skill-assessment?student_name=${enc}`;
+
+      const modalPortalBtn = document.getElementById('modal-portal-btn');
+      if (modalPortalBtn) modalPortalBtn.href = `/portal?student_name=${enc}`;
+
+      const modalHubBtn = document.getElementById('modal-hub-btn');
+      if (modalHubBtn) modalHubBtn.href = `/skill-assessment?student_name=${enc}`;
+
+      const topPrevBtn = document.getElementById('top-prev-btn');
+      if (topPrevBtn && topPrevBtn.href) {
+        try {
+          const u = new URL(topPrevBtn.href, window.location.origin);
+          u.searchParams.set('student_name', name);
+          topPrevBtn.href = u.pathname + u.search;
+        } catch(e) {}
+      }
+
+      const topNextBtn = document.getElementById('top-next-btn');
+      if (topNextBtn && topNextBtn.href) {
+        try {
+          const u = new URL(topNextBtn.href, window.location.origin);
+          u.searchParams.set('student_name', name);
+          topNextBtn.href = u.pathname + u.search;
+          nextSpecimenUrl = topNextBtn.href;
+        } catch(e) {}
+      }
+
+      const modalNextBtn = document.getElementById('modal-next-btn');
+      if (modalNextBtn && modalNextBtn.href) {
+        try {
+          const u = new URL(modalNextBtn.href, window.location.origin);
+          u.searchParams.set('student_name', name);
+          modalNextBtn.href = u.pathname + u.search;
+        } catch(e) {}
+      }
+
+      const sidebarAdvanceBtn = document.getElementById('sidebar-advance-btn');
+      if (sidebarAdvanceBtn && sidebarAdvanceBtn.href) {
+        try {
+          const u = new URL(sidebarAdvanceBtn.href, window.location.origin);
+          u.searchParams.set('student_name', name);
+          sidebarAdvanceBtn.href = u.pathname + u.search;
+        } catch(e) {}
+      }
+    }
+
+    function editCandidateName() {
+      const current = studentName === 'Inspector Candidate' ? '' : studentName;
+      const entered = prompt("Enter your Inspector Candidate name to record your assessment scores:", current);
+      if (entered !== null) {
+        const clean = entered.trim() || 'Inspector Candidate';
+        studentName = clean;
+        if (clean !== 'Inspector Candidate' && typeof localStorage !== 'undefined') {
+          localStorage.setItem('wall_candidate_name', clean);
+        }
+        updateAllNavigationLinks(clean);
+      }
+    }
+
+    let nextSpecimenUrl = {% if next_wall %}"/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}"{% else %}""{% endif %};
+    updateAllNavigationLinks(studentName);
     const defectModesData = {{ defect_modes|tojson }};
     const modeLookup = {};
     defectModesData.forEach(m => { modeLookup[m.id] = m; });
@@ -1349,13 +1461,20 @@
       }
 
       try {
-        const candidateName = studentName || (typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_name') : '') || 'Inspector Candidate';
+        const candidateName = resolveCandidateName();
+        studentName = candidateName;
+        if (candidateName && candidateName !== 'Inspector Candidate' && typeof localStorage !== 'undefined') {
+          localStorage.setItem('wall_candidate_name', candidateName);
+        }
+        updateAllNavigationLinks(candidateName);
+
         const response = await fetch(`/api/skill-assessment/evaluate/${wallSlug}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pins: studentPins,
-            student_name: candidateName
+            student_name: candidateName,
+            candidate_token: candidateToken
           })
         });
 
@@ -1370,13 +1489,8 @@
           lastEvaluationData = data;
           if (data.next_specimen_url) {
             nextSpecimenUrl = data.next_specimen_url;
-            const topNextBtn = document.getElementById('top-next-btn');
-            if (topNextBtn) topNextBtn.href = nextSpecimenUrl;
-            const modalNextBtn = document.getElementById('modal-next-btn');
-            if (modalNextBtn) modalNextBtn.href = nextSpecimenUrl;
-            const sidebarAdvanceBtn = document.getElementById('sidebar-advance-btn');
-            if (sidebarAdvanceBtn) sidebarAdvanceBtn.href = nextSpecimenUrl;
           }
+          updateAllNavigationLinks(candidateName);
           displayEvaluationResults(data);
         } else {
           alert('Error evaluating pins: ' + (data && data.error ? data.error : 'Server error'));

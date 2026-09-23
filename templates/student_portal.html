@@ -496,9 +496,12 @@
           </label>
           <input type="text" id="portal-candidate-name" value="{{ student_name }}" placeholder="Enter your full name (e.g. Liam Kelly)..." style="margin: 0; background: #1e293b;" oninput="syncCandidateName(this.value)">
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: flex-end; padding-top: 1.25rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: flex-end; padding-top: 1.25rem; flex-wrap: wrap;">
           <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.25rem; font-size: 0.9rem; background: #10b981; border: 1px solid #34d399; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="launchRandomSkillAssessment()">
             <i class="fa-solid fa-dice"></i> Launch Random Specimen
+          </button>
+          <button type="button" class="btn" id="btn-sync-portal" style="width: auto; margin: 0; padding: 0.75rem 1.25rem; font-size: 0.9rem; background: #0284c7; border: 1px solid #38bdf8; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="syncOrClaimPortalAttempts()">
+            <i class="fa-solid fa-arrows-rotate"></i> Sync Progress
           </button>
         </div>
       </div>
@@ -1023,6 +1026,17 @@
       });
     }
 
+    function getCandidateToken() {
+      let token = typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_token') : null;
+      if (!token) {
+        token = 'cand_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('wall_candidate_token', token);
+        }
+      }
+      return token;
+    }
+
     function syncCandidateName(val) {
       const trimmed = val ? val.trim() : '';
       if (trimmed) {
@@ -1044,15 +1058,42 @@
       clearTimeout(candidateRefreshTimer);
       candidateRefreshTimer = setTimeout(() => {
         refreshStudentProgress(trimmed);
-      }, 350);
+      }, 300);
     }
 
-    async function refreshStudentProgress(candidateName) {
+    async function syncOrClaimPortalAttempts() {
+      const name = (document.getElementById('portal-candidate-name') ? document.getElementById('portal-candidate-name').value.trim() : '') || localStorage.getItem('wall_candidate_name') || '';
+      if (!name || name === 'Inspector Candidate') {
+        const entered = prompt("Enter your candidate name to sync and claim your assessment attempts:", "");
+        if (entered && entered.trim()) {
+          const clean = entered.trim();
+          localStorage.setItem('wall_candidate_name', clean);
+          const inp = document.getElementById('portal-candidate-name');
+          if (inp) inp.value = clean;
+          syncCandidateName(clean);
+          return;
+        } else {
+          return;
+        }
+      }
+      const btn = document.getElementById('btn-sync-portal');
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+      await refreshStudentProgress(name, true);
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-check"></i> Synced!';
+      setTimeout(() => {
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Sync Progress';
+      }, 2000);
+    }
+
+    async function refreshStudentProgress(candidateName, claimRecent = false) {
       const name = candidateName || localStorage.getItem('wall_candidate_name') || '';
       if (!name) return;
 
       try {
-        const res = await fetch(`/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}`);
+        const token = getCandidateToken();
+        let url = `/api/skill-assessment/student-progress?student_name=${encodeURIComponent(name)}&candidate_token=${encodeURIComponent(token)}`;
+        if (claimRecent) url += '&claim_recent=1';
+        const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
         if (data.success) {
@@ -1147,6 +1188,9 @@
     function launchSpecimen(slug) {
       const nameInput = document.getElementById('portal-candidate-name');
       const name = (nameInput && nameInput.value.trim()) || localStorage.getItem('wall_candidate_name') || 'Inspector Candidate';
+      if (name && name !== 'Inspector Candidate') {
+        localStorage.setItem('wall_candidate_name', name);
+      }
       window.location.href = `/skill-assessment/${slug}?student_name=${encodeURIComponent(name)}`;
     }
 

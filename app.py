@@ -2974,10 +2974,17 @@ def create_app(config_class=Config):
     @app.route("/portal", methods=["GET", "POST"])
     def student_portal():
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
+        candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
         if student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
+            session.permanent = True
+            session.modified = True
+        if candidate_token:
+            session["candidate_token"] = candidate_token
+            session.permanent = True
+            session.modified = True
 
-        progress = get_student_skill_progress(student_name)
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token)
         comp_map = progress["completed_map"]
 
         skill_specimens_query = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
@@ -2994,6 +3001,8 @@ def create_app(config_class=Config):
             post_student_name = request.form.get("student_name", student_name or "Inspector Candidate").strip() or "Inspector Candidate"
             if post_student_name and post_student_name != "Inspector Candidate":
                 session["student_name"] = post_student_name
+                session.permanent = True
+                session.modified = True
             specimen_slug = request.form.get("specimen_slug", "").strip()
 
             # 1. Direct launch from specimen cards or quick action
@@ -6101,12 +6110,19 @@ def create_app(config_class=Config):
     # STUDENT SKILL ASSESSMENT MODULE
     # =========================================================================
 
-    def get_student_skill_progress(student_name):
+    def get_student_skill_progress(student_name, candidate_token=None, claim_recent=False):
         """
         Computes completion status, best scores, and evaluation grades for all skill assessment specimens
-        for a given student name.
+        for a given student name and candidate token.
+        Provides resilient query matching across casing, spacing, and session tokens.
+        Can optionally claim recent orphaned attempts from the same candidate session or token.
         """
-        if not student_name or not student_name.strip():
+        from sqlalchemy import or_
+        clean_name = (student_name or "").strip()
+        clean_token = (candidate_token or "").strip()
+        sess_token = session.get("candidate_token") if session else None
+
+        if not clean_name and not clean_token and not sess_token:
             return {
                 "completed_map": {},
                 "completed_count": 0,
@@ -6114,10 +6130,66 @@ def create_app(config_class=Config):
                 "average_score": 0.0
             }
 
-        clean_name = student_name.strip()
-        attempts = AssessmentAttempt.query.filter(
-            AssessmentAttempt.student_name.ilike(clean_name)
-        ).order_by(AssessmentAttempt.created_at.desc()).all()
+        # Auto-claim / re-attribute attempts created by this browser session or token
+        # if they defaulted to "Inspector Candidate" and we now have a genuine name
+        if clean_name and clean_name != "Inspector Candidate":
+            match_tokens = [t for t in [clean_token, sess_token] if t]
+            if match_tokens:
+                unclaimed = AssessmentAttempt.query.filter(
+                    AssessmentAttempt.student_session_id.in_(match_tokens),
+                    (AssessmentAttempt.student_name.in_(["Inspector Candidate", "Candidate", "", None]) |
+                     AssessmentAttempt.student_name.is_(None))
+                ).all()
+                if unclaimed:
+                    for u in unclaimed:
+                        u.student_name = clean_name
+                    try:
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
+            if claim_recent:
+                # If explicit claim requested, claim recent unassigned attempts for skill assessments
+                recent_unclaimed = AssessmentAttempt.query.filter(
+                    AssessmentAttempt.assignment_code == "SKILL-ASSESS",
+                    (AssessmentAttempt.student_name.in_(["Inspector Candidate", "Candidate", "", None]) |
+                     AssessmentAttempt.student_name.is_(None))
+                ).order_by(AssessmentAttempt.created_at.desc()).limit(15).all()
+                if recent_unclaimed:
+                    for ru in recent_unclaimed:
+                        ru.student_name = clean_name
+                    try:
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
+        # Build resilient query filters
+        filters = []
+        if clean_name and clean_name != "Inspector Candidate":
+            filters.append(AssessmentAttempt.student_name.ilike(clean_name))
+            filters.append(AssessmentAttempt.student_name.ilike(f"%{clean_name}%"))
+            name_parts = clean_name.split()
+            if len(name_parts) >= 2:
+                filters.append(AssessmentAttempt.student_name.ilike(f"%{name_parts[0]}%{name_parts[-1]}%"))
+
+        match_tokens = [t for t in [clean_token, sess_token] if t]
+        if match_tokens:
+            filters.append(AssessmentAttempt.student_session_id.in_(match_tokens))
+
+        if not filters:
+            if clean_name:
+                query = AssessmentAttempt.query.filter(AssessmentAttempt.student_name.ilike(clean_name))
+            else:
+                return {
+                    "completed_map": {},
+                    "completed_count": 0,
+                    "total_specimens": 0,
+                    "average_score": 0.0
+                }
+        else:
+            query = AssessmentAttempt.query.filter(or_(*filters))
+
+        attempts = query.order_by(AssessmentAttempt.created_at.desc()).all()
 
         completed_map = {}
         for att in attempts:
@@ -6155,16 +6227,35 @@ def create_app(config_class=Config):
     @app.route("/api/skill-assessment/student-progress")
     def api_skill_assessment_student_progress():
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
-        progress = get_student_skill_progress(student_name)
+        candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
+        claim_recent = request.args.get("claim_recent") in ["1", "true", "yes"]
+
+        if student_name and student_name != "Inspector Candidate":
+            session["student_name"] = student_name
+            session.permanent = True
+            session.modified = True
+        if candidate_token:
+            session["candidate_token"] = candidate_token
+            session.permanent = True
+            session.modified = True
+
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token, claim_recent=claim_recent)
         all_walls = Wall.query.filter_by(is_skill_assessment=True).all()
         slug_map = {}
         for w in all_walls:
             if w.id in progress["completed_map"]:
                 slug_map[w.slug] = progress["completed_map"][w.id]
 
+        # Also map any additional walls evaluated in progress["completed_map"]
+        for w_id, p_info in progress["completed_map"].items():
+            if w_id not in [w.id for w in all_walls]:
+                w_obj = Wall.query.get(w_id)
+                if w_obj and w_obj.slug:
+                    slug_map[w_obj.slug] = p_info
+
         return jsonify({
             "success": True,
-            "student_name": student_name,
+            "student_name": student_name or (session.get("student_name") or "Inspector Candidate"),
             "total_specimens": len(all_walls),
             "completed_count": progress["completed_count"],
             "pending_count": max(0, len(all_walls) - progress["completed_count"]),
@@ -6178,10 +6269,17 @@ def create_app(config_class=Config):
         """Student Skill Assessment Hub: Lists published assessment specimens with stats, scoring, and guidelines."""
         specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
+        candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
         if student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
+            session.permanent = True
+            session.modified = True
+        if candidate_token:
+            session["candidate_token"] = candidate_token
+            session.permanent = True
+            session.modified = True
 
-        progress = get_student_skill_progress(student_name)
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token)
         comp_map = progress["completed_map"]
 
         specimen_list = []
@@ -6215,8 +6313,15 @@ def create_app(config_class=Config):
         ground_truth_count = Defect.query.filter_by(wall_id=wall.id).count()
         modes_bundle = get_wall_defect_modes(wall)
         student_name = (request.args.get("student_name") or session.get("student_name") or "Inspector Candidate").strip()
+        candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
         if student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
+            session.permanent = True
+            session.modified = True
+        if candidate_token:
+            session["candidate_token"] = candidate_token
+            session.permanent = True
+            session.modified = True
 
         # Calculate sequencing for next/prev specimen navigation
         all_specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
@@ -6257,8 +6362,9 @@ def create_app(config_class=Config):
         data = request.get_json(silent=True) or {}
         submitted_pins = data.get("pins", [])
         student_name = data.get("student_name", "Inspector Candidate").strip() or "Inspector Candidate"
+        candidate_token = (data.get("candidate_token") or session.get("candidate_token") or "").strip()
         cohort_code = data.get("cohort_code", "SKILLS").strip().upper() or "SKILLS"
-        session_id = data.get("session_id", uuid.uuid4().hex[:8])
+        session_id = candidate_token or data.get("session_id", uuid.uuid4().hex[:8])
 
         gt_defects = Defect.query.filter_by(wall_id=wall.id).all()
         gt_dicts = [d.to_dict() for d in gt_defects]
@@ -6428,6 +6534,12 @@ def create_app(config_class=Config):
 
         if student_name and student_name != "Inspector Candidate":
             session["student_name"] = student_name
+            session.permanent = True
+            session.modified = True
+        if candidate_token:
+            session["candidate_token"] = candidate_token
+            session.permanent = True
+            session.modified = True
 
         # Determine next specimen in sequence
         all_skill_walls = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
@@ -6441,7 +6553,8 @@ def create_app(config_class=Config):
                 break
 
         from urllib.parse import quote_plus
-        next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}" if next_wall_slug else None
+        token_arg = f"&candidate_token={quote_plus(candidate_token)}" if candidate_token else ""
+        next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}{token_arg}" if next_wall_slug else None
 
         return jsonify({
             "success": True,
