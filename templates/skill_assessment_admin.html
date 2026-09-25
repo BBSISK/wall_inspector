@@ -514,6 +514,111 @@
       </div>
     </section>
 
+    <!-- CURRICULUM DIRECTOR & BATTERY GENERATOR HUD -->
+    <section class="guidelines-hud" style="border-color: #8b5cf6; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.85) 100%);">
+      <div class="hud-header" style="border-bottom-color: rgba(139, 92, 246, 0.3);">
+        <h2 class="hud-title" style="color: #c4b5fd;">
+          <i class="fa-solid fa-graduation-cap" style="color: #a78bfa;"></i> Curriculum Director Agent & Exam Battery Orchestrator
+        </h2>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <span class="hud-pill" style="background: rgba(139, 92, 246, 0.2); border-color: #a78bfa; color: #ddd6fe;">
+            <i class="fa-solid fa-shuffle"></i> Side-by-Side Anti-Collusion Active
+          </span>
+          <span class="hud-pill" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #6ee7b7;">
+            <i class="fa-solid fa-chart-pie"></i> Cohort Avg: {{ cohort_intel.cohort_avg_score if cohort_intel else 0 }}% ({{ cohort_intel.total_attempts if cohort_intel else 0 }} Attempts)
+          </span>
+        </div>
+      </div>
+
+      <!-- Director Insight Callout -->
+      <div style="background: rgba(15, 23, 42, 0.85); border-left: 4px solid #a78bfa; border-radius: 8px; padding: 12px 16px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="font-size: 0.84rem; color: #e2e8f0; flex: 1;">
+          <strong style="color: #c4b5fd; display: block; margin-bottom: 3px;"><i class="fa-solid fa-brain"></i> Autonomous Curriculum Director Prescription:</strong>
+          <span>{{ cohort_intel.director_recommendation if cohort_intel else 'Assemble a balanced 10-question assessment battery for candidate evaluation.' }}</span>
+        </div>
+      </div>
+
+      <!-- Battery Configuration Form & Active Batteries Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; align-items: start;">
+        
+        <!-- Left: Create Battery Form -->
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 1.25rem;">
+          <h4 style="margin: 0 0 0.85rem 0; color: #f8fafc; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-sliders" style="color: #38bdf8;"></i> Configure Assessment Battery
+          </h4>
+          <form id="create-battery-form" onsubmit="submitCreateBattery(event)">
+            <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                <label>Battery Title</label>
+                <input type="text" class="form-control" id="bat-title" name="title" value="Cohort 10-Question Masonry Pathology Exam" required>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Questions in Battery</label>
+                <input type="number" class="form-control" id="bat-size" name="battery_size" value="10" min="3" max="30" required title="Default is 10 questions">
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; background: rgba(2, 6, 23, 0.5); padding: 10px 12px; border-radius: 8px; border: 1px solid #1e293b;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #f1f5f9; cursor: pointer;">
+                <input type="checkbox" id="bat-randomize" name="randomize_order" checked style="accent-color: #8b5cf6; width: 16px; height: 16px;">
+                <span><strong>🔀 Side-by-Side Randomization:</strong> Deliver unique sequence per student to prevent desk copying</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #f1f5f9; cursor: pointer;">
+                <input type="checkbox" id="bat-dry-run" name="enable_dry_run" checked style="accent-color: #10b981; width: 16px; height: 16px;">
+                <span><strong>🔰 Practice Dry-Run Sample:</strong> Start with interactive unscored calibration + skip toggle</span>
+              </label>
+            </div>
+
+            <button type="submit" id="btn-create-battery" class="btn-submit-upload" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border-color: #a78bfa;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Balanced Battery (<span id="btn-bat-count-lbl">10</span> Questions)
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Active Assessment Batteries -->
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h4 style="margin: 0; color: #f8fafc; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i> Active Student Batteries
+            </h4>
+            <a href="/skill-assessment/battery/start?code=COHORT-10" target="_blank" style="font-size: 0.75rem; color: #38bdf8; text-decoration: none; font-weight: 700;">
+              <i class="fa-solid fa-external-link-alt"></i> Preview Student Battery Flow
+            </a>
+          </div>
+
+          <div id="active-batteries-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto;">
+            {% if batteries %}
+              {% for bat in batteries %}
+                <div style="background: #090e1a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid #8b5cf6; font-family: monospace; font-size: 0.78rem; font-weight: 800; padding: 2px 7px; border-radius: 5px;">{{ bat.code }}</span>
+                      <strong style="color: #f8fafc; font-size: 0.85rem;">{{ bat.title }}</strong>
+                    </div>
+                    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; gap: 10px;">
+                      <span><i class="fa-solid fa-list-ol"></i> <strong>{{ bat.battery_size }}</strong> Questions</span>
+                      <span>{% if bat.randomize_order %}<i class="fa-solid fa-shuffle" style="color: #34d399;"></i> Randomized{% else %}Fixed Order{% endif %}</span>
+                      <span>{% if bat.enable_dry_run %}<i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> Dry-Run Included{% else %}Direct Start{% endif %}</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <a href="/skill-assessment/battery/start?code={{ bat.code }}" target="_blank" class="btn-action-small btn-grade" style="background: #059669; border-color: #10b981;">
+                      <i class="fa-solid fa-play"></i> Launch
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div style="color: #64748b; font-size: 0.8rem; padding: 1rem; text-align: center;">
+                No custom batteries created yet. Click "Generate Balanced Battery" to assemble a 10-question exam.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- Upload & Queue Management -->
     <div class="section-grid">
 
@@ -887,6 +992,53 @@
       } catch (err) {
         console.error(err);
         alert('Delete failed');
+      }
+    }
+
+    const batSizeInput = document.getElementById('bat-size');
+    const batCountLbl = document.getElementById('btn-bat-count-lbl');
+    if (batSizeInput && batCountLbl) {
+      batSizeInput.addEventListener('input', (e) => {
+        batCountLbl.textContent = e.target.value || '10';
+      });
+    }
+
+    async function submitCreateBattery(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-create-battery');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Assembling Balanced Battery...';
+      }
+
+      const payload = {
+        title: document.getElementById('bat-title').value.trim(),
+        battery_size: parseInt(document.getElementById('bat-size').value, 10) || 10,
+        randomize_order: document.getElementById('bat-randomize').checked,
+        enable_dry_run: document.getElementById('bat-dry-run').checked
+      };
+
+      try {
+        const res = await fetch('/api/skill-assessment/battery/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          window.location.reload();
+        } else {
+          alert('Battery creation notice: ' + (data && data.error ? data.error : 'Could not assemble battery'));
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Failed to generate assessment battery');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
   </script>

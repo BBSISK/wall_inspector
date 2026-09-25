@@ -677,26 +677,83 @@
         </button>
       </div>
       {% if prev_wall %}
-        <a href="/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-exit" id="top-prev-btn" title="Previous Specimen: {{ prev_wall.title }}">
+        <a href="{% if prev_wall.custom_url %}{{ prev_wall.custom_url }}{% else %}/skill-assessment/{{ prev_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}{% endif %}" class="btn-top btn-exit" id="top-prev-btn" title="Previous Specimen: {{ prev_wall.title }}">
           <i class="fa-solid fa-arrow-left"></i> Prev
         </a>
       {% endif %}
       <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.25rem;">
-        Specimen <strong style="color: #f8fafc;">{{ current_specimen_num }}/{{ total_specimens }}</strong>
+        {% if is_dry_run %}
+          <span style="background: rgba(2, 132, 199, 0.2); border: 1px solid #0284c7; color: #38bdf8; padding: 3px 8px; border-radius: 4px; font-weight: 700;">
+            <i class="fa-solid fa-graduation-cap"></i> Practice Calibration
+          </span>
+        {% elif is_randomized_battery %}
+          <span style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #d8b4fe; padding: 3px 8px; border-radius: 4px; font-weight: 700;" title="Anti-collusion side-by-side randomized delivery sequence">
+            <i class="fa-solid fa-shuffle"></i> Question <strong style="color: #f8fafc;">{{ current_specimen_num }}</strong> of <strong style="color: #f8fafc;">{{ total_specimens }}</strong> (Randomized Delivery)
+          </span>
+        {% else %}
+          Specimen <strong style="color: #f8fafc;">{{ current_specimen_num }}/{{ total_specimens }}</strong>
+        {% endif %}
       </span>
       {% if next_wall %}
-        <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top" id="top-next-btn" style="background: #0284c7; color: white; border: 1px solid #38bdf8; font-weight: 700; text-decoration: none;" title="Next Specimen: {{ next_wall.title }}">
-          <span>Next Specimen</span> <i class="fa-solid fa-arrow-right"></i>
+        <a href="{% if next_wall.custom_url %}{{ next_wall.custom_url }}{% else %}/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}{% endif %}" class="btn-top" id="top-next-btn" style="background: #0284c7; color: white; border: 1px solid #38bdf8; font-weight: 700; text-decoration: none;" title="{{ next_wall.title }}">
+          <span>{% if is_dry_run %}Skip Practice &rarr;{% else %}Next Specimen &rarr;{% endif %}</span>
         </a>
       {% endif %}
       <span style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0.5rem;">
         Expected Targets: <strong style="color: #38bdf8;">~{{ ground_truth_count }}</strong>
       </span>
       <button type="button" class="btn-top btn-submit" id="top-submit-btn" onclick="submitAssessment()">
-        <i class="fa-solid fa-paper-plane"></i> Submit Assessment
+        <i class="fa-solid fa-paper-plane"></i> {% if is_dry_run %}Complete Practice Run{% else %}Submit Assessment{% endif %}
       </button>
     </div>
   </header>
+
+  {% if is_dry_run %}
+  <!-- Dry-Run Practice & Calibration HUD Banner -->
+  <div class="dry-run-hud-banner" id="dry-run-hud-banner" style="background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); border-bottom: 2px solid #38bdf8; padding: 0.75rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; z-index: 90; box-shadow: 0 4px 15px rgba(0,0,0,0.5); flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 1.1rem; flex-shrink: 0;">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <div>
+        <div style="font-weight: 700; font-size: 0.95rem; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+          <span>{{ dry_run_data.title if dry_run_data else '🔰 Practice Calibration Specimen (Unscored)' }}</span>
+          <span style="background: #0284c7; color: white; font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">Tutorial Mode</span>
+        </div>
+        <div style="color: #94a3b8; font-size: 0.8rem;">
+          {{ dry_run_data.subtitle if dry_run_data else 'Learn the inspection controls before your scored assessment begins.' }}
+          <span style="color: #38bdf8; margin-left: 6px;"><i class="fa-solid fa-shield-halved"></i> Unscored practice sample &mdash; doesn't affect your grade.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Step Quick Pills -->
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 5px; background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1;">
+        <i class="fa-solid fa-magnifying-glass-plus" style="color: #38bdf8;"></i> <span>1. Zoom</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px; background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1;">
+        <i class="fa-solid fa-crosshairs" style="color: #38bdf8;"></i> <span>2. Click Pin</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px; background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1;">
+        <i class="fa-solid fa-list-check" style="color: #38bdf8;"></i> <span>3. Classify</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px; background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1;">
+        <i class="fa-solid fa-paper-plane" style="color: #10b981;"></i> <span>4. Submit</span>
+      </div>
+    </div>
+
+    <!-- Prominent Skip Practice Button -->
+    {% if skip_dry_run_url %}
+    <div>
+      <a href="{{ skip_dry_run_url }}" class="btn-top" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: 1px solid #38bdf8; font-weight: 700; padding: 0.45rem 1rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);" id="btn-skip-dry-run">
+        <span>{{ dry_run_data.skip_label if dry_run_data else '⏩ Skip Practice & Begin Question 1' }}</span>
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <!-- Interactive Workstation Core -->
   <div class="workstation-body">
@@ -778,7 +835,7 @@
 
       <div class="sidebar-footer">
         <button type="button" class="btn-submit-main" id="main-submit-btn" onclick="submitAssessment()" disabled>
-          <i class="fa-solid fa-check-circle"></i> Complete & Evaluate
+          <i class="fa-solid fa-check-circle"></i> {% if is_dry_run %}Complete Practice Run & Evaluate{% else %}Complete & Evaluate{% endif %}
         </button>
       </div>
     </aside>
@@ -901,8 +958,8 @@
           <i class="fa-solid fa-layer-group"></i> Skills Hub
         </a>
         {% if next_wall %}
-          <a href="/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-submit" id="modal-next-btn" style="background: #0284c7; border-color: #38bdf8;">
-            <i class="fa-solid fa-arrow-right"></i> Advance to Next Specimen &rarr;
+          <a href="{% if next_wall.custom_url %}{{ next_wall.custom_url }}{% else %}/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}{% endif %}" class="btn-top btn-submit" id="modal-next-btn" style="background: #0284c7; border-color: #38bdf8;">
+            <i class="fa-solid fa-arrow-right"></i> {% if is_dry_run %}Begin Scored Exam (Question 1) &rarr;{% else %}Advance to Next Specimen &rarr;{% endif %}
           </a>
         {% else %}
           <a href="/skill-assessment?student_name={{ student_name|urlencode }}{% if student_id %}&student_id={{ student_id|urlencode }}{% endif %}" class="btn-top btn-submit" id="modal-next-btn">
@@ -917,6 +974,8 @@
     const wallSlug = {{ wall.slug|tojson }};
     const initialStudentName = {{ student_name|tojson }};
     const initialStudentId = {{ student_id|tojson }};
+    const isDryRun = {{ 'true' if is_dry_run else 'false' }};
+    const batteryCode = {{ battery_code|tojson if battery_code else '""' }};
 
     function getStoredCandidateToken() {
       let token = typeof localStorage !== 'undefined' ? localStorage.getItem('wall_candidate_token') : null;
@@ -990,6 +1049,16 @@
       const modalHubBtn = document.getElementById('modal-hub-btn');
       if (modalHubBtn) modalHubBtn.href = `/skill-assessment?student_name=${enc}${sidParam}`;
 
+      const skipDryRunBtn = document.getElementById('btn-skip-dry-run');
+      if (skipDryRunBtn && skipDryRunBtn.href) {
+        try {
+          const u = new URL(skipDryRunBtn.href, window.location.origin);
+          u.searchParams.set('student_name', name);
+          if (sid) u.searchParams.set('student_id', sid);
+          skipDryRunBtn.href = u.pathname + u.search;
+        } catch(e) {}
+      }
+
       const topPrevBtn = document.getElementById('top-prev-btn');
       if (topPrevBtn && topPrevBtn.href) {
         try {
@@ -1045,7 +1114,7 @@
       }
     }
 
-    let nextSpecimenUrl = {% if next_wall %}"/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}"{% else %}""{% endif %};
+    let nextSpecimenUrl = {% if next_wall %}{% if next_wall.custom_url %}{{ next_wall.custom_url|tojson }}{% else %}"/skill-assessment/{{ next_wall.slug }}?student_name={{ student_name|urlencode }}"{% endif %}{% else %}""{% endif %};
     updateAllNavigationLinks(studentName);
     const defectModesData = {{ defect_modes|tojson }};
     const modeLookup = {};
@@ -1538,7 +1607,9 @@
             pins: studentPins,
             student_name: candidateName,
             student_id: candidateStudentId,
-            candidate_token: candidateToken
+            candidate_token: candidateToken,
+            is_dry_run: isDryRun,
+            battery_code: batteryCode
           })
         });
 
@@ -1561,6 +1632,10 @@
           }
           if (data.next_specimen_url) {
             nextSpecimenUrl = data.next_specimen_url;
+            const modalNextBtn = document.getElementById('modal-next-btn');
+            if (modalNextBtn) {
+              modalNextBtn.href = data.next_specimen_url;
+            }
           }
           updateAllNavigationLinks(studentName);
           displayEvaluationResults(data);
@@ -1686,7 +1761,24 @@
         // 4. Update Sidebar with full evaluated state
         renderSidebar();
 
-        // 5. Open Score Modal
+        // 5. Customize Score Modal if Dry-Run Practice
+        if (data.is_dry_run || isDryRun) {
+          const titleEl = document.getElementById('modal-score-title');
+          if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> Practice Calibration Complete';
+          const subEl = document.getElementById('modal-score-subtitle');
+          if (subEl) subEl.textContent = 'Great job! You are now familiar with defect pinning and grading. This practice sample is unscored and does not affect your grade.';
+          const modalNextBtn = document.getElementById('modal-next-btn');
+          if (modalNextBtn) {
+            modalNextBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Begin Scored Exam (Question 1) &rarr;';
+            modalNextBtn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+            modalNextBtn.style.borderColor = '#10b981';
+            if (data.next_specimen_url) {
+              modalNextBtn.href = data.next_specimen_url;
+            }
+          }
+        }
+
+        // 6. Open Score Modal
         openScoreModal();
 
       } catch (renderErr) {

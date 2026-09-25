@@ -153,6 +153,10 @@ class Assignment(db.Model):
     wall_id = db.Column(db.String(36), nullable=True)
     time_limit_minutes = db.Column(db.Integer, default=0)
     mode = db.Column(db.String(20), default="exam")
+    battery_size = db.Column(db.Integer, default=10)
+    randomize_order = db.Column(db.Boolean, default=True)
+    enable_dry_run = db.Column(db.Boolean, default=True)
+    director_notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -166,8 +170,13 @@ class Assignment(db.Model):
             "wall_id": self.wall_id,
             "time_limit_minutes": self.time_limit_minutes or 0,
             "mode": self.mode or "exam",
+            "battery_size": int(self.battery_size if self.battery_size is not None else 10),
+            "randomize_order": bool(self.randomize_order if self.randomize_order is not None else True),
+            "enable_dry_run": bool(self.enable_dry_run if self.enable_dry_run is not None else True),
+            "director_notes": self.director_notes or "",
             "is_active": self.is_active,
-            "walls_count": len(self.walls) if self.walls else (1 if self.wall_id else 0)
+            "walls_count": len(self.walls) if self.walls else (1 if self.wall_id else 0),
+            "wall_slugs": [w.slug for w in self.walls] if self.walls else []
         }
 
 class Certificate(db.Model):

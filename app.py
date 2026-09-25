@@ -11,6 +11,12 @@ import cloudinary
 import cloudinary.uploader
 from config import Config
 from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission, Student
+from curriculum_agent import (
+    assemble_battery_specimens,
+    generate_student_battery_sequence,
+    get_dry_run_calibration_data,
+    analyze_cohort_intelligence
+)
 
 cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
 if cloudinary_url:
@@ -492,6 +498,22 @@ def create_app(config_class=Config):
             if "mode" not in assign_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE assignments ADD COLUMN mode VARCHAR(20) DEFAULT 'exam';"))
+                    conn.commit()
+            if "battery_size" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN battery_size INTEGER DEFAULT 10;"))
+                    conn.commit()
+            if "randomize_order" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN randomize_order BOOLEAN DEFAULT TRUE;"))
+                    conn.commit()
+            if "enable_dry_run" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN enable_dry_run BOOLEAN DEFAULT TRUE;"))
+                    conn.commit()
+            if "director_notes" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN director_notes TEXT;"))
                     conn.commit()
 
             sub_cols = [c["name"] for c in inspector.get_columns("student_submissions")]
@@ -6573,6 +6595,30 @@ def create_app(config_class=Config):
         wall_types = sorted(list(set(s.wall_type for s in specimens if s.wall_type)))
         difficulties = ["beginner", "intermediate", "advanced"]
 
+        # Ensure default 10-question assessment battery exists
+        active_battery = Assignment.query.filter_by(code="COHORT-10").first()
+        if not active_battery and specimens:
+            try:
+                selected_walls = assemble_battery_specimens(specimens, target_count=10)
+                active_battery = Assignment(
+                    code="COHORT-10",
+                    title="Standard 10-Question Skill Assessment Battery",
+                    wall_id=selected_walls[0].id if selected_walls else None,
+                    battery_size=10,
+                    randomize_order=True,
+                    enable_dry_run=True,
+                    director_notes="Auto-curated 10-question battery with side-by-side anti-collusion randomization and pre-exam practice dry-run.",
+                    is_active=True
+                )
+                active_battery.walls = selected_walls
+                db.session.add(active_battery)
+                db.session.commit()
+            except Exception as bat_err:
+                db.session.rollback()
+                print(f"Notice: Default battery seed note: {bat_err}")
+
+        all_batteries = Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()
+
         return render_template(
             "skill_assessment_hub.html",
             specimens=specimen_list,
@@ -6585,7 +6631,9 @@ def create_app(config_class=Config):
             student_id=student_id,
             completed_count=progress["completed_count"],
             average_score=progress["average_score"],
-            pending_count=max(0, len(specimens) - progress["completed_count"])
+            pending_count=max(0, len(specimens) - progress["completed_count"]),
+            active_battery=active_battery.to_dict() if active_battery else None,
+            batteries=[b.to_dict() for b in all_batteries]
         )
 
     @app.route("/skill-assessment/<slug>")
@@ -6623,19 +6671,70 @@ def create_app(config_class=Config):
             session.permanent = True
             session.modified = True
 
-        # Calculate sequencing for next/prev specimen navigation
+        # Calculate sequencing for next/prev specimen navigation (Standard vs Randomized Battery vs Dry-Run)
         all_specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
-        curr_idx = None
-        for i, sp in enumerate(all_specimens):
-            if sp.id == wall.id:
-                curr_idx = i
-                break
+        battery_code = (request.args.get("battery") or "").strip().upper()
+        is_dry_run = (request.args.get("dry_run") == "1")
+        dry_run_data = get_dry_run_calibration_data() if is_dry_run else None
+        battery_obj = Assignment.query.filter_by(code=battery_code).first() if battery_code else None
+        is_randomized_battery = False
+        skip_dry_run_url = None
 
         next_wall = None
         prev_wall = None
-        if curr_idx is not None and len(all_specimens) > 1:
-            next_wall = all_specimens[(curr_idx + 1) % len(all_specimens)].to_dict()
-            prev_wall = all_specimens[(curr_idx - 1) % len(all_specimens)].to_dict()
+        curr_num = 1
+        tot_num = len(all_specimens)
+
+        if is_dry_run:
+            b_code = battery_code or "COHORT-10"
+            skip_dry_run_url = f"/skill-assessment/battery/start?code={b_code}&skip_dry_run=1"
+            curr_num = "Practice"
+            tot_num = battery_obj.battery_size if (battery_obj and battery_obj.battery_size) else 10
+            next_wall = {
+                "slug": wall.slug,
+                "custom_url": skip_dry_run_url,
+                "title": f"Start Scored Battery (Question 1 of {tot_num})"
+            }
+        elif battery_code:
+            target_count = battery_obj.battery_size if (battery_obj and battery_obj.battery_size) else 10
+            pool_walls = battery_obj.walls if (battery_obj and battery_obj.walls) else all_specimens
+            pool_slugs = [w.slug for w in pool_walls]
+            student_seed = student_id or candidate_token or student_name or session.get("_id") or "default_seed"
+
+            if not battery_obj or battery_obj.randomize_order:
+                is_randomized_battery = True
+                seq_slugs = generate_student_battery_sequence(pool_slugs, f"{battery_code}:{student_seed}", target_count=target_count)
+            else:
+                seq_slugs = pool_slugs[:target_count]
+
+            if slug not in seq_slugs:
+                seq_slugs = [slug] + [s for s in seq_slugs if s != slug][:max(0, target_count - 1)]
+
+            curr_idx = seq_slugs.index(slug)
+            curr_num = curr_idx + 1
+            tot_num = len(seq_slugs)
+
+            if curr_idx + 1 < len(seq_slugs):
+                nw = Wall.query.filter_by(slug=seq_slugs[curr_idx + 1]).first()
+                if nw:
+                    next_wall = nw.to_dict()
+                    next_wall["custom_url"] = f"/skill-assessment/{nw.slug}?battery={battery_code}&q={curr_idx + 2}"
+            if curr_idx > 0:
+                pw = Wall.query.filter_by(slug=seq_slugs[curr_idx - 1]).first()
+                if pw:
+                    prev_wall = pw.to_dict()
+                    prev_wall["custom_url"] = f"/skill-assessment/{pw.slug}?battery={battery_code}&q={curr_idx}"
+        else:
+            curr_idx = None
+            for i, sp in enumerate(all_specimens):
+                if sp.id == wall.id:
+                    curr_idx = i
+                    break
+            if curr_idx is not None and len(all_specimens) > 1:
+                next_wall = all_specimens[(curr_idx + 1) % len(all_specimens)].to_dict()
+                prev_wall = all_specimens[(curr_idx - 1) % len(all_specimens)].to_dict()
+            curr_num = (curr_idx + 1) if curr_idx is not None else 1
+            tot_num = len(all_specimens)
 
         return render_template(
             "skill_assessment_workstation.html",
@@ -6650,8 +6749,14 @@ def create_app(config_class=Config):
             student_id=student_id,
             next_wall=next_wall,
             prev_wall=prev_wall,
-            current_specimen_num=(curr_idx + 1) if curr_idx is not None else 1,
-            total_specimens=len(all_specimens)
+            current_specimen_num=curr_num,
+            total_specimens=tot_num,
+            battery_code=battery_code,
+            battery_obj=battery_obj.to_dict() if battery_obj else None,
+            is_dry_run=is_dry_run,
+            dry_run_data=dry_run_data,
+            skip_dry_run_url=skip_dry_run_url,
+            is_randomized_battery=is_randomized_battery
         )
 
     @app.route("/api/skill-assessment/evaluate/<slug>", methods=["POST"], strict_slashes=False)
@@ -6806,32 +6911,40 @@ def create_app(config_class=Config):
             grade = "Remedial Review Required"
 
         passed = score >= 70.0
+        is_dry_run = bool(data.get("is_dry_run"))
+        battery_code = (data.get("battery_code") or "").strip().upper()
 
-        try:
-            attempt = AssessmentAttempt(
-                wall_id=wall.id,
-                student_id=student.id if student else None,
-                student_session_id=session_id,
-                cohort_code=cohort_code,
-                assignment_code="SKILL-ASSESS",
-                student_name=student_name,
-                submitted_markers=submitted_pins,
-                true_positives=full_hits + partial_hits,
-                false_positives=false_positives,
-                false_negatives=missed_count,
-                score_percentage=score,
-                passed=passed,
-                feedback_notes={
-                    "grade": grade,
-                    "earned_points": round(earned_points, 2),
-                    "total_gt": total_gt,
-                    "items": feedback_items
-                }
-            )
-            commit_with_retry(attempt)
-        except Exception as attempt_err:
-            db.session.rollback()
-            print(f"Notice: Skill assessment attempt logging recovered: {attempt_err}")
+        if is_dry_run:
+            if battery_code:
+                session[f"dry_run_done_{battery_code}"] = True
+                session.modified = True
+            grade = "Practice Dry-Run (Unscored)"
+        else:
+            try:
+                attempt = AssessmentAttempt(
+                    wall_id=wall.id,
+                    student_id=student.id if student else None,
+                    student_session_id=session_id,
+                    cohort_code=cohort_code,
+                    assignment_code=battery_code or "SKILL-ASSESS",
+                    student_name=student_name,
+                    submitted_markers=submitted_pins,
+                    true_positives=full_hits + partial_hits,
+                    false_positives=false_positives,
+                    false_negatives=missed_count,
+                    score_percentage=score,
+                    passed=passed,
+                    feedback_notes={
+                        "grade": grade,
+                        "earned_points": round(earned_points, 2),
+                        "total_gt": total_gt,
+                        "items": feedback_items
+                    }
+                )
+                commit_with_retry(attempt)
+            except Exception as attempt_err:
+                db.session.rollback()
+                print(f"Notice: Skill assessment attempt logging recovered: {attempt_err}")
 
         gt_overlay = []
         for gt in gt_dicts:
@@ -6867,20 +6980,52 @@ def create_app(config_class=Config):
         all_skill_walls = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
         next_wall_slug = None
         next_wall_title = None
-        for i, sw in enumerate(all_skill_walls):
-            if sw.id == wall.id and len(all_skill_walls) > 1:
-                next_sw = all_skill_walls[(i + 1) % len(all_skill_walls)]
-                next_wall_slug = next_sw.slug
-                next_wall_title = next_sw.title
-                break
 
         from urllib.parse import quote_plus
         token_arg = f"&candidate_token={quote_plus(candidate_token)}" if candidate_token else ""
         student_id_arg = f"&student_id={quote_plus(student_id)}" if student_id else ""
-        next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}{student_id_arg}{token_arg}" if next_wall_slug else None
+
+        if is_dry_run:
+            b_code = battery_code or "COHORT-10"
+            next_url = f"/skill-assessment/battery/start?code={quote_plus(b_code)}&skip_dry_run=1&student_name={quote_plus(student_name)}{student_id_arg}{token_arg}"
+            next_wall_title = "Start Question 1 (Scored Battery)"
+        elif battery_code:
+            battery_obj = Assignment.query.filter_by(code=battery_code).first()
+            target_count = battery_obj.battery_size if (battery_obj and battery_obj.battery_size) else 10
+            pool_walls = battery_obj.walls if (battery_obj and battery_obj.walls) else all_skill_walls
+            pool_slugs = [w.slug for w in pool_walls]
+            student_seed = student_id or candidate_token or student_name or session_id or "default_seed"
+
+            if not battery_obj or battery_obj.randomize_order:
+                seq_slugs = generate_student_battery_sequence(pool_slugs, f"{battery_code}:{student_seed}", target_count=target_count)
+            else:
+                seq_slugs = pool_slugs[:target_count]
+
+            if wall.slug in seq_slugs:
+                c_idx = seq_slugs.index(wall.slug)
+                if c_idx + 1 < len(seq_slugs):
+                    next_wall_slug = seq_slugs[c_idx + 1]
+                    next_sw = Wall.query.filter_by(slug=next_wall_slug).first()
+                    next_wall_title = next_sw.title if next_sw else "Next Question"
+                    next_url = f"/skill-assessment/{next_wall_slug}?battery={quote_plus(battery_code)}&q={c_idx + 2}&student_name={quote_plus(student_name)}{student_id_arg}{token_arg}"
+                else:
+                    next_url = f"/skill-assessment?student_name={quote_plus(student_name)}{student_id_arg}{token_arg}&battery_completed={quote_plus(battery_code)}"
+                    next_wall_title = "Finish Battery & View Scorecard"
+            else:
+                next_url = f"/skill-assessment?student_name={quote_plus(student_name)}{student_id_arg}{token_arg}"
+        else:
+            for i, sw in enumerate(all_skill_walls):
+                if sw.id == wall.id and len(all_skill_walls) > 1:
+                    next_sw = all_skill_walls[(i + 1) % len(all_skill_walls)]
+                    next_wall_slug = next_sw.slug
+                    next_wall_title = next_sw.title
+                    break
+            next_url = f"/skill-assessment/{next_wall_slug}?student_name={quote_plus(student_name)}{student_id_arg}{token_arg}" if next_wall_slug else None
 
         return jsonify({
             "success": True,
+            "is_dry_run": is_dry_run,
+            "battery_code": battery_code,
             "student_name": student_name,
             "student_id": student.id if student else None,
             "student": student.to_dict() if student else None,
@@ -7331,11 +7476,18 @@ def create_app(config_class=Config):
             data["defect_count"] = d_count
             specimen_list.append(data)
 
+        active_batteries = [b.to_dict() for b in Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()]
+        attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.created_at.desc()).limit(200).all()
+        walls_map = {s.id: s for s in specimens}
+        cohort_intel = analyze_cohort_intelligence(attempts, walls_map)
+
         return render_template(
             "skill_assessment_admin.html",
             specimens=specimen_list,
             wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()),
-            remedial_options=REMEDIAL_OPTIONS
+            remedial_options=REMEDIAL_OPTIONS,
+            batteries=active_batteries,
+            cohort_intel=cohort_intel
         )
 
     @app.route("/skill-assessment/admin/upload", methods=["POST"])
@@ -7588,6 +7740,153 @@ def create_app(config_class=Config):
         db.session.delete(wall)
         db.session.commit()
         return jsonify({"success": True})
+
+    @app.route("/skill-assessment/battery/start")
+    def skill_assessment_battery_start():
+        """
+        Launches a randomized skill assessment battery for the student:
+        1. Loads battery by code (or defaults to active COHORT-10 battery).
+        2. If dry_run is enabled and not skipped, routes to the interactive calibration sample.
+        3. If dry_run is skipped or completed, computes the student's unique anti-collusion sequence
+           and routes directly to Question 1.
+        """
+        code = (request.args.get("code") or "COHORT-10").strip().upper()
+        skip_dry_run = (request.args.get("skip_dry_run") == "1")
+        student_name = (request.args.get("student_name") or session.get("student_name") or "Inspector Candidate").strip()
+        student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
+        candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
+
+        battery = Assignment.query.filter_by(code=code).first()
+        all_specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
+
+        if not battery:
+            selected_walls = assemble_battery_specimens(all_specimens, target_count=10)
+            battery = Assignment(
+                code=code,
+                title=f"{code} Skill Assessment Battery",
+                wall_id=selected_walls[0].id if selected_walls else None,
+                battery_size=10,
+                randomize_order=True,
+                enable_dry_run=True,
+                is_active=True
+            )
+            battery.walls = selected_walls
+            db.session.add(battery)
+            db.session.commit()
+
+        target_count = battery.battery_size or 10
+        pool_walls = battery.walls if battery.walls else all_specimens
+        if not pool_walls:
+            return redirect(url_for("skill_assessment_hub"))
+
+        pool_slugs = [w.slug for w in pool_walls]
+        student_seed = student_id or candidate_token or student_name or session.get("_id") or "default_seed"
+
+        if skip_dry_run:
+            session[f"dry_run_done_{code}"] = True
+            session.permanent = True
+            session.modified = True
+
+        from urllib.parse import quote_plus
+        query_args = f"student_name={quote_plus(student_name)}"
+        if student_id:
+            query_args += f"&student_id={quote_plus(student_id)}"
+        if candidate_token:
+            query_args += f"&candidate_token={quote_plus(candidate_token)}"
+
+        dry_run_done = bool(session.get(f"dry_run_done_{code}"))
+        if battery.enable_dry_run and not dry_run_done and not skip_dry_run:
+            practice_slug = pool_slugs[0]
+            return redirect(f"/skill-assessment/{practice_slug}?battery={code}&dry_run=1&{query_args}")
+
+        if battery.randomize_order:
+            seq_slugs = generate_student_battery_sequence(pool_slugs, f"{code}:{student_seed}", target_count=target_count)
+        else:
+            seq_slugs = pool_slugs[:target_count]
+
+        first_slug = seq_slugs[0] if seq_slugs else pool_slugs[0]
+        return redirect(f"/skill-assessment/{first_slug}?battery={code}&q=1&{query_args}")
+
+    @app.route("/api/skill-assessment/battery/create", methods=["POST"], strict_slashes=False)
+    @admin_required
+    def api_skill_assessment_battery_create():
+        """
+        Assessor Battery Generator:
+        Creates an assessment battery with assessor-defined question count (default 10),
+        anti-collusion side-by-side randomization, and pre-exam dry-run options.
+        """
+        data = request.get_json(silent=True) or request.form.to_dict() or {}
+        title = (data.get("title") or "Cohort Skill Assessment Battery").strip()
+        raw_size = data.get("battery_size") or 10
+        try:
+            battery_size = max(1, min(30, int(raw_size)))
+        except (ValueError, TypeError):
+            battery_size = 10
+
+        randomize_order = str(data.get("randomize_order", "true")).lower() in ["true", "1", "yes", "on"]
+        enable_dry_run = str(data.get("enable_dry_run", "true")).lower() in ["true", "1", "yes", "on"]
+        difficulty_filter = data.get("difficulty") or None
+        wall_type_filter = data.get("wall_type") or None
+
+        code = (data.get("code") or "").strip().upper()
+        if not code:
+            code = f"BAT-{uuid.uuid4().hex[:4].upper()}"
+
+        all_specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).all()
+        curated_walls = assemble_battery_specimens(
+            all_specimens,
+            target_count=battery_size,
+            difficulty_filter=difficulty_filter,
+            wall_type_filter=wall_type_filter
+        )
+
+        assignment = Assignment(
+            code=code,
+            title=title,
+            wall_id=curated_walls[0].id if curated_walls else None,
+            battery_size=battery_size,
+            randomize_order=randomize_order,
+            enable_dry_run=enable_dry_run,
+            director_notes=f"Curated {len(curated_walls)} specimens (target: {battery_size}) with balanced difficulty and anti-collusion randomization.",
+            is_active=True
+        )
+        assignment.walls = curated_walls
+        db.session.add(assignment)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "battery": assignment.to_dict(),
+            "specimens_count": len(curated_walls),
+            "battery_code": assignment.code,
+            "launch_url": f"/skill-assessment/battery/start?code={assignment.code}"
+        })
+
+    @app.route("/api/skill-assessment/curriculum-intelligence", methods=["GET"], strict_slashes=False)
+    @admin_required
+    def api_skill_assessment_curriculum_intelligence():
+        """
+        Curriculum Director Intelligence:
+        Synthesizes cohort heatmap and error patterns across multiple specimens,
+        identifies class-wide diagnostic blindspots, and prescribes remediation actions.
+        """
+        cohort_code = (request.args.get("cohort") or "GENERAL").strip().upper()
+        attempts_query = AssessmentAttempt.query
+        if cohort_code and cohort_code != "ALL":
+            attempts_query = attempts_query.filter(AssessmentAttempt.cohort_code == cohort_code)
+        attempts = attempts_query.order_by(AssessmentAttempt.created_at.desc()).limit(200).all()
+
+        walls = {w.id: w for w in Wall.query.filter_by(is_skill_assessment=True).all()}
+        intelligence = analyze_cohort_intelligence(attempts, walls, target_cohort=cohort_code)
+
+        active_batteries = [b.to_dict() for b in Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()]
+
+        return jsonify({
+            "success": True,
+            "cohort": cohort_code,
+            "intelligence": intelligence,
+            "active_batteries": active_batteries
+        })
 
     return app
 
