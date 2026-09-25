@@ -219,5 +219,37 @@ class TestCurriculumDirectorAgent(unittest.TestCase):
             after_count = AssessmentAttempt.query.count()
             self.assertEqual(initial_count, after_count, "Dry-run should not create AssessmentAttempt in DB.")
 
+    def test_unified_portal_entry_points(self):
+        """KISS Entry Points: /student redirects to /portal, and /skill-assessment renders student portal."""
+        # /student -> /portal
+        resp_student = self.client.get("/student")
+        self.assertEqual(resp_student.status_code, 302)
+        self.assertIn("/portal", resp_student.location)
+
+        # /skill-assessment renders portal
+        resp_hub = self.client.get("/skill-assessment")
+        self.assertEqual(resp_hub.status_code, 200)
+        self.assertIn("Student Portal", resp_hub.data.decode("utf-8"))
+
+    def test_portal_checkin_and_switch_candidate(self):
+        """Portal fast check-in POST sets candidate session, and switch_student=1 clears it."""
+        # Check-in via direct name
+        post_resp = self.client.post("/portal", data={
+            "action": "check_in",
+            "candidate_name": "Sarah Connor",
+            "candidate_pin": "1234"
+        }, follow_redirects=True)
+        self.assertEqual(post_resp.status_code, 200)
+        html = post_resp.data.decode("utf-8")
+        self.assertIn("Sarah Connor", html)
+        self.assertIn("Switch Candidate", html)
+
+        # Switch Candidate resets
+        switch_resp = self.client.get("/portal?switch_student=1", follow_redirects=True)
+        self.assertEqual(switch_resp.status_code, 200)
+        switch_html = switch_resp.data.decode("utf-8")
+        self.assertIn("Candidate Check-In", switch_html)
+
 if __name__ == "__main__":
     unittest.main()
+

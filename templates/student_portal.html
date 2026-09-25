@@ -391,53 +391,216 @@
 </head>
 <body>
   <div class="portal-container">
-    <div style="text-align: center; margin-bottom: 1.5rem;">
-      <h1 style="margin: 0; font-size: 2rem; color: #f8fafc;">🏛️ Global Wall Inspector</h1>
-      <p style="margin: 0.35rem 0 0; color: #94a3b8; font-size: 0.95rem;">Professional Masonry Assessment & Continuous Professional Development (CPD) Portal</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #334155; padding-bottom: 1rem;">
+      <div>
+        <h1 style="margin: 0; font-size: 1.85rem; color: #f8fafc; display: flex; align-items: center; gap: 10px;">
+          <span>🏛️</span> Global Wall Inspector <span style="font-size: 0.95rem; background: #0284c7; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Student Portal</span>
+        </h1>
+        <p style="margin: 0.35rem 0 0; color: #94a3b8; font-size: 0.88rem;">Structural defect identification, clinical diagnostics, and continuous competency tracking</p>
+      </div>
+      <div>
+        <a href="/" style="background: #1e293b; color: #94a3b8; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; border: 1px solid #334155; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-left"></i> Public Wall Catalog
+        </a>
+      </div>
     </div>
 
-    <!-- Learning Studio Quick Links -->
-    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.25rem; flex-wrap: wrap;">
-      <a href="/" style="background: #1e293b; color: #94a3b8; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #334155;">&larr; Catalog</a>
-      <a href="/skill-assessment" style="background: #0284c7; color: white; text-decoration: none; padding: 5px 14px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #38bdf8; font-weight: 700;"><i class="fa-solid fa-bullseye"></i> 🎯 Skill Assessments ({{ skill_specimens|length if skill_specimens else 15 }})</a>
-      <a href="/field-guide" style="background: #1e293b; color: #38bdf8; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #0284c7;">📄 Field Guide (Printable)</a>
-      <a href="/cards" style="background: #1e293b; color: #c084fc; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #7c3aed;">📇 Flashcards</a>
-      <a href="/compare" style="background: #1e293b; color: #34d399; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #059669;">⚖️ Compare Studio</a>
-      <a href="/map" style="background: #1e293b; color: #38bdf8; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #0284c7;">🗺️ Map Atlas</a>
-      <a href="/quiz" style="background: #1e293b; color: #fbbf24; text-decoration: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #d97706;">⚡ Reflex Quiz</a>
-    </div>
+    <!-- Candidate Check-In Area (Visible if Unidentified) -->
+    {% if not is_identified %}
+    <div class="checkin-card" style="background: linear-gradient(135deg, #090e1a 0%, #1e293b 100%); border: 2px solid #0284c7; border-radius: 14px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(2, 132, 199, 0.25);">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="display: inline-flex; width: 48px; height: 48px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; align-items: center; justify-content: center; font-size: 1.4rem; color: #38bdf8; margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-user-graduate"></i>
+        </div>
+        <h2 style="margin: 0; font-size: 1.45rem; color: #f8fafc;">Candidate Check-In</h2>
+        <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.85rem;">Select your name from your class cohort, or enter your candidate name to begin your assessment.</p>
+      </div>
 
-    <!-- Mode Selector Tabs (3 Primary Portals) -->
+      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 1.25rem;">
+        <button type="button" id="btn-mode-cohort" onclick="setCheckinMode('cohort')" style="padding: 0.45rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; background: #0284c7; color: white; border: 1px solid #38bdf8; cursor: pointer;">
+          <i class="fa-solid fa-users"></i> Select from Class List
+        </button>
+        <button type="button" id="btn-mode-direct" onclick="setCheckinMode('direct')" style="padding: 0.45rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; background: #1e293b; color: #94a3b8; border: 1px solid #334155; cursor: pointer;">
+          <i class="fa-solid fa-keyboard"></i> Type Candidate Name
+        </button>
+      </div>
+
+      <form method="POST" action="/portal" style="max-width: 480px; margin: 0 auto;">
+        <input type="hidden" name="action" value="check_in">
+
+        <!-- Mode 1: Select from Cohort -->
+        <div id="checkin-cohort-group">
+          <label style="color: #cbd5e1; font-weight: 600; font-size: 0.8rem; display: block; margin-bottom: 6px;">Choose Your Registered Student Name:</label>
+          <select name="selected_student_id" id="checkin-student-select" style="width: 100%; background: #090e1a; border: 1px solid #38bdf8; color: #f8fafc; padding: 0.8rem; border-radius: 8px; font-size: 0.95rem; margin-bottom: 1rem;">
+            <option value="">-- Choose Name from Class List --</option>
+            {% for cohort_name, students in cohorts_map.items() %}
+              <optgroup label="👥 Cohort: {{ cohort_name }}">
+                {% for st in students %}
+                  <option value="{{ st.id }}">{{ st.name }} (PIN: {{ st.pin }})</option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Mode 2: Direct Name Entry -->
+        <div id="checkin-direct-group" style="display: none;">
+          <label style="color: #cbd5e1; font-weight: 600; font-size: 0.8rem; display: block; margin-bottom: 6px;">Candidate Full Name:</label>
+          <input type="text" name="candidate_name" id="checkin-name-input" placeholder="e.g. Barry Sisk" style="width: 100%; background: #090e1a; border: 1px solid #38bdf8; color: #f8fafc; padding: 0.8rem; border-radius: 8px; font-size: 0.95rem; margin-bottom: 1rem;">
+        </div>
+
+        <button type="submit" class="btn" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; font-size: 1rem; padding: 0.85rem; border: 1px solid #10b981; border-radius: 8px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); cursor: pointer; width: 100%; margin-top: 0.5rem;">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Continue to Assessment Dashboard &rarr;
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <!-- Candidate Identifier Bar (Visible when Identified) -->
+    <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid #334155; border-radius: 12px; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1rem;">
+          {{ student_name[0]|upper if student_name else 'C' }}
+        </div>
+        <div>
+          <div style="font-weight: 800; font-size: 1.05rem; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+            <span>{{ student_name }}</span>
+            {% if current_student %}
+              <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-shield-halved"></i> ENROLLED STUDENT
+              </span>
+            {% else %}
+              <span style="background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                Active Candidate
+              </span>
+            {% endif %}
+          </div>
+          <div style="font-size: 0.75rem; color: #94a3b8; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px;">
+            {% if current_student %}
+              <span>Cohort: <strong style="color: #38bdf8;">{{ current_student.cohort_code }}</strong></span> &bull; 
+              <span>PIN: <strong style="color: #facc15; font-family: monospace;">{{ current_student.pin }}</strong></span>
+              {% if current_student.email %}
+                &bull; <span><i class="fa-regular fa-envelope"></i> <span id="auth-user-email">{{ current_student.email }}</span></span>
+              {% endif %}
+            {% else %}
+              <span>Single Candidate Session</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div>
+        <a href="/portal?switch_student=1" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-user-pen"></i> Switch Candidate
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- HERO ACTION: Today's Cohort Assessment Battery -->
+    {% if battery_info %}
+    <div class="battery-hero-card" style="background: linear-gradient(135deg, #090e1a 0%, #0f172a 50%, #1e293b 100%); border: 2px solid {% if battery_info.status == 'completed' %}#10b981{% elif battery_info.status == 'in_progress' %}#f59e0b{% else %}#38bdf8{% endif %}; border-radius: 14px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: #38bdf8; flex-shrink: 0;">
+            🎯
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <h3 style="margin: 0; font-size: 1.25rem; color: #f8fafc;">{{ battery_info.title }}</h3>
+              <span style="background: #0284c7; color: white; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">
+                {{ battery_info.battery_size }} Questions
+              </span>
+              <span style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #d8b4fe; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">
+                <i class="fa-solid fa-shuffle"></i> Side-by-Side Anti-Collusion
+              </span>
+            </div>
+            <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.82rem;">
+              Balanced examination battery (30% Beginner, 50% Intermediate, 20% Advanced) with randomized student delivery.
+            </p>
+          </div>
+        </div>
+
+        <!-- Status Badge -->
+        <div>
+          {% if battery_info.status == 'completed' %}
+            <span style="background: #065f46; color: #a7f3d0; border: 1px solid #10b981; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-circle-check"></i> Completed &bull; Precision: {{ battery_info.avg_score }}% ({{ 'Pass' if battery_info.passed else 'Review' }})
+            </span>
+          {% elif battery_info.status == 'in_progress' %}
+            <span style="background: #78350f; color: #fde68a; border: 1px solid #f59e0b; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-spinner fa-spin"></i> In Progress ({{ battery_info.completed_count }}/{{ battery_info.total_count }} Complete)
+            </span>
+          {% else %}
+            <span style="background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid #0284c7; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-clock"></i> Ready (0/{{ battery_info.total_count }})
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Progress Bar (if in progress or completed) -->
+      {% if battery_info.status != 'not_started' %}
+      <div style="margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #cbd5e1; margin-bottom: 4px;">
+          <span>Exam Progression</span>
+          <span style="font-weight: 800; color: #34d399;">{{ battery_info.pct_complete }}%</span>
+        </div>
+        <div style="width: 100%; height: 8px; background: #090e1a; border-radius: 999px; overflow: hidden; border: 1px solid #334155;">
+          <div style="width: {{ battery_info.pct_complete }}%; height: 100%; background: linear-gradient(90deg, #0284c7, #10b981); border-radius: 999px;"></div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Hero Action Buttons -->
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        {% if battery_info.status == 'in_progress' %}
+          <a href="{{ battery_info.resume_url }}" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; font-size: 1rem; border: 1px solid #10b981; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+            <i class="fa-solid fa-play"></i> Resume Battery: Question {{ battery_info.next_q_num }} of {{ battery_info.total_count }} &rarr;
+          </a>
+        {% elif battery_info.status == 'completed' %}
+          <button type="button" onclick="switchPortalTab('passport')" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.5rem; background: #0284c7; color: white; font-weight: 800; font-size: 1rem; border: 1px solid #38bdf8; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-graduation-cap"></i> View Scorecard &amp; Skills Passport
+          </button>
+          <a href="{{ battery_info.skip_dry_run_url }}" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.25rem; background: #1e293b; color: #cbd5e1; font-weight: 700; font-size: 0.9rem; border: 1px solid #334155; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-arrows-rotate"></i> Retake Exam Battery
+          </a>
+        {% else %}
+          <a href="{{ battery_info.start_dry_run_url }}" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; font-weight: 800; font-size: 1rem; border: 1px solid #38bdf8; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
+            <i class="fa-solid fa-graduation-cap"></i> Start Exam (with Practice Dry-Run) &rarr;
+          </a>
+          <a href="{{ battery_info.skip_dry_run_url }}" class="btn" style="width: auto; margin: 0; padding: 0.75rem 1.25rem; background: #1e293b; color: #94a3b8; font-weight: 700; font-size: 0.9rem; border: 1px solid #334155; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            <span>⏩ Skip Practice &amp; Begin Question 1</span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Mode Selector Tabs -->
     <div class="portal-tabs">
       <button type="button" class="portal-tab-btn active" id="tab-btn-skills" onclick="switchPortalTab('skills')">
-        <span><i class="fa-solid fa-bullseye" style="color: #00f2fe;"></i> 🎯 Practical Skill Assessments</span>
-      </button>
-      <button type="button" class="portal-tab-btn" id="tab-btn-exam" onclick="switchPortalTab('exam')">
-        <span><i class="fa-solid fa-key" style="color: #facc15;"></i> 📝 PIN Examination Queue</span>
+        <span><i class="fa-solid fa-layer-group" style="color: #00f2fe;"></i> 📚 Open Practice Library ({{ skill_specimens|length }})</span>
       </button>
       <button type="button" class="portal-tab-btn" id="tab-btn-passport" onclick="switchPortalTab('passport')">
-        <span><i class="fa-solid fa-graduation-cap" style="color: #34d399;"></i> 🎓 Skills Passport & CPD Radar</span>
+        <span><i class="fa-solid fa-graduation-cap" style="color: #34d399;"></i> 🎓 Skills Passport &amp; CPD Radar</span>
+      </button>
+      <button type="button" class="portal-tab-btn" id="tab-btn-exam" onclick="switchPortalTab('exam')">
+        <span><i class="fa-solid fa-key" style="color: #facc15;"></i> 🔑 Custom Assignment PIN</span>
       </button>
     </div>
 
-    <!-- TAB 1: Practical Skill Assessments (Specimen Workstation) -->
+    <!-- TAB 1: Open Practice Library -->
     <div id="tab-panel-skills" class="portal-card">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #334155; padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
         <div>
           <span style="font-size: 0.75rem; text-transform: uppercase; color: #38bdf8; font-weight: 800; letter-spacing: 0.5px;">
-            <i class="fa-solid fa-crosshairs"></i> Clinical Pathology & Defect Pinning Workstation
+            <i class="fa-solid fa-book-open"></i> Self-Paced Clinical Library
           </span>
-          <h2 style="text-align: left; margin: 0.35rem 0 0.25rem; font-size: 1.75rem; color: #f8fafc;">
+          <h2 style="text-align: left; margin: 0.35rem 0 0.25rem; font-size: 1.5rem; color: #f8fafc;">
             Authentic Masonry Skill Assessments
           </h2>
           <p style="text-align: left; margin: 0; font-size: 0.88rem; color: #94a3b8; max-width: 650px;">
-            Inspect authentic high-resolution masonry specimens, tag pathological defect modes at precise coordinates, and receive instant clinical evaluations against expert ground truth.
+            Practice individual specimens independently. Inspect high-resolution photography, drop defect pins, and verify spatial accuracy against ground truth.
           </p>
-        </div>
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-          <a href="/skill-assessment" class="btn" style="width: auto; margin: 0; padding: 0.6rem 1.25rem; font-size: 0.85rem; background: #0284c7; border: 1px solid #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-layer-group"></i> Full Assessment Hub &rarr;
-          </a>
         </div>
       </div>
 
@@ -449,7 +612,7 @@
               <i class="fa-solid fa-user-graduate"></i>
             </div>
             <div>
-              <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Candidate Diagnostic Dashboard</div>
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Candidate Progress Summary</div>
               <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;" id="dashboard-candidate-name">
                 {{ student_name if student_name else 'Inspector Candidate' }}
               </div>
@@ -484,73 +647,6 @@
           </div>
           <div class="progress-bar-wrap">
             <div class="progress-bar-fill" id="stat-progress-bar" style="width: {% if skill_specimens|length > 0 %}{{ ((completed_count|default(0) / skill_specimens|length) * 100)|round(1) }}%{% else %}0%{% endif %};"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Student Access & PIN Authentication Card -->
-      <div id="student-auth-banner" style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
-        <!-- Logged In State -->
-        <div id="auth-state-loggedin" style="{% if not current_student %}display: none;{% endif %} display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #10b981); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white; font-weight: bold; flex-shrink: 0;" id="user-avatar-initials">
-              {{ current_student.name[0] if current_student and current_student.name else 'S' }}
-            </div>
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 1.2rem; font-weight: 800; color: #f8fafc;" id="auth-user-name">
-                  {{ current_student.name if current_student else 'Inspector Candidate' }}
-                </span>
-                <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-shield-halved"></i> ENROLLED STUDENT
-                </span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: #94a3b8; margin-top: 4px; flex-wrap: wrap;">
-                <span><i class="fa-regular fa-envelope"></i> <span id="auth-user-email">{{ current_student.email if current_student else '' }}</span></span>
-                <span style="color: #475569;">•</span>
-                <span>
-                  <i class="fa-solid fa-key" style="color: #facc15;"></i> PIN: 
-                  <strong id="auth-user-pin" style="color: #f8fafc; letter-spacing: 2px; font-family: monospace; font-size: 0.95rem;">{{ current_student.pin if current_student else '0000' }}</strong>
-                  <button type="button" onclick="promptChangePin()" title="Change your 4-digit PIN" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 0.72rem; border-radius: 4px; padding: 2px 6px; cursor: pointer; margin-left: 6px;">
-                    <i class="fa-solid fa-pen"></i> Change PIN
-                  </button>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.65rem 1.15rem; font-size: 0.85rem; background: #10b981; border: 1px solid #34d399; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="launchRandomSkillAssessment()">
-              <i class="fa-solid fa-dice"></i> Launch Random Specimen
-            </button>
-            <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.65rem 1.15rem; font-size: 0.85rem; background: #334155; border: 1px solid #475569; color: #cbd5e1; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="logoutStudent()">
-              <i class="fa-solid fa-arrow-right-from-bracket"></i> Switch / Sign Out
-            </button>
-          </div>
-        </div>
-
-        <!-- Logged Out State -->
-        <div id="auth-state-loggedout" style="{% if current_student %}display: none;{% endif %} display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-          <div>
-            <div style="font-size: 0.75rem; text-transform: uppercase; color: #38bdf8; font-weight: 800; letter-spacing: 0.5px;">
-              <i class="fa-solid fa-address-card"></i> Student Enrollment & PIN Access
-            </div>
-            <div style="font-size: 1.1rem; font-weight: 800; color: #f8fafc; margin-top: 2px;">
-              Track & Sync Your Assessment Results Across Any Device
-            </div>
-            <p style="text-align: left; margin: 4px 0 0; font-size: 0.82rem; color: #94a3b8;">
-              Low-friction login: Enter your email and 4-digit PIN (defaults to <strong>0000</strong>) to automatically preserve your scoring history.
-            </p>
-          </div>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.7rem 1.25rem; font-size: 0.88rem; background: #2563eb; border: 1px solid #38bdf8; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="openAuthModal('login')">
-              <i class="fa-solid fa-key"></i> Student Login (PIN: 0000)
-            </button>
-            <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.7rem 1.25rem; font-size: 0.88rem; background: #059669; border: 1px solid #10b981; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="openAuthModal('enroll')">
-              <i class="fa-solid fa-user-plus"></i> Enroll in 10 Seconds
-            </button>
-            <button type="button" class="btn" style="width: auto; margin: 0; padding: 0.7rem 1.1rem; font-size: 0.88rem; background: #1e293b; border: 1px solid #334155; color: #94a3b8; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" onclick="launchRandomSkillAssessment()">
-              <i class="fa-solid fa-dice"></i> Guest Random
-            </button>
           </div>
         </div>
       </div>
@@ -845,6 +941,28 @@
   </div>
 
   <script>
+    function setCheckinMode(mode) {
+      const isCohort = mode === 'cohort';
+      const cohortGroup = document.getElementById('checkin-cohort-group');
+      const directGroup = document.getElementById('checkin-direct-group');
+      const btnCohort = document.getElementById('btn-mode-cohort');
+      const btnDirect = document.getElementById('btn-mode-direct');
+
+      if (cohortGroup) cohortGroup.style.display = isCohort ? 'block' : 'none';
+      if (directGroup) directGroup.style.display = isCohort ? 'none' : 'block';
+
+      if (btnCohort) {
+        btnCohort.style.background = isCohort ? '#0284c7' : '#1e293b';
+        btnCohort.style.color = isCohort ? 'white' : '#94a3b8';
+        btnCohort.style.borderColor = isCohort ? '#38bdf8' : '#334155';
+      }
+      if (btnDirect) {
+        btnDirect.style.background = isCohort ? '#1e293b' : '#0284c7';
+        btnDirect.style.color = isCohort ? '#94a3b8' : 'white';
+        btnDirect.style.borderColor = isCohort ? '#334155' : '#38bdf8';
+      }
+    }
+
     function switchPortalTab(tab) {
       const isSkills = tab === 'skills';
       const isExam = tab === 'exam';
