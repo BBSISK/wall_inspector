@@ -67,7 +67,7 @@ docker compose up --build
 # Container health telemetry at http://localhost:8000/api/health
 ```
 
-### 2. Run the 61 Automated Unit & Agent Tests
+### 2. Run the 60+ Automated Unit & Agent Tests
 ```bash
 python3 -m unittest discover -s . -p "test_*.py" -v
 python3 mcp_server.py --self-test
