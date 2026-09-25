@@ -75,7 +75,7 @@ flowchart TB
 * **What Happens on Every `git push`**:
   1. GitHub automatically boots a fresh Ubuntu Linux cloud machine.
   2. Installs Python 3.11 and `requirements.txt`.
-  3. Runs all **61 automated unit tests** covering the Unified Student Portal (`/portal`), the **Intake Sentinel Agent**, the **Curriculum Director Agent** (anti-collusion randomization & dry-run mode), and the **COCO MLOps Exporter**.
+  3. Runs all **60+ automated unit tests** covering the Unified Student Portal (`/portal`), the **Intake Sentinel Agent**, the **Curriculum Director Agent** (anti-collusion randomization & dry-run mode), and the **COCO MLOps Exporter**.
   4. Runs `python mcp_server.py --self-test` to verify all 4 MCP agent tools respond accurately.
 
 ---
