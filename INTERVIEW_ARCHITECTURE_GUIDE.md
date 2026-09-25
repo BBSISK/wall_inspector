@@ -43,7 +43,7 @@ flowchart TB
 
 ## 🎤 The 5 Pillars: Interview Questions & Your "Gold Standard" Answers
 
-### Pillar 1: Docker & Containerization ([`Dockerfile`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/Dockerfile), [`docker-compose.yml`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/docker-compose.yml))
+### Pillar 1: Docker & Containerization ([`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml))
 
 * **Why We Used It**:
   Earlier in development, our **Intake Sentinel Agent** worked on macOS (which already had `Pillow` installed) but failed when deployed to a Linux cloud server (`ModuleNotFoundError: No module named 'PIL'`). Docker eliminates the *"Works on My Machine"* problem by sealing the exact OS (`python:3.11-slim`), native C image libraries (`libjpeg62-turbo`), Python packages, and `Gunicorn` server inside an immutable container.
@@ -55,7 +55,7 @@ flowchart TB
 
 ---
 
-### Pillar 2: Terraform — Infrastructure as Code ([`infra/main.tf`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/infra/main.tf), [`infra/variables.tf`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/infra/variables.tf))
+### Pillar 2: Terraform — Infrastructure as Code ([`infra/main.tf`](infra/main.tf), [`infra/variables.tf`](infra/variables.tf))
 
 * **Why We Used It**:
   Setting up cloud servers by clicking buttons in a web dashboard ("ClickOps") is slow, unrepeatable, and prone to human error. Terraform codifies our cloud infrastructure into declarative `.tf` files.
@@ -68,7 +68,7 @@ flowchart TB
 
 ---
 
-### Pillar 3: GitHub Actions CI/CD ([`.github/workflows/ci.yml`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/.github/workflows/ci.yml))
+### Pillar 3: GitHub Actions CI/CD ([`ci/github-actions-ci.yml`](ci/github-actions-ci.yml))
 
 * **Why We Used It**:
   To prevent broken code from ever reaching production.
@@ -80,7 +80,7 @@ flowchart TB
 
 ---
 
-### Pillar 4: Model Context Protocol — MCP Server ([`mcp_server.py`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/mcp_server.py))
+### Pillar 4: Model Context Protocol — MCP Server ([`mcp_server.py`](mcp_server.py))
 
 * **Why We Used It**:
   **MCP (Model Context Protocol)** is the universal open standard in 2026 for connecting AI assistants (Claude, Gemini, Cursor) to domain-specific tools and databases over JSON-RPC 2.0.
@@ -92,7 +92,7 @@ flowchart TB
 
 ---
 
-### Pillar 5: MLOps Data Flywheel & CVAT / YOLOv8 Bridge ([`/api/skill-assessment/export-coco`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/app.py#L7921-L8052))
+### Pillar 5: MLOps Data Flywheel & CVAT / YOLOv8 Bridge ([`app.py`](app.py))
 
 * **Why We Used It**:
   As assessors upload **500 uncompressed masonry images** to Cloudinary and students drop thousands of diagnostic pins in `/portal`, the platform naturally builds a massive labeled Computer Vision dataset.

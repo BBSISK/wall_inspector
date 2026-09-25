@@ -4,7 +4,7 @@
 > [!NOTE]
 > This catalog contains **26 complete worked specimens** engineered for testing student masonry pathology competence. Each entry specifies authentic imagery, architectural context, clinical defect diagnosis, failure mechanics, tolerances, student assessment tasks, and Euro (€) benchmark rates.
 > 
-> A standalone interactive viewer is also available at: [`worked_examples_catalog.html`](file:///Users/barrysisk/Gemini_Start_Code/wall_inspector/templates/worked_examples_catalog.html)
+> A standalone interactive viewer is also available at: [`worked_examples_catalog.html`](templates/worked_examples_catalog.html)
 
 ---
 
@@ -44,7 +44,7 @@
 ## 1. Brickwork & Cavity Construction (Specimens 01 – 04)
 
 ### Specimen 01: Victorian Red Brick Cavity Wall
-![Victorian Red Brick Efflorescence](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/brick_efflorescence_01.jpg)
+![Victorian Red Brick Efflorescence](static/img/walls/brick_efflorescence_01.jpg)
 
 - **Archetype**: Brick Cavity Masonry (Load-bearing Envelope)
 - **Location & Material**: Manchester, UK — Fired Carboniferous Coal Measures mudstone brickwork.
@@ -62,7 +62,7 @@
 ---
 
 ### Specimen 02: Industrial Fired Brick Pier
-![Industrial Brick Spalling](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/old_brick_decay_01.jpg)
+![Industrial Brick Spalling](static/img/walls/old_brick_decay_01.jpg)
 
 - **Archetype**: Brick Cavity / Solid Fired Brick Pier (Load-bearing)
 - **Location & Material**: Birmingham, UK — Low-temperature kiln fired Victorian common bricks.
@@ -80,7 +80,7 @@
 ---
 
 ### Specimen 03: Edwardian Semi-Detached Flank Wall
-![Stepped Settlement Crack](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/modern_brick_damage_01.jpg)
+![Stepped Settlement Crack](static/img/walls/modern_brick_damage_01.jpg)
 
 - **Archetype**: Brick Cavity Masonry (Flank Load-bearing Wythe)
 - **Location & Material**: South London, UK — London Stock clay brickwork over London Clay subsoil.
@@ -98,7 +98,7 @@
 ---
 
 ### Specimen 04: Commercial Gable Brickwork
-![Thermal Movement Brickwork](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/brick_thermal_01.jpg)
+![Thermal Movement Brickwork](static/img/walls/brick_thermal_01.jpg)
 
 - **Archetype**: Brick Cavity Masonry (Unrestrained Gable Envelope)
 - **Location & Material**: Leeds, UK — Modern wirecut extruded brickwork.
@@ -118,7 +118,7 @@
 ## 2. Historic Stone Rubble Masonry (Specimens 05 – 08)
 
 ### Specimen 05: 18th-Century Coursed Lime Rubble
-![Coursed Lime Rubble Washout](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/lime_coursed_01.jpg)
+![Coursed Lime Rubble Washout](static/img/walls/lime_coursed_01.jpg)
 
 - **Archetype**: Historic Lime Mortar (Coursed Sandstone Rubble)
 - **Location & Material**: Wicklow, Ireland — Calcareous Sandstone bedded in hydraulic lime (NHL 2.0).
@@ -136,7 +136,7 @@
 ---
 
 ### Specimen 06: Uncoursed Rubble: Continuous Vertical Joint Shear
-![Continuous Vertical Joints](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_joints_01.jpg)
+![Continuous Vertical Joints](static/img/walls/ultratech_stone_joints_01.jpg)
 
 - **Archetype**: Stone Rubble Masonry (Random Rubble Wall)
 - **Location & Material**: Rajasthan, India / International — Dressed and uncoursed stone rubble bedded in lime mortar.
@@ -154,7 +154,7 @@
 ---
 
 ### Specimen 07: Fieldstone Rubble: Severe Lime Run-off & Calcite Crust
-![Lime Run-Off Encrustation](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_limerunoff_01.jpg)
+![Lime Run-Off Encrustation](static/img/walls/ultratech_stone_limerunoff_01.jpg)
 
 - **Archetype**: Stone Rubble Masonry (Fieldstone Wall)
 - **Location & Material**: Karnataka, India / International — Glacial fieldstone bedded in cement-lime mortar.
@@ -172,7 +172,7 @@
 ---
 
 ### Specimen 08: Stone Boundary Wall: Missing Through-Stones & Wythe Disconnection
-![Missing Through-Stones](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_coursing_01.jpg)
+![Missing Through-Stones](static/img/walls/ultratech_stone_coursing_01.jpg)
 
 - **Archetype**: Stone Rubble Masonry (Boundary Walling)
 - **Location & Material**: Maharashtra, India / International — Irregular rubble boundary wall with quoin dressings.
@@ -192,7 +192,7 @@
 ## 3. Dressed Ashlar Freestone & Civic Classical (Specimens 09 – 11)
 
 ### Specimen 09: Georgian Ashlar Limestone Portico
-![Ashlar Exfoliation & Spall](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ashlar_cracking_01.jpg)
+![Ashlar Exfoliation & Spall](static/img/walls/ashlar_cracking_01.jpg)
 
 - **Archetype**: Ashlar Stone (Finely Dressed Civic Masonry)
 - **Location & Material**: Dublin, Ireland — Georgian Leinster Granite & Portland freestone blocks.
@@ -210,7 +210,7 @@
 ---
 
 ### Specimen 10: Sedimentary Stone: Face-Bedding Delamination
-![Improper Bedding Delamination](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_bedding_01.jpg)
+![Improper Bedding Delamination](static/img/walls/ultratech_stone_bedding_01.jpg)
 
 - **Archetype**: Ashlar Stone (Precision Dressed Masonry)
 - **Location & Material**: Madhya Pradesh, India / International — Stratified sedimentary sandstone bedded in lime mortar.
@@ -228,7 +228,7 @@
 ---
 
 ### Specimen 11: Exposed Porous Stone: Critical Frost Attack & Ice Wedging
-![Frost Attack on Stone](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_frost_01.jpg)
+![Frost Attack on Stone](static/img/walls/ultratech_stone_frost_01.jpg)
 
 - **Archetype**: Ashlar Stone (Exposed Parapet & Wall Head)
 - **Location & Material**: Himachal Pradesh, India / International — High-porosity sandstone walling subjected to sub-zero freeze-thaw cycles.
@@ -248,7 +248,7 @@
 ## 4. Dry Stone & Gravity Walling (Specimens 12 – 16)
 
 ### Specimen 12: Traditional Irish Dry Stone Boundary
-![Dry Stone Coping Loss](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/drystone_01.jpg)
+![Dry Stone Coping Loss](static/img/walls/drystone_01.jpg)
 
 - **Archetype**: Traditional Dry Stone (Double-Faced Field Boundary)
 - **Location & Material**: Galway (Aran Islands), Ireland — Karst limestone slabs without mortar.
@@ -266,7 +266,7 @@
 ---
 
 ### Specimen 13: Double-Faced Field Boundary
-![Lateral Wythe Bulge](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/stone_bulge_01.jpg)
+![Lateral Wythe Bulge](static/img/walls/stone_bulge_01.jpg)
 
 - **Archetype**: Traditional Dry Stone (Double-Faced Gravity Wall)
 - **Location & Material**: Yorkshire Dales, UK — Carboniferous sandstone fieldstone.
@@ -284,7 +284,7 @@
 ---
 
 ### Specimen 14: Aran Karst Limestone Wall
-![Aran Dry Stone Wall](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/drystone_aran_01.jpg)
+![Aran Dry Stone Wall](static/img/walls/drystone_aran_01.jpg)
 
 - **Archetype**: Traditional Dry Stone (Single-Wythe Karst Lace Wall)
 - **Location & Material**: Inis Mór, Aran Islands, Ireland — Karst limestone slabs.
@@ -302,7 +302,7 @@
 ---
 
 ### Specimen 15: Mountain Pasture Boundary
-![Dry Stone Collapse Breach](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/drystone_collapse_01.jpg)
+![Dry Stone Collapse Breach](static/img/walls/drystone_collapse_01.jpg)
 
 - **Archetype**: Traditional Dry Stone (Upland Boundary Wall)
 - **Location & Material**: Mourne Mountains, Northern Ireland — Granitic erratic rubble.
@@ -320,7 +320,7 @@
 ---
 
 ### Specimen 16: Highland Retaining Dyke
-![Retaining Dry Stone Dyke](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/retaining_drystone_01.jpg)
+![Retaining Dry Stone Dyke](static/img/walls/retaining_drystone_01.jpg)
 
 - **Archetype**: Traditional Dry Stone (Slope Revetment Dyke)
 - **Location & Material**: Scottish Highlands — Dalradian schist gravity retaining wall.
@@ -340,7 +340,7 @@
 ## 5. Retaining Walls & Cob Earth (Specimens 17 – 18)
 
 ### Specimen 17: Roadside Granite Retaining Wall
-![Granite Retaining Bulge](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/retaining_granite_01.jpg)
+![Granite Retaining Bulge](static/img/walls/retaining_granite_01.jpg)
 
 - **Archetype**: Retaining Wall (Gravity Retaining Structure)
 - **Location & Material**: Galway, Ireland — Porphyritic granite blocks with drainage weeps.
@@ -358,7 +358,7 @@
 ---
 
 ### Specimen 18: Vernacular Cob Cottage Wall
-![Cob Earth Structure](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/cob_earth_01.jpg)
+![Cob Earth Structure](static/img/walls/cob_earth_01.jpg)
 
 - **Archetype**: Cob & Earth (Monolithic Mass Earth Structure)
 - **Location & Material**: Wexford, Ireland — Subsoil clay, sharp sand, chopped barley straw and uncalcined lime.
@@ -378,7 +378,7 @@
 ## 6. Specialist & Modern Wall Types (Specimens 19 – 20)
 
 ### Specimen 19: East Anglian Knapped Flint Facade
-![Knapped Flint Facade](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/flint_knapped_01.jpg)
+![Knapped Flint Facade](static/img/walls/flint_knapped_01.jpg)
 
 - **Archetype**: Knapped Flint & Lime Flushwork (Decorative & Protective Facing)
 - **Location & Material**: Norfolk, UK — Cretaceous flint nodules bedded in chalk lime mortar.
@@ -396,7 +396,7 @@
 ---
 
 ### Specimen 20: Modular Concrete Blockwork (CMU) Structural Framing
-![CMU Structural Framing](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_cmu_blockwork_01.jpg)
+![CMU Structural Framing](static/img/walls/ultratech_cmu_blockwork_01.jpg)
 
 - **Archetype**: Concrete Blockwork (Modular CMU Structural Framing)
 - **Location & Material**: International — Concrete masonry unit (CMU) infill panels in reinforced concrete framing.
@@ -416,7 +416,7 @@
 ## 8. Advanced Stone Pathology & Conservation Deficiencies (Specimens 21 – 26)
 
 ### Specimen 21: Historic Sandstone: Contour Scaling
-![Contour Scaling in Sandstone](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_pores_01.jpg)
+![Contour Scaling in Sandstone](static/img/walls/ultratech_stone_pores_01.jpg)
 
 - **Archetype**: Ashlar Stone / Dressed Sandstone (Millstone Grit / York Stone)
 - **Location & Material**: West Yorkshire, UK — Carboniferous quartzose sandstone ashlar.
@@ -434,7 +434,7 @@
 ---
 
 ### Specimen 22: Sheltered Limestone: Black Gypsum Crust & Cavitation (Alveolar Decay)
-![Black Gypsum Crust & Cavitation](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ashlar_cracking_01.jpg)
+![Black Gypsum Crust & Cavitation](static/img/walls/ashlar_cracking_01.jpg)
 
 - **Archetype**: Ashlar Stone / Dressed Oolitic Limestone (Portland / Bath Stone)
 - **Location & Material**: Central London, UK — Jurassic oolitic limestone cornices and undercut string courses.
@@ -452,7 +452,7 @@
 ---
 
 ### Specimen 23: Rubble Wall: Inappropriate Ribbon Pointing & Cement Trap Decay
-![Inappropriate Ribbon Pointing](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/stone_rubble_01.jpg)
+![Inappropriate Ribbon Pointing](static/img/walls/stone_rubble_01.jpg)
 
 - **Archetype**: Historic Lime Mortar / Uncoursed Rubble Stonework
 - **Location & Material**: Wales, UK — Fieldstone rubble wall repaired with dense 1:3 Portland cement ribbon pointing.
@@ -470,7 +470,7 @@
 ---
 
 ### Specimen 24: Historic Masonry: Biogenic Cryptogamic Colonization & Acid Etching
-![Biogenic Cryptogamic Colonization](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/lime_coursed_01.jpg)
+![Biogenic Cryptogamic Colonization](static/img/walls/lime_coursed_01.jpg)
 
 - **Archetype**: Historic Lime / Dressed Sandstone / Copings
 - **Location & Material**: Devon, UK — Dressed sandstone and lime-coursed churchyard boundary wall.
@@ -488,7 +488,7 @@
 ---
 
 ### Specimen 25: Faunal Biodeterioration: Mason Bee Boring & Avian Guano Dissolution
-![Mason Bee Boring & Guano Attack](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/drystone_02.jpg)
+![Mason Bee Boring & Guano Attack](static/img/walls/drystone_02.jpg)
 
 - **Archetype**: Historic Lime Mortar / Porous Sandstone
 - **Location & Material**: Cotswolds, UK — Historic boundary wall in soft oolitic limestone and non-hydraulic lime mortar.
@@ -506,7 +506,7 @@
 ---
 
 ### Specimen 26: Victorian Plinth: Impermeable Synthetic Coating & Sealant Spalling
-![Impermeable Coating Failure](/Users/barrysisk/.gemini/antigravity/brain/79171137-84ae-4284-8661-387042650045/images/ultratech_stone_frost_01.jpg)
+![Impermeable Coating Failure](static/img/walls/ultratech_stone_frost_01.jpg)
 
 - **Archetype**: Ashlar Stone / Victorian Bay Window Plinths
 - **Location & Material**: Edinburgh, UK — Craigleith sandstone bay window plinth coated with silicone water repellent and oil paint.
