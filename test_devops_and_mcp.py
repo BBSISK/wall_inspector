@@ -97,7 +97,7 @@ class TestDevOpsAndMCPStack(unittest.TestCase):
             os.path.join("infra", "main.tf"),
             os.path.join("infra", "variables.tf"),
             os.path.join("infra", "outputs.tf"),
-            os.path.join("ci", "github-actions-ci.yml"),
+            os.path.join(".github", "workflows", "ci.yml"),
             "openapi.yaml",
             "mcp_server.py"
         ]
