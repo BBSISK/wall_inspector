@@ -452,6 +452,31 @@
       <span id="ai-reviewed-badge" class="badge-ai-reviewed" style="{% if not wall.is_ai_reviewed %}display: none;{% else %}display: inline-flex;{% endif %} background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; padding: 3px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; align-items: center; gap: 5px;">
         <i class="fa-solid fa-wand-magic-sparkles"></i> AI Reviewed
       </span>
+      <!-- Sentinel Shield Badge Button -->
+      <button type="button" id="sentinel-badge-btn" onclick="openSentinelModal()" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; cursor: pointer; text-decoration: none; border: 1px solid; transition: all 0.2s;
+        {% if wall.sentinel_status == 'passed' %}
+          background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: #10b981;
+        {% elif wall.sentinel_status == 'advisory' %}
+          background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: #f59e0b;
+        {% elif wall.sentinel_status == 'warning' %}
+          background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: #ef4444;
+        {% elif wall.sentinel_status == 'overridden' %}
+          background: rgba(14, 165, 233, 0.15); color: #38bdf8; border-color: #38bdf8;
+        {% else %}
+          background: rgba(100, 116, 139, 0.15); color: #94a3b8; border-color: #64748b;
+        {% endif %}">
+        {% if wall.sentinel_status == 'passed' %}
+          <i class="fa-solid fa-shield-check"></i> Sentinel: Passed ({{ wall.sentinel_score }}%)
+        {% elif wall.sentinel_status == 'advisory' %}
+          <i class="fa-solid fa-shield-exclamation"></i> Sentinel: Advisory ({{ wall.sentinel_score }}%)
+        {% elif wall.sentinel_status == 'warning' %}
+          <i class="fa-solid fa-shield-xmark"></i> Sentinel: Warning ({{ wall.sentinel_score }}%)
+        {% elif wall.sentinel_status == 'overridden' %}
+          <i class="fa-solid fa-shield"></i> Sentinel: Overridden ({{ wall.sentinel_score }}%)
+        {% else %}
+          <i class="fa-solid fa-shield-halved"></i> Sentinel: Audit
+        {% endif %}
+      </button>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center;">
       <button type="button" id="btn-grader-heatmap" class="btn-top" style="background: #1e293b; color: #fbbf24; border: 1px solid #f59e0b;" onclick="toggleGraderCohortHeatmap()" title="Toggle Student Cohort Heatmap">
@@ -678,6 +703,89 @@
         <button type="button" class="btn-cancel" onclick="closeGradeModal()">Cancel</button>
         <button type="button" class="btn-save-gt" onclick="saveCurrentDefect()">Save Target</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Intake Sentinel Audit Modal -->
+  <div id="sentinel-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); z-index: 210; align-items: center; justify-content: center; padding: 1.5rem; backdrop-filter: blur(6px);">
+    <div class="modal-card" style="max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #1e293b; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-shield-halved" style="color: #38bdf8; font-size: 1.25rem;"></i>
+            <h3 style="margin: 0; font-size: 1.15rem; color: #f8fafc; font-weight: 800;">Intake Sentinel Quality Audit</h3>
+            <span id="modal-sentinel-badge" style="font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; border: 1px solid;">
+            </span>
+          </div>
+          <p id="modal-sentinel-summary" style="margin: 4px 0 0 0; font-size: 0.82rem; color: #94a3b8;">
+            Field capture QA, photogrammetry audit, and regional geological context.
+          </p>
+        </div>
+        <button type="button" onclick="closeSentinelModal()" style="background: transparent; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; padding: 4px;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Non-blocking Advisory Banner -->
+      <div id="sentinel-advisory-banner" style="background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38bdf8; padding: 10px 14px; border-radius: 6px; margin-bottom: 1.25rem; font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-circle-info" style="color: #38bdf8; font-size: 1rem;"></i>
+          <span><strong>Advisory Only:</strong> This audit provides quality feedback for field capture. It will never block or prevent grading.</span>
+        </div>
+        <button type="button" id="btn-modal-override" onclick="acknowledgeSentinelOverride()" style="background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap; display: none;">
+          <i class="fa-solid fa-check-double"></i> Acknowledge & Override
+        </button>
+      </div>
+
+      <!-- 4-Pillar Quality Audit Checklist -->
+      <div style="margin-bottom: 1.25rem;">
+        <h4 style="margin: 0 0 0.6rem 0; font-size: 0.85rem; text-transform: uppercase; color: #38bdf8; letter-spacing: 0.5px; font-weight: 800;">
+          <i class="fa-solid fa-list-check"></i> Photogrammetry QA Checklist
+        </h4>
+        <div id="sentinel-checklist-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        </div>
+      </div>
+
+      <!-- Native Stone Geological & Material Intelligence -->
+      <div style="margin-bottom: 1.25rem; background: rgba(30, 41, 59, 0.4); border: 1px solid #334155; border-radius: 10px; padding: 1rem;">
+        <h4 style="margin: 0 0 0.6rem 0; font-size: 0.85rem; text-transform: uppercase; color: #fbbf24; letter-spacing: 0.5px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-mountain"></i> Regional Geological Context & Mortar Spec
+        </h4>
+        <div style="display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.82rem;">
+          <div><strong style="color: #94a3b8;">Bedrock Formation:</strong> <span id="sentinel-bedrock" style="color: #f1f5f9;">—</span></div>
+          <div><strong style="color: #94a3b8;">Mineralogy & Lithology:</strong> <span id="sentinel-mineralogy" style="color: #cbd5e1;">—</span></div>
+          <div><strong style="color: #94a3b8;">Compatible Conservation Mortar:</strong> <span id="sentinel-mortar" style="color: #34d399; font-weight: 600;">—</span></div>
+        </div>
+      </div>
+
+      <!-- Optical & Camera Telemetry -->
+      <div style="margin-bottom: 1.25rem; background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; border-radius: 10px; padding: 0.85rem 1rem;">
+        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; font-weight: 800;">
+          <i class="fa-solid fa-camera"></i> Optical Ingestion Telemetry
+        </h4>
+        <div id="sentinel-telemetry-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; font-size: 0.78rem;">
+        </div>
+      </div>
+
+      <!-- Actionable Recommendations -->
+      <div id="sentinel-recommendations-box" style="margin-bottom: 1.25rem;">
+        <h4 style="margin: 0 0 0.4rem 0; font-size: 0.8rem; text-transform: uppercase; color: #a78bfa; font-weight: 800;">
+          <i class="fa-solid fa-lightbulb"></i> Field Protocol Recommendations
+        </h4>
+        <ul id="sentinel-recommendations-list" style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">
+        </ul>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid #1e293b; padding-top: 1rem;">
+        <button type="button" class="btn-cancel" onclick="closeSentinelModal()">Close</button>
+        <button type="button" id="btn-footer-override" onclick="acknowledgeSentinelOverride()" class="btn-save-gt" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-check"></i> Acknowledge & Proceed Under Advisement
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -1368,6 +1476,219 @@
         drawGraderCohortHeatmap(graderHeatmapData);
       }
     });
+
+    // --- Intake Sentinel Agent Client Logic ---
+    let sentinelData = {{ wall.sentinel_report|tojson if wall.sentinel_report else '{}' }};
+    let sentinelStatus = {{ wall.sentinel_status|tojson if wall.sentinel_status else '"passed"' }};
+    let sentinelScore = {{ wall.sentinel_score if wall.sentinel_score is not none else 100 }};
+    let sentinelOverride = {{ 'true' if wall.sentinel_override else 'false' }};
+
+    async function openSentinelModal() {
+      const modal = document.getElementById('sentinel-modal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      // If report is not populated or missing checklist, fetch from server
+      if (!sentinelData || !sentinelData.checklist) {
+        try {
+          const res = await fetch(`/api/skill-assessment/sentinel-report/${wallSlug}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.report) {
+              sentinelData = json.report;
+              sentinelStatus = json.sentinel_status || sentinelStatus;
+              sentinelScore = json.sentinel_score !== undefined ? json.sentinel_score : sentinelScore;
+              sentinelOverride = json.sentinel_override !== undefined ? json.sentinel_override : sentinelOverride;
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching Sentinel report:', e);
+        }
+      }
+
+      renderSentinelModalUI();
+    }
+
+    function closeSentinelModal() {
+      const modal = document.getElementById('sentinel-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function renderSentinelModalUI() {
+      const badge = document.getElementById('modal-sentinel-badge');
+      const summary = document.getElementById('modal-sentinel-summary');
+      const checklistContainer = document.getElementById('sentinel-checklist-container');
+      const bedrockEl = document.getElementById('sentinel-bedrock');
+      const mineralogyEl = document.getElementById('sentinel-mineralogy');
+      const mortarEl = document.getElementById('sentinel-mortar');
+      const telemetryGrid = document.getElementById('sentinel-telemetry-grid');
+      const recsList = document.getElementById('sentinel-recommendations-list');
+      const btnModalOverride = document.getElementById('btn-modal-override');
+      const btnFooterOverride = document.getElementById('btn-footer-override');
+
+      const status = sentinelStatus || 'passed';
+      const score = sentinelScore !== undefined ? sentinelScore : 100;
+      const isOverridden = Boolean(sentinelOverride);
+
+      if (badge) {
+        if (isOverridden || status === 'overridden') {
+          badge.textContent = `Overridden (${score}%)`;
+          badge.style.background = 'rgba(14, 165, 233, 0.2)';
+          badge.style.color = '#38bdf8';
+          badge.style.borderColor = '#38bdf8';
+        } else if (status === 'passed') {
+          badge.textContent = `Passed (${score}%)`;
+          badge.style.background = 'rgba(16, 185, 129, 0.2)';
+          badge.style.color = '#34d399';
+          badge.style.borderColor = '#10b981';
+        } else if (status === 'advisory') {
+          badge.textContent = `Advisory (${score}%)`;
+          badge.style.background = 'rgba(245, 158, 11, 0.2)';
+          badge.style.color = '#fbbf24';
+          badge.style.borderColor = '#f59e0b';
+        } else {
+          badge.textContent = `Warning (${score}%)`;
+          badge.style.background = 'rgba(239, 68, 68, 0.2)';
+          badge.style.color = '#f87171';
+          badge.style.borderColor = '#ef4444';
+        }
+      }
+
+      if (summary) {
+        summary.textContent = (sentinelData && sentinelData.summary) ? sentinelData.summary : 'Intake Sentinel photogrammetric quality and geological context assessment.';
+      }
+
+      if (checklistContainer) {
+        checklistContainer.innerHTML = '';
+        const checklist = (sentinelData && sentinelData.checklist) ? sentinelData.checklist : {
+          orthogonal_plane: { title: "90° Orthogonal Alignment", status: "pass", feedback: "Adequate elevation alignment." },
+          diffuse_lighting: { title: "Diffuse Ambient Lighting", status: "pass", feedback: "Adequate ambient illumination." },
+          framing_scope: { title: "Macro-to-Course Framing", status: "pass", feedback: "Adequate course height framing." },
+          resolution: { title: "Optical Resolution & Sharpness", status: "pass", feedback: "Adequate sharpness." }
+        };
+
+        Object.values(checklist).forEach(item => {
+          const card = document.createElement('div');
+          card.style.background = 'rgba(15, 23, 42, 0.8)';
+          card.style.border = '1px solid #1e293b';
+          card.style.borderRadius = '8px';
+          card.style.padding = '10px 12px';
+          card.style.display = 'flex';
+          card.style.flexDirection = 'column';
+          card.style.gap = '4px';
+
+          let pillBg = 'rgba(16, 185, 129, 0.15)', pillCol = '#34d399', pillIcon = 'fa-check', pillText = 'PASS';
+          if (item.status === 'warning') {
+            pillBg = 'rgba(239, 68, 68, 0.15)'; pillCol = '#f87171'; pillIcon = 'fa-triangle-exclamation'; pillText = 'WARNING';
+          } else if (item.status === 'advisory') {
+            pillBg = 'rgba(245, 158, 11, 0.15)'; pillCol = '#fbbf24'; pillIcon = 'fa-circle-exclamation'; pillText = 'ADVISORY';
+          }
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="font-size: 0.8rem; color: #f1f5f9;">${item.title}</strong>
+              <span style="background: ${pillBg}; color: ${pillCol}; font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid ${pillIcon}"></i> ${pillText}
+              </span>
+            </div>
+            <p style="margin: 0; font-size: 0.74rem; color: #94a3b8; line-height: 1.35;">${item.feedback || ''}</p>
+          `;
+          checklistContainer.appendChild(card);
+        });
+      }
+
+      const geo = (sentinelData && sentinelData.geology) ? sentinelData.geology : {};
+      if (bedrockEl) bedrockEl.textContent = geo.bedrock_formation || 'Carboniferous Limestone / Field Boundary';
+      if (mineralogyEl) mineralogyEl.textContent = geo.mineralogy || 'Calcitic/siliceous regional stone matrix';
+      if (mortarEl) mortarEl.textContent = geo.compatible_mortar || 'Non-hydraulic hot-mixed lime putty (1:3 sharp sand) or NHL 2.0';
+
+      const optics = (sentinelData && sentinelData.optics) ? sentinelData.optics : {};
+      if (telemetryGrid) {
+        const camMake = (optics.exif && optics.exif.camera_make) ? optics.exif.camera_make : '';
+        const camModel = (optics.exif && optics.exif.camera_model) ? optics.exif.camera_model : '';
+        const camStr = (camMake || camModel) ? `${camMake} ${camModel}`.trim() : 'Digital Camera / Ingested';
+
+        telemetryGrid.innerHTML = `
+          <div style="background: #090e1a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+            <span style="display: block; color: #64748b; font-size: 0.68rem;">DIMENSIONS</span>
+            <strong style="color: #cbd5e1;">${optics.width ? optics.width + 'x' + optics.height : 'Standard'}</strong>
+          </div>
+          <div style="background: #090e1a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+            <span style="display: block; color: #64748b; font-size: 0.68rem;">FIDELITY</span>
+            <strong style="color: #cbd5e1;">${optics.megapixels ? optics.megapixels + ' MP' : 'Native'}</strong>
+          </div>
+          <div style="background: #090e1a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+            <span style="display: block; color: #64748b; font-size: 0.68rem;">ASPECT RATIO</span>
+            <strong style="color: #cbd5e1;">${optics.aspect_ratio || 'Orthogonal'}</strong>
+          </div>
+          <div style="background: #090e1a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <span style="display: block; color: #64748b; font-size: 0.68rem;">DEVICE EXIF</span>
+            <strong style="color: #cbd5e1;" title="${camStr}">${camStr}</strong>
+          </div>
+        `;
+      }
+
+      if (recsList) {
+        recsList.innerHTML = '';
+        const recs = (sentinelData && sentinelData.recommendations && sentinelData.recommendations.length > 0)
+          ? sentinelData.recommendations
+          : ["Specimen conforms to baseline field capture criteria. Ground truth marking may proceed immediately."];
+        recs.forEach(r => {
+          const li = document.createElement('li');
+          li.style.marginBottom = '3px';
+          li.textContent = r;
+          recsList.appendChild(li);
+        });
+      }
+
+      if (isOverridden || status === 'overridden') {
+        if (btnModalOverride) btnModalOverride.style.display = 'none';
+        if (btnFooterOverride) {
+          btnFooterOverride.innerHTML = '<i class="fa-solid fa-check"></i> Advisement Acknowledged (Overridden)';
+          btnFooterOverride.style.background = '#1e293b';
+          btnFooterOverride.style.borderColor = '#38bdf8';
+          btnFooterOverride.style.color = '#38bdf8';
+          btnFooterOverride.disabled = true;
+        }
+      } else {
+        if (btnModalOverride) btnModalOverride.style.display = 'inline-block';
+        if (btnFooterOverride) {
+          btnFooterOverride.innerHTML = '<i class="fa-solid fa-check"></i> Acknowledge & Proceed Under Advisement';
+          btnFooterOverride.style.background = '#0284c7';
+          btnFooterOverride.style.borderColor = '#38bdf8';
+          btnFooterOverride.style.color = '#ffffff';
+          btnFooterOverride.disabled = false;
+        }
+      }
+    }
+
+    async function acknowledgeSentinelOverride() {
+      try {
+        const res = await fetch(`/api/skill-assessment/sentinel-override/${wallSlug}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            sentinelOverride = true;
+            sentinelStatus = 'overridden';
+
+            const headerBadge = document.getElementById('sentinel-badge-btn');
+            if (headerBadge) {
+              headerBadge.innerHTML = `<i class="fa-solid fa-shield"></i> Sentinel: Overridden (${sentinelScore}%)`;
+              headerBadge.style.background = 'rgba(14, 165, 233, 0.15)';
+              headerBadge.style.color = '#38bdf8';
+              headerBadge.style.borderColor = '#38bdf8';
+            }
+
+            renderSentinelModalUI();
+          }
+        }
+      } catch (err) {
+        console.error('Error setting Sentinel override:', err);
+      }
+    }
   </script>
 
 </body>

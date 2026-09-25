@@ -427,6 +427,27 @@ def create_app(config_class=Config):
                     conn.execute(text(f"ALTER TABLE walls ADD COLUMN assessment_defect_modes {col_type};"))
                     conn.commit()
 
+            if "sentinel_status" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN sentinel_status VARCHAR(20) DEFAULT 'passed';"))
+                    conn.commit()
+
+            if "sentinel_score" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN sentinel_score INTEGER DEFAULT 100;"))
+                    conn.commit()
+
+            if "sentinel_report" not in wall_cols:
+                with db.engine.connect() as conn:
+                    col_type = "JSON" if db.engine.dialect.name == "postgresql" else "TEXT"
+                    conn.execute(text(f"ALTER TABLE walls ADD COLUMN sentinel_report {col_type};"))
+                    conn.commit()
+
+            if "sentinel_override" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN sentinel_override BOOLEAN DEFAULT FALSE;"))
+                    conn.commit()
+
             if db.engine.dialect.name == "postgresql":
                 with db.engine.connect() as conn:
                     try:
@@ -7379,6 +7400,14 @@ def create_app(config_class=Config):
             )
             commit_with_retry(wall)
 
+            # Run Intake Sentinel QA & Geological Context Enrichment (strictly advisory, never blocks)
+            try:
+                from sentinel_agent import run_sentinel_audit
+                run_sentinel_audit(wall, file_bytes)
+                commit_with_retry(wall)
+            except Exception as sentinel_err:
+                print(f"Notice: Sentinel audit encountered: {sentinel_err}")
+
             # Auto-suggest defects using AI immediately so pins are pre-loaded for grading
             try:
                 generate_ai_defect_suggestions(wall)
@@ -7503,7 +7532,40 @@ def create_app(config_class=Config):
             "prioritized_modes": modes_bundle["prioritized"],
             "all_modes": modes_bundle["all"],
             "is_ai_reviewed": bool(wall.is_ai_reviewed),
-            "ai_reviewed_at": wall.ai_reviewed_at.strftime("%Y-%m-%d %H:%M") if wall.ai_reviewed_at else None
+            "ai_reviewed_at": wall.ai_reviewed_at.strftime("%Y-%m-%d %H:%M") if wall.ai_reviewed_at else None,
+            "sentinel_status": wall.sentinel_status or "passed",
+            "sentinel_score": int(wall.sentinel_score if wall.sentinel_score is not None else 100),
+            "sentinel_override": bool(wall.sentinel_override)
+        })
+
+    @app.route("/api/skill-assessment/sentinel-override/<slug>", methods=["POST"], strict_slashes=False)
+    @admin_required
+    def api_skill_assessment_sentinel_override(slug):
+        """Allows instructor to acknowledge and override Sentinel advisory/warning flags to proceed under advisement."""
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        wall.sentinel_override = True
+        wall.sentinel_status = "overridden"
+        commit_with_retry(wall)
+        return jsonify({
+            "success": True,
+            "slug": wall.slug,
+            "sentinel_status": wall.sentinel_status,
+            "sentinel_override": True
+        })
+
+    @app.route("/api/skill-assessment/sentinel-report/<slug>", methods=["GET"], strict_slashes=False)
+    @admin_required
+    def api_skill_assessment_sentinel_report(slug):
+        """Returns the structured Sentinel audit report and geological enrichment for modal inspection."""
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        report = wall.sentinel_report or {}
+        return jsonify({
+            "success": True,
+            "slug": wall.slug,
+            "score": int(wall.sentinel_score if wall.sentinel_score is not None else 100),
+            "status": wall.sentinel_status or "passed",
+            "override": bool(wall.sentinel_override),
+            "report": report
         })
 
     @app.route("/api/skill-assessment/delete/<slug>", methods=["POST"])

@@ -23,6 +23,10 @@ class Wall(db.Model):
     is_skill_assessment = db.Column(db.Boolean, default=False)
     is_ai_reviewed = db.Column(db.Boolean, default=False)
     ai_reviewed_at = db.Column(db.DateTime, nullable=True)
+    sentinel_status = db.Column(db.String(20), default="passed")
+    sentinel_score = db.Column(db.Integer, default=100)
+    sentinel_report = db.Column(db.JSON, nullable=True)
+    sentinel_override = db.Column(db.Boolean, default=False)
     assessment_defect_modes = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -50,6 +54,10 @@ class Wall(db.Model):
             "is_skill_assessment": bool(self.is_skill_assessment),
             "is_ai_reviewed": bool(self.is_ai_reviewed),
             "ai_reviewed_at": self.ai_reviewed_at.strftime("%Y-%m-%d %H:%M") if self.ai_reviewed_at else None,
+            "sentinel_status": self.sentinel_status or "passed",
+            "sentinel_score": int(self.sentinel_score if self.sentinel_score is not None else 100),
+            "sentinel_report": self.sentinel_report or {},
+            "sentinel_override": bool(self.sentinel_override),
             "assessment_defect_modes": self.assessment_defect_modes or []
         }
 

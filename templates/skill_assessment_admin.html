@@ -626,6 +626,9 @@
           <div style="font-size: 0.72rem; color: #a855f7; text-align: center; margin-top: 4px;">
             <i class="fa-solid fa-robot"></i> Defects will be automatically analyzed and suggested upon upload.
           </div>
+          <div style="font-size: 0.72rem; color: #38bdf8; text-align: center; margin-top: 2px;">
+            <i class="fa-solid fa-shield-halved"></i> Intake Sentinel audits optics, EXIF & native geology (non-blocking quality advisories).
+          </div>
         </form>
       </section>
 
@@ -644,6 +647,7 @@
                 <th>Archetype</th>
                 <th>Difficulty</th>
                 <th>Status</th>
+                <th>Sentinel QA</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -671,6 +675,27 @@
                       <span class="badge-status-ai" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #a855f7; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-left: 4px; display: inline-flex; align-items: center; gap: 4px;" title="Analyzed & suggested by AI{% if wall.ai_reviewed_at %} on {{ wall.ai_reviewed_at }}{% endif %}">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> AI Reviewed
                       </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if wall.sentinel_status == 'passed' %}
+                      <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Quality Score: {{ wall.sentinel_score }}/100">
+                        <i class="fa-solid fa-shield-check"></i> Passed ({{ wall.sentinel_score }}%)
+                      </span>
+                    {% elif wall.sentinel_status == 'advisory' %}
+                      <span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Quality Score: {{ wall.sentinel_score }}/100 - Advisory Only">
+                        <i class="fa-solid fa-shield-exclamation"></i> Advisory ({{ wall.sentinel_score }}%)
+                      </span>
+                    {% elif wall.sentinel_status == 'warning' %}
+                      <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Quality Score: {{ wall.sentinel_score }}/100 - Discrepancies Detected">
+                        <i class="fa-solid fa-shield-xmark"></i> Warning ({{ wall.sentinel_score }}%)
+                      </span>
+                    {% elif wall.sentinel_status == 'overridden' %}
+                      <span style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Audited ({{ wall.sentinel_score }}%) - Overridden by Instructor">
+                        <i class="fa-solid fa-shield"></i> Overridden
+                      </span>
+                    {% else %}
+                      <span style="color: #64748b; font-size: 0.72rem;">—</span>
                     {% endif %}
                   </td>
                   <td>
