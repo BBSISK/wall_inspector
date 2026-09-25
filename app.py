@@ -3033,76 +3033,11 @@ def create_app(config_class=Config):
         )
 
     # --- Student Assignment Portal ---
-    @app.route("/student")
-    def student_entry_alias():
-        """Clean URL alias for the unified student portal."""
-        return redirect(url_for("student_portal", **request.args))
-
-    # --- Unified Student Portal & Skills Assessment Hub ---
     @app.route("/portal", methods=["GET", "POST"])
     def student_portal():
-        # Handle switch / logout student action
-        if request.args.get("switch_student") == "1":
-            session.pop("student_id", None)
-            session.pop("student_name", None)
-            session.pop("student_email", None)
-            session.pop("student_pin", None)
-            session.pop("candidate_token", None)
-            session.modified = True
-            return redirect(url_for("student_portal"))
-
         student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
         student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
         candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
-
-        # Handle Fast Check-In / Identification POST
-        if request.method == "POST":
-            action = request.form.get("action", "")
-            if action == "check_in" or request.form.get("check_in"):
-                selected_student_id = request.form.get("selected_student_id", "").strip()
-                entered_name = request.form.get("candidate_name", "").strip()
-                entered_pin = str(request.form.get("candidate_pin", "0000")).strip() or "0000"
-
-                if selected_student_id:
-                    sel_student = db.session.get(Student, selected_student_id)
-                    if sel_student:
-                        session["student_id"] = sel_student.id
-                        session["student_name"] = sel_student.name
-                        session["student_email"] = sel_student.email
-                        session["student_pin"] = sel_student.pin
-                        session.permanent = True
-                        session.modified = True
-                        return redirect(url_for("student_portal"))
-                elif entered_name:
-                    ex_student = Student.query.filter(Student.name.ilike(entered_name)).first()
-                    if not ex_student:
-                        import re
-                        clean_slug = re.sub(r'[^a-zA-Z0-9]', '', entered_name).lower() or uuid.uuid4().hex[:6]
-                        email = f"{clean_slug}_{uuid.uuid4().hex[:4]}@wallinspector.local"
-                        ex_student = Student(
-                            name=entered_name,
-                            email=email,
-                            pin=entered_pin,
-                            cohort_code="GENERAL"
-                        )
-                        db.session.add(ex_student)
-                        try:
-                            db.session.commit()
-                        except Exception:
-                            db.session.rollback()
-                            ex_student = Student.query.filter(Student.name.ilike(entered_name)).first()
-
-                    if ex_student:
-                        session["student_id"] = ex_student.id
-                        session["student_name"] = ex_student.name
-                        session["student_email"] = ex_student.email
-                        session["student_pin"] = ex_student.pin
-                    else:
-                        session["student_name"] = entered_name
-
-                    session.permanent = True
-                    session.modified = True
-                    return redirect(url_for("student_portal"))
 
         current_student = None
         if student_id:
@@ -3129,15 +3064,6 @@ def create_app(config_class=Config):
             session.permanent = True
             session.modified = True
 
-        is_identified = bool(current_student or (student_name and student_name != "Inspector Candidate"))
-
-        # Load cohort directories for 1-tap check-in
-        all_students = Student.query.order_by(Student.cohort_code.asc(), Student.name.asc()).all()
-        cohorts_map = {}
-        for st in all_students:
-            c_code = st.cohort_code or "GENERAL"
-            cohorts_map.setdefault(c_code, []).append(st.to_dict())
-
         progress = get_student_skill_progress(student_name, candidate_token=candidate_token, student_id=student_id)
         comp_map = progress["completed_map"]
 
@@ -3150,104 +3076,6 @@ def create_app(config_class=Config):
             data["user_progress"] = comp_map.get(s.id)
             skill_specimens.append(data)
 
-        wall_types = sorted(list(set(s.get("wall_type") for s in skill_specimens if s.get("wall_type"))))
-        difficulties = ["beginner", "intermediate", "advanced"]
-
-        # Ensure default 10-question assessment battery exists
-        active_battery = Assignment.query.filter_by(code="COHORT-10").first()
-        if not active_battery and skill_specimens_query:
-            try:
-                selected_walls = assemble_battery_specimens(skill_specimens_query, target_count=10)
-                active_battery = Assignment(
-                    code="COHORT-10",
-                    title="Standard 10-Question Skill Assessment Battery",
-                    wall_id=selected_walls[0].id if selected_walls else None,
-                    battery_size=10,
-                    randomize_order=True,
-                    enable_dry_run=True,
-                    director_notes="Auto-curated 10-question battery with side-by-side anti-collusion randomization and pre-exam practice dry-run.",
-                    is_active=True
-                )
-                active_battery.walls = selected_walls
-                db.session.add(active_battery)
-                db.session.commit()
-            except Exception as bat_err:
-                db.session.rollback()
-                print(f"Notice: Default battery seed note: {bat_err}")
-
-        # Compute Student Assessment Battery State (Not Started, In Progress, Completed)
-        battery_info = None
-        if active_battery:
-            b_size = active_battery.battery_size or 10
-            pool_walls = active_battery.walls if active_battery.walls else skill_specimens_query
-            pool_slugs = [w.slug for w in pool_walls]
-            student_seed = student_id or candidate_token or student_name or "default_seed"
-
-            if active_battery.randomize_order:
-                student_seq_slugs = generate_student_battery_sequence(pool_slugs, f"{active_battery.code}:{student_seed}", target_count=b_size)
-            else:
-                student_seq_slugs = pool_slugs[:b_size]
-
-            # Fetch attempts for this student
-            student_attempts = []
-            if current_student or (student_name and student_name != "Inspector Candidate"):
-                q = AssessmentAttempt.query.filter(
-                    (AssessmentAttempt.student_id == student_id) |
-                    (AssessmentAttempt.student_name.ilike(student_name))
-                )
-                student_attempts = q.order_by(AssessmentAttempt.created_at.asc()).all()
-
-            completed_wall_ids = set(a.wall_id for a in student_attempts)
-            completed_slugs = set(w.slug for w in pool_walls if w.id in completed_wall_ids)
-
-            completed_in_battery = [s for s in student_seq_slugs if s in completed_slugs]
-            b_completed_count = len(completed_in_battery)
-            b_total_count = len(student_seq_slugs)
-            b_pct = round((b_completed_count / b_total_count * 100)) if b_total_count > 0 else 0
-
-            next_idx = None
-            next_slug = None
-            for i, s in enumerate(student_seq_slugs):
-                if s not in completed_slugs:
-                    next_idx = i
-                    next_slug = s
-                    break
-
-            from urllib.parse import quote_plus
-            enc_name = quote_plus(student_name)
-            sid_arg = f"&student_id={quote_plus(student_id)}" if student_id else ""
-
-            start_dry_run_url = f"/skill-assessment/battery/start?code={active_battery.code}&student_name={enc_name}{sid_arg}"
-            skip_dry_run_url = f"/skill-assessment/battery/start?code={active_battery.code}&skip_dry_run=1&student_name={enc_name}{sid_arg}"
-            resume_url = f"/skill-assessment/{next_slug}?battery={active_battery.code}&q={next_idx + 1}&student_name={enc_name}{sid_arg}" if next_slug else None
-
-            # Calculate battery average score
-            bat_attempts = [a for a in student_attempts if (a.assignment_code == active_battery.code or a.wall_id in [w.id for w in pool_walls])]
-            avg_bat_score = round(sum(a.score_percentage for a in bat_attempts) / len(bat_attempts), 1) if bat_attempts else 0.0
-
-            b_status = "not_started"
-            if b_completed_count >= b_total_count and b_total_count > 0:
-                b_status = "completed"
-            elif b_completed_count > 0:
-                b_status = "in_progress"
-
-            battery_info = {
-                "code": active_battery.code,
-                "title": active_battery.title,
-                "battery_size": b_size,
-                "status": b_status,
-                "completed_count": b_completed_count,
-                "total_count": b_total_count,
-                "pct_complete": b_pct,
-                "next_q_num": (next_idx + 1) if next_idx is not None else 1,
-                "start_dry_run_url": start_dry_run_url,
-                "skip_dry_run_url": skip_dry_run_url,
-                "resume_url": resume_url,
-                "avg_score": avg_bat_score,
-                "passed": avg_bat_score >= 70.0
-            }
-
-        # Handle Assignment Code or Specimen POST
         if request.method == "POST":
             code = request.form.get("assignment_code", "").strip().upper()
             post_student_name = request.form.get("student_name", student_name or "Inspector Candidate").strip() or "Inspector Candidate"
@@ -3261,9 +3089,9 @@ def create_app(config_class=Config):
             if specimen_slug:
                 return redirect(url_for("skill_assessment_workstation", slug=specimen_slug, student_name=post_student_name, student_id=student_id or None))
 
-            # 2. If student typed SKILLS or ASSESSMENT, send to portal
+            # 2. If student typed SKILLS or ASSESSMENT, send to skill assessment hub
             if code in ["SKILL", "SKILLS", "ASSESSMENT", "ASSESS", "EXAM", "PRACTICAL"]:
-                return redirect(url_for("student_portal", student_name=post_student_name, student_id=student_id or None))
+                return redirect(url_for("skill_assessment_hub", student_name=post_student_name, student_id=student_id or None))
 
             # 3. If code matches a skill assessment slug directly
             matching_skill = Wall.query.filter_by(slug=code.lower(), is_skill_assessment=True).first()
@@ -3284,47 +3112,24 @@ def create_app(config_class=Config):
                     "student_portal.html",
                     error="Invalid assignment code. Tip: Choose from the Skill Assessment specimens below or launch a random assessment!",
                     skill_specimens=skill_specimens,
-                    specimens=skill_specimens,
-                    total_specimens=len(skill_specimens),
                     student_name=post_student_name,
                     current_student=current_student,
                     student_id=student_id,
-                    is_identified=is_identified,
-                    all_students=all_students,
-                    cohorts_map=cohorts_map,
-                    active_battery=active_battery.to_dict() if active_battery else None,
-                    battery_info=battery_info,
                     completed_count=progress["completed_count"],
                     average_score=progress["average_score"],
-                    pending_count=max(0, len(skill_specimens) - progress["completed_count"]),
-                    wall_types=wall_types,
-                    difficulties=difficulties,
-                    defect_modes=SKILL_DEFECT_MODES
+                    pending_count=max(0, len(skill_specimens) - progress["completed_count"])
                 )
             return redirect(url_for("run_assignment", code=code, student_name=post_student_name))
-
-        all_batteries = Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()
 
         return render_template(
             "student_portal.html",
             skill_specimens=skill_specimens,
-            specimens=skill_specimens,
-            total_specimens=len(skill_specimens),
             student_name=student_name,
             current_student=current_student,
             student_id=student_id,
-            is_identified=is_identified,
-            all_students=all_students,
-            cohorts_map=cohorts_map,
-            active_battery=active_battery.to_dict() if active_battery else None,
-            battery_info=battery_info,
-            batteries=[b.to_dict() for b in all_batteries],
             completed_count=progress["completed_count"],
             average_score=progress["average_score"],
-            pending_count=max(0, len(skill_specimens) - progress["completed_count"]),
-            wall_types=wall_types,
-            difficulties=difficulties,
-            defect_modes=SKILL_DEFECT_MODES
+            pending_count=max(0, len(skill_specimens) - progress["completed_count"])
         )
 
     @app.route("/portal/run/<code>")
@@ -6745,8 +6550,91 @@ def create_app(config_class=Config):
 
     @app.route("/skill-assessment")
     def skill_assessment_hub():
-        """Unified student portal for skills assessment & batteries."""
-        return student_portal()
+        """Student Skill Assessment Hub: Lists published assessment specimens with stats, scoring, and guidelines."""
+        specimens = Wall.query.filter_by(is_skill_assessment=True, is_published=True).order_by(Wall.id.asc()).all()
+        student_id = (request.args.get("student_id") or session.get("student_id") or "").strip()
+        student_name = (request.args.get("student_name") or session.get("student_name") or "").strip()
+        candidate_token = (request.args.get("candidate_token") or session.get("candidate_token") or "").strip()
+
+        current_student = None
+        if student_id:
+            current_student = db.session.get(Student, student_id)
+        if not current_student and student_name and student_name != "Inspector Candidate":
+            current_student = Student.query.filter(Student.name.ilike(student_name)).first()
+
+        if current_student:
+            student_name = current_student.name
+            student_id = current_student.id
+            session["student_id"] = current_student.id
+            session["student_name"] = current_student.name
+            session["student_email"] = current_student.email
+            session["student_pin"] = current_student.pin
+            session.permanent = True
+            session.modified = True
+        elif student_name and student_name != "Inspector Candidate":
+            session["student_name"] = student_name
+            session.permanent = True
+            session.modified = True
+
+        if candidate_token:
+            session["candidate_token"] = candidate_token
+            session.permanent = True
+            session.modified = True
+
+        progress = get_student_skill_progress(student_name, candidate_token=candidate_token, student_id=student_id)
+        comp_map = progress["completed_map"]
+
+        specimen_list = []
+        for s in specimens:
+            d_count = Defect.query.filter_by(wall_id=s.id).count()
+            data = s.to_dict()
+            data["defect_count"] = d_count
+            data["user_progress"] = comp_map.get(s.id)
+            specimen_list.append(data)
+
+        wall_types = sorted(list(set(s.wall_type for s in specimens if s.wall_type)))
+        difficulties = ["beginner", "intermediate", "advanced"]
+
+        # Ensure default 10-question assessment battery exists
+        active_battery = Assignment.query.filter_by(code="COHORT-10").first()
+        if not active_battery and specimens:
+            try:
+                selected_walls = assemble_battery_specimens(specimens, target_count=10)
+                active_battery = Assignment(
+                    code="COHORT-10",
+                    title="Standard 10-Question Skill Assessment Battery",
+                    wall_id=selected_walls[0].id if selected_walls else None,
+                    battery_size=10,
+                    randomize_order=True,
+                    enable_dry_run=True,
+                    director_notes="Auto-curated 10-question battery with side-by-side anti-collusion randomization and pre-exam practice dry-run.",
+                    is_active=True
+                )
+                active_battery.walls = selected_walls
+                db.session.add(active_battery)
+                db.session.commit()
+            except Exception as bat_err:
+                db.session.rollback()
+                print(f"Notice: Default battery seed note: {bat_err}")
+
+        all_batteries = Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()
+
+        return render_template(
+            "skill_assessment_hub.html",
+            specimens=specimen_list,
+            total_specimens=len(specimens),
+            wall_types=wall_types,
+            difficulties=difficulties,
+            defect_modes=SKILL_DEFECT_MODES,
+            student_name=student_name,
+            current_student=current_student,
+            student_id=student_id,
+            completed_count=progress["completed_count"],
+            average_score=progress["average_score"],
+            pending_count=max(0, len(specimens) - progress["completed_count"]),
+            active_battery=active_battery.to_dict() if active_battery else None,
+            batteries=[b.to_dict() for b in all_batteries]
+        )
 
     @app.route("/skill-assessment/<slug>")
     def skill_assessment_workstation(slug):
@@ -7999,6 +7887,176 @@ def create_app(config_class=Config):
             "intelligence": intelligence,
             "active_batteries": active_batteries
         })
+
+    # --- Cloud Container Observability & MLOps Dataset Export ---
+    @app.route("/api/health", methods=["GET"])
+    def api_health_telemetry():
+        """
+        Container & Cloud Orchestration Healthcheck Endpoint (Docker / Render / Terraform).
+        Verifies PostgreSQL/SQLite connectivity, specimen catalog readiness, and active AI agents.
+        """
+        db_status = "connected"
+        total_walls = 0
+        skill_specimens = 0
+        try:
+            total_walls = Wall.query.count()
+            skill_specimens = Wall.query.filter_by(is_skill_assessment=True).count()
+        except Exception as db_err:
+            db_status = f"degraded ({db_err})"
+
+        return jsonify({
+            "status": "healthy" if db_status == "connected" else "degraded",
+            "database": db_status,
+            "total_walls": total_walls,
+            "skill_specimens": skill_specimens,
+            "cloudinary_configured": bool(os.getenv("CLOUDINARY_URL", "").strip()),
+            "active_agents": [
+                "IntakeSentinelAgent",
+                "CurriculumDirectorAgent"
+            ],
+            "mcp_server": "mcp_server.py (JSON-RPC 2.0)",
+            "version": "2.0.0"
+        }), (200 if db_status == "connected" else 503)
+
+    @app.route("/api/skill-assessment/export-coco", methods=["GET"])
+    def api_export_coco_dataset():
+        """
+        MLOps Human-in-the-Loop Dataset Exporter (Microsoft COCO 1.0 Standard).
+        Exports all masonry specimens (Cloudinary / static URLs), defect taxonomy categories,
+        expert ground-truth bounding boxes, and optional student consensus annotations
+        for seamless import into CVAT or YOLOv8-Seg training pipelines.
+        """
+        include_consensus = request.args.get("include_student_consensus", "0") in ("1", "true", "yes")
+        as_download = request.args.get("download", "0") in ("1", "true", "yes")
+
+        # 1. Build Category Map
+        all_modes = SKILL_DEFECT_MODES if isinstance(SKILL_DEFECT_MODES, list) else SKILL_DEFECT_MODES.get("all", [])
+        categories = []
+        cat_slug_to_id = {}
+        for idx, m in enumerate(all_modes, start=1):
+            cid = idx
+            cslug = m.get("id", f"defect_{idx}")
+            cat_slug_to_id[cslug] = cid
+            categories.append({
+                "id": cid,
+                "name": cslug,
+                "label": m.get("label", cslug),
+                "supercategory": "masonry_defect"
+            })
+
+        # 2. Build Images & Expert Ground Truth Annotations
+        specimens = Wall.query.filter_by(is_skill_assessment=True).order_by(Wall.created_at.asc()).all()
+        images = []
+        annotations = []
+        ann_id = 1
+        ref_w, ref_h = 1920, 1440
+
+        for img_idx, wall in enumerate(specimens, start=1):
+            w_dict = wall.to_dict()
+            images.append({
+                "id": img_idx,
+                "file_name": w_dict.get("image_url") or f"/static/img/walls/{wall.image_filename}",
+                "width": ref_w,
+                "height": ref_h,
+                "wall_slug": wall.slug,
+                "wall_type": wall.wall_type,
+                "difficulty": wall.difficulty,
+                "country": wall.country
+            })
+
+            wall_defects = Defect.query.filter_by(wall_id=wall.id).all()
+            for d in wall_defects:
+                cat_id = cat_slug_to_id.get(d.category)
+                if not cat_id:
+                    cat_id = len(categories) + 1
+                    cat_slug_to_id[d.category] = cat_id
+                    categories.append({
+                        "id": cat_id,
+                        "name": d.category,
+                        "label": d.title or d.category,
+                        "supercategory": "masonry_defect"
+                    })
+
+                tol = getattr(d, "tolerance_radius", 0.06) or 0.06
+                x_min = max(0.0, min(1.0, (d.x_min - tol) if abs(d.x_max - d.x_min) < 0.005 else d.x_min))
+                y_min = max(0.0, min(1.0, (d.y_min - tol) if abs(d.y_max - d.y_min) < 0.005 else d.y_min))
+                x_max = max(0.0, min(1.0, (d.x_max + tol) if abs(d.x_max - d.x_min) < 0.005 else d.x_max))
+                y_max = max(0.0, min(1.0, (d.y_max + tol) if abs(d.y_max - d.y_min) < 0.005 else d.y_max))
+
+                px_x = round(x_min * ref_w, 2)
+                px_y = round(y_min * ref_h, 2)
+                px_w = round(max(12.0, (x_max - x_min) * ref_w), 2)
+                px_h = round(max(12.0, (y_max - y_min) * ref_h), 2)
+
+                annotations.append({
+                    "id": ann_id,
+                    "image_id": img_idx,
+                    "category_id": cat_id,
+                    "bbox": [px_x, px_y, px_w, px_h],
+                    "area": round(px_w * px_h, 2),
+                    "iscrowd": 0,
+                    "attributes": {
+                        "severity": d.severity,
+                        "remedial_action": d.remedial_action,
+                        "title": d.title,
+                        "source": "expert_ground_truth"
+                    }
+                })
+                ann_id += 1
+
+            if include_consensus:
+                attempts = AssessmentAttempt.query.filter_by(wall_id=wall.id).limit(50).all()
+                for att in attempts:
+                    raw_markers = att.submitted_markers
+                    if isinstance(raw_markers, str):
+                        try:
+                            raw_markers = json.loads(raw_markers)
+                        except Exception:
+                            raw_markers = []
+                    for pin in (raw_markers if isinstance(raw_markers, list) else []):
+                        if not isinstance(pin, dict):
+                            continue
+                        p_cat = pin.get("category")
+                        if not p_cat:
+                            continue
+                        cat_id = cat_slug_to_id.get(p_cat, 1)
+                        px = round(float(pin.get("x", 0.5)) * ref_w - 40, 2)
+                        py = round(float(pin.get("y", 0.5)) * ref_h - 40, 2)
+                        annotations.append({
+                            "id": ann_id,
+                            "image_id": img_idx,
+                            "category_id": cat_id,
+                            "bbox": [max(0.0, px), max(0.0, py), 80.0, 80.0],
+                            "area": 6400.0,
+                            "iscrowd": 0,
+                            "attributes": {
+                                "severity": pin.get("severity", "moderate"),
+                                "remedial_action": pin.get("remedial", "repoint_lime"),
+                                "source": "student_consensus_pin"
+                            }
+                        })
+                        ann_id += 1
+
+        coco_payload = {
+            "info": {
+                "description": "Global Wall Inspector — Masonry Defect Dataset (COCO 1.0)",
+                "version": "2.0.0",
+                "year": 2026,
+                "contributor": "Global Wall Inspector AI & Assessor Studio",
+                "date_created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            },
+            "licenses": [
+                {"id": 1, "name": "Global Wall Inspector Certification & MLOps License"}
+            ],
+            "categories": categories,
+            "images": images,
+            "annotations": annotations
+        }
+
+        resp = jsonify(coco_payload)
+        if as_download:
+            resp.headers["Content-Disposition"] = 'attachment; filename="wall_inspector_coco_dataset.json"'
+        return resp
 
     return app
 

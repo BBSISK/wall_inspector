@@ -1,0 +1,49 @@
+# ==============================================================================
+# Global Wall Inspector — Local Multi-Container Orchestration (Docker Compose)
+# Starts the Flask/Gunicorn Web App + PostgreSQL 15 Database with Persistent Storage
+# Usage: docker compose up --build
+# ==============================================================================
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: wall_inspector_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: inspector
+      POSTGRES_PASSWORD: stonecraft_local_password
+      POSTGRES_DB: wall_inspector
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inspector -d wall_inspector"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wall_inspector_web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://inspector:stonecraft_local_password@db:5432/wall_inspector
+      SECRET_KEY: ${SECRET_KEY:-docker-local-secret-key-2026}
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      PORT: 8000
+    volumes:
+      - ./static/img/walls:/app/static/img/walls
+
+volumes:
+  postgres_data:
+    driver: local

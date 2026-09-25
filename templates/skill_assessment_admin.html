@@ -421,7 +421,7 @@
   <!-- Top Navigation -->
   <header class="top-nav">
     <div style="display: flex; align-items: center; gap: 10px;">
-      <a href="/portal" class="brand">
+      <a href="/skill-assessment" class="brand">
         <i class="fa-solid fa-camera"></i>
         Professional Skill Assessment Ingestion
       </a>
@@ -431,7 +431,10 @@
       <button type="button" class="btn-nav" onclick="openSkillQrModal()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: 1px solid #10b981; font-weight: 700; cursor: pointer;">
         <i class="fa-solid fa-qrcode"></i> Connect Phone Camera
       </button>
-      <a href="/portal" class="btn-nav btn-back"><i class="fa-solid fa-arrow-left"></i> Student Portal</a>
+      <a href="/api/skill-assessment/export-coco?download=1&include_student_consensus=1" class="btn-nav" style="background: rgba(139, 92, 246, 0.2); color: #ddd6fe; border: 1px solid #8b5cf6; font-weight: 700;" title="Download Microsoft COCO 1.0 JSON dataset for CVAT / YOLOv8">
+        <i class="fa-solid fa-boxes-packing"></i> Export COCO / CVAT
+      </a>
+      <a href="/portal" class="btn-nav btn-back"><i class="fa-solid fa-graduation-cap"></i> Student Portal</a>
       <a href="/dashboard" class="btn-nav btn-back"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
       <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-house"></i> Main Catalog</a>
     </div>

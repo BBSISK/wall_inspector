@@ -1,0 +1,26 @@
+# Git & Version Control
+.git
+.gitignore
+.github
+
+# Python caches & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Local SQLite databases & environment secrets
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

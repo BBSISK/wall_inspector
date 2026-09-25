@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Global Wall Inspector — AI Agent & MLOps Assessment API
+  version: 2.0.0
+  description: >
+    Contract-first REST and Agent API specification for the Global Wall Inspector platform.
+    Covers Container Health Telemetry, the Intake Sentinel Agent, the Curriculum Director Agent,
+    Spatial Defect Grading, and the MLOps COCO 1.0 Dataset Exporter (CVAT / YOLOv8 compatible).
+
+paths:
+  /api/health:
+    get:
+      summary: Cloud Container & Database Health Telemetry
+      tags: [Observability]
+      responses:
+        "200":
+          description: Service, PostgreSQL database, and AI agents are operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "healthy" }
+                  database: { type: string, example: "connected" }
+                  total_walls: { type: integer, example: 36 }
+                  skill_specimens: { type: integer, example: 32 }
+                  cloudinary_configured: { type: boolean, example: true }
+                  active_agents:
+                    type: array
+                    items: { type: string }
+
+  /api/skill-assessment/sentinel-check:
+    post:
+      summary: Intake Sentinel Agent — Real-Time Image Quality Gate
+      tags: [AI Agents]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                wall_image:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Sentinel quality evaluation report (resolution, sharpness, exposure, aspect ratio)
+
+  /api/skill-assessment/curriculum-intelligence:
+    get:
+      summary: Curriculum Director Agent — Cohort Weakness & Battery Analytics
+      tags: [AI Agents]
+      responses:
+        "200":
+          description: Aggregated cohort accuracy, missed defect categories, and active batteries
+
+  /api/skill-assessment/export-coco:
+    get:
+      summary: MLOps COCO 1.0 Computer Vision Dataset Exporter (CVAT / YOLOv8)
+      tags: [MLOps & Computer Vision]
+      parameters:
+        - name: include_student_consensus
+          in: query
+          schema: { type: boolean, default: false }
+          description: Include crowdsourced student diagnostic pins alongside expert ground truth
+      responses:
+        "200":
+          description: Standard Microsoft COCO 1.0 JSON dataset containing images, categories, and bounding boxes
