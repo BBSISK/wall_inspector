@@ -1,5 +1,7 @@
 # 🏛️ Global Wall Inspector — AI Masonry Diagnostic & Skills Certification Platform
 
+[![CI](https://github.com/BBSISK/wall_inspector/actions/workflows/ci.yml/badge.svg)](https://github.com/BBSISK/wall_inspector/actions/workflows/ci.yml)
+
 **Global Wall Inspector** is a clinical skills-assessment and certification platform built for civil engineering, heritage conservation, and masonry construction students and assessors. Traditional masonry training relies on static textbook photos or inconsistent field walks where instructors cannot objectively measure whether a student is looking at the right defect. This platform solves that by turning high-resolution, uncompressed masonry photographs into interactive diagnostic workstations: students inspect walls using a zoom loupe, drop spatial defect pins (`step_cracking`, `lime_washout`, `spalling`, `root_jacking`), classify structural severity, and prescribe conservation remedies—which are then graded in real time against expert ground-truth bounding boxes. Behind the scenes, two autonomous AI agents (**Intake Sentinel** and **Curriculum Director**) audit incoming photographic quality, generate side-by-side randomized exam batteries with unscored practice dry-runs, and export labeled datasets in **Microsoft COCO 1.0 JSON** format for downstream Computer Vision (`CVAT` / `YOLOv8`) training.
 
 ---
