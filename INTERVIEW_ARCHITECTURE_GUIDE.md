@@ -9,7 +9,7 @@ This guide breaks down the **5-Pillar Modern AI & Cloud Engineering Stack** impl
 ```mermaid
 flowchart TB
     subgraph CI_IaC["🏗️ Pillar 2 & 3: CI/CD & Infrastructure as Code"]
-        GHA["⚡ GitHub Actions (.github/workflows/ci.yml)\nRuns 61 Unit & Agent Tests on every git push"]
+        GHA["⚡ GitHub Actions (.github/workflows/ci.yml)\nRuns 86 Unit & Agent Tests on every git push"]
         TF["📐 Terraform (infra/main.tf)\nProvisions Render Web Service, PostgreSQL 15 & Secrets"]
     end
 

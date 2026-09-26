@@ -12,7 +12,20 @@
 * **Agent 1 — Intake Sentinel (`sentinel_agent.py`)**: Evaluates newly uploaded field photographs across 4 photogrammetric pillars (90° orthogonal plane, diffuse illumination, course framing, and Laplacian focus sharpness) with a non-blocking *Progress Under Advisement* override.
 * **Agent 2 — Curriculum Director (`app.py`)**: Allows assessors to configure custom exam battery sizes (default 10), dynamically shuffles question order per candidate to prevent side-by-side classroom collusion, and identifies cohort-wide diagnostic blind spots.
 * **Model Context Protocol Server (`mcp_server.py`)**: Exposes the platform's domain agents (`sentinel_evaluate_image`, `curriculum_cohort_intelligence`, `list_skill_specimens`, `export_coco_dataset_stats`) over JSON-RPC 2.0 for external LLM hosts (Claude, Gemini, Cursor).
+* **Human-in-the-Loop Provenance Tracking (3-tier audit lineage)**: Every Gemini Vision defect proposal is tagged `auto_suggested`; when an assessor reviews and saves it, it is upgraded to `auto_accepted` with the assessor's name and a timestamp; specimens marked from scratch are `human_graded` gold-standard benchmarks. Each defect pin carries a `confidence_score`, and the assessor queue can be filtered by lineage. This builds a verified ground-truth pool so that only human-validated specimens feed future retrieval (RAG) and model training.
 * **MLOps COCO 1.0 Dataset Exporter (`/api/skill-assessment/export-coco`)**: Exports full-resolution Cloudinary image links, expert ground-truth bounding boxes, and crowdsourced student consensus pins into standard COCO JSON for **CVAT** and **YOLOv8-Seg** pipelines.
+
+---
+
+## 🧭 Human-in-the-Loop Provenance Model
+
+| Tier | Badge | How it is created | Trust level |
+|---|---|---|---|
+| `auto_suggested` | ⚡ AI Proposal | Gemini Vision proposes defect pins on upload | Unverified, excluded from ground truth |
+| `auto_accepted` | 🤝 Accepted | An assessor reviews, adjusts and saves the AI proposal (name and timestamp audited) | Verified |
+| `human_graded` | ✍️ Human | An assessor marks all defects from scratch | Gold-standard benchmark |
+
+New columns (`grading_status`, `graded_by_user_*`, `graded_at`, `provenance`, `confidence_score`) are added by a non-destructive auto-migration on start-up, so existing production records in PostgreSQL are preserved.
 
 ---
 
@@ -69,7 +82,7 @@ docker compose up --build
 # Container health telemetry at http://localhost:8000/api/health
 ```
 
-### 2. Run the 60+ Automated Unit & Agent Tests
+### 2. Run the 86 Automated Unit & Agent Tests
 ```bash
 python3 -m unittest discover -s . -p "test_*.py" -v
 python3 mcp_server.py --self-test
