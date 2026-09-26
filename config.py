@@ -27,3 +27,13 @@ class Config:
 
     # Authorized System Admin Emails
     SYSTEM_ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("SYSTEM_ADMIN_EMAILS", "barry.b.sisk@gmail.com,admin@wallinspector.org,barry.sisk@wallinspector.org").split(",") if e.strip()]
+
+    # Transactional & Alert Email Configuration
+    SMTP_SERVER = os.getenv("SMTP_SERVER", os.getenv("MAIL_SERVER", ""))
+    SMTP_PORT = int(os.getenv("SMTP_PORT", os.getenv("MAIL_PORT", 587)))
+    SMTP_USERNAME = os.getenv("SMTP_USERNAME", os.getenv("MAIL_USERNAME", ""))
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", os.getenv("MAIL_PASSWORD", ""))
+    SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in ["true", "1", "yes"]
+    SMTP_SENDER = os.getenv("SMTP_SENDER", os.getenv("MAIL_DEFAULT_SENDER", "Wall Inspector <notifications@wallinspector.org>"))
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+    SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")

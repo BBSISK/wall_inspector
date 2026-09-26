@@ -3227,6 +3227,21 @@ def create_app(config_class=Config):
 
         # 2. Admin (Class Admin or System Admin) - check approval
         if not user.is_approved:
+            try:
+                from notification_service import notify_admin_access_requested
+                app_base = request.host_url.rstrip("/") if request else "https://wall-inspector.onrender.com"
+                notify_admin_access_requested(
+                    user_name=user.name,
+                    user_email=user.email,
+                    provider=provider,
+                    role=user.role,
+                    admin_emails=system_admin_emails,
+                    app_url=app_base,
+                    app_config=app.config
+                )
+            except Exception as notify_err:
+                print(f"[AUTH NOTIFY NOTICE] Could not trigger admin notification: {notify_err}")
+
             return redirect(url_for("pending_approval", email=user.email, role=user.role, provider=provider, next=next_url))
 
         # Approved Administrator
@@ -4439,6 +4454,19 @@ def create_app(config_class=Config):
 
         if action == "toggle_approval":
             user.is_approved = not user.is_approved
+            if user.is_approved:
+                try:
+                    from notification_service import notify_user_access_approved
+                    app_base = request.host_url.rstrip("/") if request else "https://wall-inspector.onrender.com"
+                    notify_user_access_approved(
+                        user_name=user.name,
+                        user_email=user.email,
+                        assigned_role=user.role,
+                        app_url=app_base,
+                        app_config=app.config
+                    )
+                except Exception as notify_err:
+                    print(f"[AUTH APPROVE NOTIFY NOTICE] Could not trigger user approval notification: {notify_err}")
         elif action == "toggle_active":
             user.is_active = not user.is_active
         elif action == "set_role" and new_role in ["system_admin", "class_admin", "student"]:
