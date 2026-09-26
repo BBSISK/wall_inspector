@@ -395,6 +395,10 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Enable ProxyFix to respect X-Forwarded-Proto from Render's HTTPS reverse proxy
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     upload_folder = os.path.join(app.root_path, "static", "img", "walls")
     os.makedirs(upload_folder, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = upload_folder
@@ -3272,6 +3276,8 @@ def create_app(config_class=Config):
         session.permanent = True
 
         redirect_uri = url_for("oauth_callback", provider=provider, _external=True)
+        if (request.headers.get("X-Forwarded-Proto") == "https" or ("localhost" not in request.host and "127.0.0.1" not in request.host)) and redirect_uri.startswith("http://"):
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
         auth_url = get_oauth_authorization_url(provider, redirect_uri, state, client_id=client_id, tenant=tenant)
         return redirect(auth_url)
 
@@ -3321,6 +3327,8 @@ def create_app(config_class=Config):
         client_secret = app.config.get("GOOGLE_CLIENT_SECRET") if provider == "google" else app.config.get("MICROSOFT_CLIENT_SECRET")
         tenant = app.config.get("MICROSOFT_TENANT_ID", "common")
         redirect_uri = url_for("oauth_callback", provider=provider, _external=True)
+        if (request.headers.get("X-Forwarded-Proto") == "https" or ("localhost" not in request.host and "127.0.0.1" not in request.host)) and redirect_uri.startswith("http://"):
+            redirect_uri = redirect_uri.replace("http://", "https://", 1)
 
         user_profile, err = exchange_oauth_code(
             provider=provider,
