@@ -98,8 +98,8 @@ def dispatch_email(recipients, subject, html_content, text_content=None, app_con
     sendgrid_key = cfg.get("SENDGRID_API_KEY") or os.getenv("SENDGRID_API_KEY", "")
     smtp_server = cfg.get("SMTP_SERVER") or os.getenv("SMTP_SERVER", os.getenv("MAIL_SERVER", ""))
     smtp_port = int(cfg.get("SMTP_PORT") or os.getenv("SMTP_PORT", os.getenv("MAIL_PORT", 587)))
-    smtp_user = cfg.get("SMTP_USERNAME") or os.getenv("SMTP_USERNAME", os.getenv("MAIL_USERNAME", ""))
-    smtp_pass = cfg.get("SMTP_PASSWORD") or os.getenv("SMTP_PASSWORD", os.getenv("MAIL_PASSWORD", ""))
+    smtp_user = (cfg.get("SMTP_USERNAME") or os.getenv("SMTP_USERNAME", os.getenv("MAIL_USERNAME", ""))).strip()
+    smtp_pass = (cfg.get("SMTP_PASSWORD") or os.getenv("SMTP_PASSWORD", os.getenv("MAIL_PASSWORD", ""))).replace(" ", "").strip()
     smtp_tls = str(cfg.get("SMTP_USE_TLS", os.getenv("SMTP_USE_TLS", "true"))).lower() in ["true", "1", "yes"]
     sender = cfg.get("SMTP_SENDER") or os.getenv("SMTP_SENDER", os.getenv("MAIL_DEFAULT_SENDER", "Wall Inspector <notifications@wallinspector.org>"))
 
