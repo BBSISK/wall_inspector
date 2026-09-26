@@ -95,10 +95,71 @@ class Defect(db.Model):
             "explanation": self.explanation
         }
 
+class Organization(db.Model):
+    __tablename__ = "organizations"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(150), nullable=False)
+    code = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    domain = db.Column(db.String(100), nullable=True, index=True)
+    contact_email = db.Column(db.String(150), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    students = db.relationship("Student", backref="organization", lazy=True)
+    assignments = db.relationship("Assignment", backref="organization", lazy=True)
+    users = db.relationship("User", backref="organization", lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "code": self.code,
+            "domain": self.domain or "",
+            "contact_email": self.contact_email or "",
+            "is_active": self.is_active,
+            "students_count": len(self.students) if self.students else 0,
+            "assignments_count": len(self.assignments) if self.assignments else 0,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else ""
+        }
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = db.Column(db.String(150), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(30), default="student", nullable=False)  # "system_admin", "class_admin", "student"
+    organization_id = db.Column(db.String(36), db.ForeignKey("organizations.id"), nullable=True)
+    is_approved = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True)
+    auth_provider = db.Column(db.String(30), default="email")  # "google", "microsoft", "email"
+    avatar_url = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    last_login_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "email": self.email,
+            "name": self.name,
+            "role": self.role,
+            "organization_id": self.organization_id,
+            "organization_name": self.organization.name if self.organization else "Platform / Master",
+            "organization_code": self.organization.code if self.organization else "GLOBAL",
+            "is_approved": self.is_approved,
+            "is_active": self.is_active,
+            "auth_provider": self.auth_provider,
+            "avatar_url": self.avatar_url or "",
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else "",
+            "last_login_at": self.last_login_at.strftime("%Y-%m-%d %H:%M") if self.last_login_at else ""
+        }
+
 class Student(db.Model):
     __tablename__ = "students"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = db.Column(db.String(36), db.ForeignKey("organizations.id"), nullable=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False, index=True)
     pin = db.Column(db.String(10), default="0000", nullable=False)
@@ -111,6 +172,8 @@ class Student(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "organization_id": self.organization_id,
+            "organization_name": self.organization.name if self.organization else "Global Masonry Academy",
             "name": self.name,
             "email": self.email,
             "pin": self.pin,
@@ -148,6 +211,7 @@ class Assignment(db.Model):
     __tablename__ = "assignments"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = db.Column(db.String(36), db.ForeignKey("organizations.id"), nullable=True)
     code = db.Column(db.String(30), unique=True, nullable=False)
     title = db.Column(db.String(150), nullable=False)
     wall_id = db.Column(db.String(36), nullable=True)
@@ -165,6 +229,8 @@ class Assignment(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "organization_id": self.organization_id,
+            "organization_name": self.organization.name if self.organization else "All Schools",
             "code": self.code,
             "title": self.title,
             "wall_id": self.wall_id,

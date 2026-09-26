@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Admin | {{ current_org.name if current_org else 'School Administration' }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-card: #182234;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-green: #34d399;
+      --accent-purple: #a78bfa;
+      --accent-amber: #fbbf24;
+      --accent-red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    /* Top Bar */
+    .topbar {
+      background: #090e1a;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .org-badge {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.5rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: 1px solid var(--accent-blue);
+    }
+    .btn-primary:hover { background: #0284c7; }
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white;
+      border: 1px solid #10b981;
+    }
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: #cbd5e1;
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover { background: #334155; color: white; }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+      border: 1px solid var(--accent-red);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Header Banner */
+    .school-banner {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .school-info h1 {
+      margin: 0 0 0.4rem;
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .school-meta {
+      display: flex;
+      gap: 1rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .school-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent-blue);
+      line-height: 1.2;
+    }
+    .metric-lbl {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 0.35rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Sections */
+    .section-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 2.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      background: rgba(15, 23, 42, 0.7);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .section-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Tables */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #090e1a;
+      padding: 0.85rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    td {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+    tr:hover td {
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-pin {
+      font-family: monospace;
+      font-size: 0.95rem;
+      font-weight: 800;
+      background: #020617;
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+    .badge-cohort {
+      background: rgba(167, 139, 250, 0.2);
+      border: 1px solid var(--accent-purple);
+      color: #c4b5fd;
+    }
+    .badge-pass {
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid #10b981;
+      color: var(--accent-green);
+    }
+    .badge-fail {
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid #ef4444;
+      color: var(--accent-red);
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .modal-header {
+      background: #090e1a;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .modal-header h3 { margin: 0; font-size: 1.2rem; }
+    .modal-body { padding: 1.5rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .form-control {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.65rem 0.9rem;
+      color: white;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .modal-footer {
+      background: #090e1a;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    /* Cohort Filter Chips */
+    .cohort-chips {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .cohort-chip {
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+    .cohort-chip.active {
+      background: var(--accent-blue);
+      color: #020617;
+      font-weight: 800;
+      border-color: var(--accent-blue);
+    }
+
+    /* Instruction Callout */
+    .callout-box {
+      background: rgba(2, 132, 199, 0.1);
+      border: 1px solid var(--accent-blue);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/" class="brand-link">
+        <span>🏛️</span>
+        <span>Global Wall Inspector</span>
+      </a>
+      <span class="org-badge">
+        <i class="fa-solid fa-school"></i> Class Admin
+      </span>
+      {% if all_orgs|length > 1 %}
+        <form method="GET" action="/admin/class" style="display: inline-flex; align-items: center; margin: 0;">
+          <select name="org_id" onchange="this.form.submit()" class="form-control" style="padding: 3px 8px; font-size: 0.8rem; width: auto; background: #1e293b;">
+            {% for org in all_orgs %}
+              <option value="{{ org.id }}" {% if current_org and current_org.id == org.id %}selected{% endif %}>
+                {{ org.name }} ({{ org.code }})
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="topbar-actions">
+      <a href="/portal" target="_blank" class="btn btn-secondary">
+        <i class="fa-solid fa-graduation-cap"></i> Student Portal
+      </a>
+      {% if is_system_admin %}
+        <a href="/admin/system" class="btn btn-secondary" style="border-color: var(--accent-purple); color: #c4b5fd;">
+          <i class="fa-solid fa-shield-halved"></i> System Admin
+        </a>
+      {% endif %}
+      <a href="/dashboard" class="btn btn-secondary">
+        <i class="fa-solid fa-chart-pie"></i> Diagnostic View
+      </a>
+      <a href="/admin/logout" class="btn btn-danger">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- School Header Banner -->
+    <div class="school-banner">
+      <div class="school-info">
+        <h1>
+          <span>🏫</span> {{ current_org.name if current_org else 'Global Masonry Academy' }}
+        </h1>
+        <div class="school-meta">
+          <span><i class="fa-solid fa-hashtag"></i> Code: <strong style="color: var(--accent-blue);">{{ current_org.code if current_org else 'GWI-GENERAL' }}</strong></span>
+          {% if current_org and current_org.domain %}
+            <span><i class="fa-solid fa-globe"></i> Domain: {{ current_org.domain }}</span>
+          {% endif %}
+          {% if current_org and current_org.contact_email %}
+            <span><i class="fa-solid fa-envelope"></i> Contact: {{ current_org.contact_email }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <button type="button" onclick="openEnrollModal()" class="btn btn-primary">
+          <i class="fa-solid fa-user-plus"></i> Enroll Student
+        </button>
+        <button type="button" onclick="openBatteryModal()" class="btn btn-success">
+          <i class="fa-solid fa-plus-circle"></i> Provision Battery
+        </button>
+        <a href="/admin/class/export-csv{% if current_org %}?org_id={{ current_org.id }}{% endif %}{% if selected_cohort %}&cohort={{ selected_cohort }}{% endif %}" class="btn btn-secondary">
+          <i class="fa-solid fa-file-csv"></i> Export Results CSV
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Classroom Guidance Callout -->
+    <div class="callout-box">
+      <div>
+        <strong style="color: var(--accent-blue); font-size: 0.95rem;">
+          <i class="fa-solid fa-chalkboard-user"></i> Classroom Launch Instructions:
+        </strong>
+        <p style="margin: 0.25rem 0 0; color: #cbd5e1; font-size: 0.85rem;">
+          Instruct students to open <strong>/portal</strong> on their devices. They select their name or enter their 4-digit PIN to begin assigned batteries.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button type="button" onclick="copyPortalUrl()" class="btn btn-primary" style="font-size: 0.8rem;">
+          <i class="fa-solid fa-copy"></i> Copy Portal URL
+        </button>
+      </div>
+    </div>
+
+    <!-- Key Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-val">{{ total_students_count }}</div>
+        <div class="metric-lbl">Enrolled Students</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color: var(--accent-purple);">{{ cohorts|length }}</div>
+        <div class="metric-lbl">Active Cohorts</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color: var(--accent-green);">{{ pass_rate }}%</div>
+        <div class="metric-lbl">Pass Rate ({{ total_attempts }} Attempts)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color: var(--accent-amber);">{{ avg_score }}%</div>
+        <div class="metric-lbl">Average Score</div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: STUDENTS & COHORTS -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-users"></i> Student Roster &amp; PIN Authentication</h2>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <div class="cohort-chips">
+            <a href="/admin/class{% if current_org %}?org_id={{ current_org.id }}{% endif %}" class="cohort-chip {% if not selected_cohort %}active{% endif %}">
+              All Cohorts ({{ total_students_count }})
+            </a>
+            {% for c in cohorts %}
+              <a href="/admin/class?{% if current_org %}org_id={{ current_org.id }}&{% endif %}cohort={{ c }}" class="cohort-chip {% if selected_cohort == c %}active{% endif %}">
+                {{ c }}
+              </a>
+            {% endfor %}
+          </div>
+          <button type="button" onclick="openEnrollModal()" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.78rem;">
+            <i class="fa-solid fa-plus"></i> Add Student
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Email Address</th>
+              <th>Cohort</th>
+              <th>Exam PIN</th>
+              <th>Attempts</th>
+              <th>Avg Score</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if students %}
+              {% for s in students %}
+                {% set stats = student_stats.get(s.id, {'attempts_count': 0, 'avg_score': 0.0, 'passed_count': 0}) %}
+                <tr>
+                  <td><strong>{{ s.name }}</strong></td>
+                  <td style="color: var(--text-muted); font-family: monospace;">{{ s.email }}</td>
+                  <td>
+                    <span class="badge badge-cohort">{{ s.cohort_code or 'GENERAL' }}</span>
+                  </td>
+                  <td>
+                    <span class="badge-pin">{{ s.pin }}</span>
+                    <button type="button" onclick="copyText('{{ s.pin }}', 'PIN Copied!')" title="Copy PIN" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px;">
+                      <i class="fa-solid fa-copy"></i>
+                    </button>
+                  </td>
+                  <td>{{ stats.attempts_count }}</td>
+                  <td>
+                    {% if stats.attempts_count > 0 %}
+                      <strong style="color: {% if stats.avg_score >= 80 %}#34d399{% elif stats.avg_score >= 60 %}#fbbf24{% else %}#f87171{% endif %};">
+                        {{ stats.avg_score }}%
+                      </strong>
+                    {% else %}
+                      <span style="color: #64748b;">No attempts</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="/portal?student_id={{ s.id }}" target="_blank" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;">
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i> Student View
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  No students currently enrolled in this cohort. Tap <strong>Enroll Student</strong> to issue PIN credentials.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 2: EXAM BATTERIES -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-clipboard-check"></i> Examination Batteries &amp; Assignments</h2>
+        <button type="button" onclick="openBatteryModal()" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.78rem;">
+          <i class="fa-solid fa-plus"></i> New Battery
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Battery Code</th>
+              <th>Assignment Title</th>
+              <th>Specimen Count</th>
+              <th>Time Limit</th>
+              <th>Dry-Run Practice</th>
+              <th>Anti-Collusion</th>
+              <th>Direct Exam Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if assignments %}
+              {% for a in assignments %}
+                <tr>
+                  <td>
+                    <span class="badge" style="background: #020617; border: 1px solid var(--accent-blue); color: var(--accent-blue); font-family: monospace; font-size: 0.85rem;">
+                      {{ a.code }}
+                    </span>
+                  </td>
+                  <td><strong>{{ a.title }}</strong></td>
+                  <td>{{ a.battery_size }} Specimens</td>
+                  <td>
+                    {% if a.time_limit_minutes and a.time_limit_minutes > 0 %}
+                      {{ a.time_limit_minutes }} mins
+                    {% else %}
+                      <span style="color: var(--text-muted);">Unlimited</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if a.enable_dry_run %}
+                      <span class="badge badge-pass"><i class="fa-solid fa-check"></i> Enabled</span>
+                    {% else %}
+                      <span class="badge" style="background: #334155; color: #94a3b8;">Disabled</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if a.randomize_order %}
+                      <span class="badge" style="background: rgba(167, 139, 250, 0.2); color: #c4b5fd;">Shuffled</span>
+                    {% else %}
+                      <span class="badge" style="background: #334155; color: #94a3b8;">Sequential</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <a href="/skill-assessment/battery/start?code={{ a.code }}" target="_blank" class="btn btn-primary" style="padding: 3px 8px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-play"></i> Launch
+                      </a>
+                      <button type="button" onclick="copyBatteryUrl('{{ a.code }}')" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-copy"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  No customized test batteries created yet. Tap <strong>New Battery</strong> to configure an exam sequence.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 3: RECENT ATTEMPTS & BLINDSPOTS -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+      
+      <!-- Recent School Attempts Table -->
+      <section class="section-card" style="margin-bottom: 0;">
+        <div class="section-header">
+          <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Examination Attempts</h2>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Last {{ attempts|length }} submissions</span>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Cohort</th>
+                <th>Score</th>
+                <th>Result</th>
+                <th>Hits / False / Miss</th>
+                <th>Report</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if attempts %}
+                {% for att in attempts %}
+                  <tr>
+                    <td><strong>{{ att.student_name or 'Anonymous' }}</strong></td>
+                    <td><span class="badge badge-cohort">{{ att.cohort_code or 'GENERAL' }}</span></td>
+                    <td><strong>{{ att.score_percentage }}%</strong></td>
+                    <td>
+                      {% if att.passed %}
+                        <span class="badge badge-pass">PASSED</span>
+                      {% else %}
+                        <span class="badge badge-fail">REVISE</span>
+                      {% endif %}
+                    </td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">
+                      <span style="color: #34d399;">{{ att.true_positives }}</span> / 
+                      <span style="color: #fbbf24;">{{ att.false_positives }}</span> / 
+                      <span style="color: #f87171;">{{ att.false_negatives }}</span>
+                    </td>
+                    <td>
+                      <a href="/report/{{ att.id }}" target="_blank" class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.72rem;">
+                        Survey &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                    No attempts recorded yet for this school.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Diagnostic Blindspots -->
+      <section class="section-card" style="margin-bottom: 0;">
+        <div class="section-header">
+          <h2><i class="fa-solid fa-triangle-exclamation"></i> Top Missed Defects</h2>
+        </div>
+        <div style="padding: 1.25rem;">
+          {% if top_missed %}
+            <p style="margin: 0 0 1rem; font-size: 0.82rem; color: var(--text-muted);">
+              High-frequency false negatives observed across this cohort:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              {% for fault, count in top_missed %}
+                <div style="background: #090e1a; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.85rem; color: #f1f5f9;">{{ fault }}</strong>
+                  <span class="badge badge-fail">{{ count }} missed</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+              <i class="fa-solid fa-circle-check" style="font-size: 2rem; color: #10b981; margin-bottom: 0.5rem; display: block;"></i>
+              No recurring diagnostic blindspots recorded.
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: ENROLL STUDENT -->
+  <div id="modal-enroll" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus" style="color: var(--accent-blue);"></i> Enroll New Student</h3>
+        <button type="button" onclick="closeEnrollModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">&times;</button>
+      </div>
+      <form method="POST" action="/admin/class/students/add">
+        <input type="hidden" name="org_id" value="{{ current_org.id if current_org else '' }}">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Student Full Name *</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. John Doe" required>
+          </div>
+          <div class="form-group">
+            <label>Student Email (Optional)</label>
+            <input type="email" name="email" class="form-control" placeholder="e.g. jdoe@institution.edu (auto-generated if blank)">
+          </div>
+          <div class="form-group">
+            <label>Cohort Code</label>
+            <input type="text" name="cohort_code" class="form-control" value="{{ selected_cohort or 'GENERAL' }}" placeholder="e.g. MASONRY-2026-A" required>
+          </div>
+          <div class="form-group">
+            <label>4-Digit Examination PIN</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="student_pin_input" name="pin" maxlength="6" class="form-control" style="font-family: monospace; font-size: 1.1rem; letter-spacing: 2px;" placeholder="4-digit PIN">
+              <button type="button" onclick="generateRandomPin()" class="btn btn-secondary" style="flex-shrink: 0;">
+                <i class="fa-solid fa-dice"></i> Random PIN
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" onclick="closeEnrollModal()" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Enroll &amp; Issue Credentials</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: PROVISION BATTERY -->
+  <div id="modal-battery" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-plus-circle" style="color: var(--accent-green);"></i> Provision Examination Battery</h3>
+        <button type="button" onclick="closeBatteryModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">&times;</button>
+      </div>
+      <form method="POST" action="/admin/class/battery/create">
+        <input type="hidden" name="org_id" value="{{ current_org.id if current_org else '' }}">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Exam / Assessment Title *</label>
+            <input type="text" name="title" class="form-control" placeholder="e.g. Historic Conservation Spring 2026 Final" required>
+          </div>
+          <div class="form-group">
+            <label>Specimen Question Count</label>
+            <select name="battery_size" class="form-control">
+              <option value="5">5 Specimen Sprint Exam</option>
+              <option value="10" selected>10 Specimen Standard Battery</option>
+              <option value="15">15 Specimen Comprehensive Battery</option>
+              <option value="20">20 Specimen Mastery Battery</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Time Limit (Minutes)</label>
+            <select name="time_limit_minutes" class="form-control">
+              <option value="0" selected>Unlimited / Self-Paced</option>
+              <option value="15">15 Minutes (Timed Sprint)</option>
+              <option value="30">30 Minutes</option>
+              <option value="45">45 Minutes</option>
+              <option value="60">60 Minutes (Standard Period)</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none;">
+              <input type="checkbox" name="enable_dry_run" value="1" checked style="width: 16px; height: 16px;">
+              <span>Enable Pre-Exam Dry-Run</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none;">
+              <input type="checkbox" name="randomize_order" value="1" checked style="width: 16px; height: 16px;">
+              <span>Anti-Collusion Shuffle</span>
+            </label>
+          </div>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label>Instructor Notes for Cohort</label>
+            <textarea name="director_notes" class="form-control" rows="2" placeholder="e.g. Focus on mortar washout and structural shear cracks."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" onclick="closeBatteryModal()" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Create Battery</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openEnrollModal() {
+      generateRandomPin();
+      document.getElementById('modal-enroll').classList.add('active');
+    }
+    function closeEnrollModal() {
+      document.getElementById('modal-enroll').classList.remove('active');
+    }
+    function openBatteryModal() {
+      document.getElementById('modal-battery').classList.add('active');
+    }
+    function closeBatteryModal() {
+      document.getElementById('modal-battery').classList.remove('active');
+    }
+    function generateRandomPin() {
+      const pin = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('student_pin_input').value = pin;
+    }
+    function copyText(text, msg) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert(msg || 'Copied to clipboard!');
+      });
+    }
+    function copyPortalUrl() {
+      const url = window.location.origin + '/portal';
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Student Portal URL copied:\n' + url);
+      });
+    }
+    function copyBatteryUrl(code) {
+      const url = window.location.origin + '/skill-assessment/battery/start?code=' + code;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Direct Battery Exam URL copied:\n' + url);
+      });
+    }
+
+    // Close modals when clicking backdrop
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal-backdrop')) {
+        event.target.classList.remove('active');
+      }
+    };
+  </script>
+</body>
+</html>

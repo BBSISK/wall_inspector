@@ -10,7 +10,7 @@ from sqlalchemy import text, inspect
 import cloudinary
 import cloudinary.uploader
 from config import Config
-from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission, Student
+from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission, Student, Organization, User
 from curriculum_agent import (
     assemble_battery_specimens,
     generate_student_battery_sequence,
@@ -487,10 +487,26 @@ def create_app(config_class=Config):
                     conn.commit()
 
             all_tables = inspector.get_table_names()
+            if "organizations" not in all_tables:
+                Organization.__table__.create(db.engine)
+
+            if "users" not in all_tables:
+                User.__table__.create(db.engine)
+
             if "students" not in all_tables:
                 Student.__table__.create(db.engine)
 
+            student_cols = [c["name"] for c in inspector.get_columns("students")]
+            if "organization_id" not in student_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE students ADD COLUMN organization_id VARCHAR(36);"))
+                    conn.commit()
+
             assign_cols = [c["name"] for c in inspector.get_columns("assignments")]
+            if "organization_id" not in assign_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE assignments ADD COLUMN organization_id VARCHAR(36);"))
+                    conn.commit()
             if "time_limit_minutes" not in assign_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE assignments ADD COLUMN time_limit_minutes INTEGER DEFAULT 0;"))
@@ -531,6 +547,60 @@ def create_app(config_class=Config):
                     conn.commit()
         except Exception as e:
             print(f"Migration note: {e}")
+
+        # Seed default Organization
+        try:
+            default_org = Organization.query.filter_by(code="GWI-GENERAL").first()
+            if not default_org:
+                default_org = Organization(
+                    id=str(uuid.uuid4()),
+                    name="Global Masonry Academy",
+                    code="GWI-GENERAL",
+                    domain="globalmasonry.edu",
+                    contact_email="admin@globalmasonry.edu",
+                    is_active=True
+                )
+                db.session.add(default_org)
+                db.session.commit()
+
+            # Backfill any existing students or assignments without organization_id
+            Student.query.filter(Student.organization_id.is_(None)).update({Student.organization_id: default_org.id}, synchronize_session=False)
+            Assignment.query.filter(Assignment.organization_id.is_(None)).update({Assignment.organization_id: default_org.id}, synchronize_session=False)
+            db.session.commit()
+
+            # Seed default System Admin user if not exists
+            sys_admin = User.query.filter_by(email="sysadmin@wallinspector.org").first()
+            if not sys_admin:
+                sys_admin = User(
+                    id=str(uuid.uuid4()),
+                    email="sysadmin@wallinspector.org",
+                    name="Platform System Admin",
+                    role="system_admin",
+                    organization_id=default_org.id,
+                    is_approved=True,
+                    is_active=True,
+                    auth_provider="email"
+                )
+                db.session.add(sys_admin)
+                db.session.commit()
+
+            # Seed default Class Admin instructor if not exists
+            class_admin = User.query.filter_by(email="instructor@globalmasonry.edu").first()
+            if not class_admin:
+                class_admin = User(
+                    id=str(uuid.uuid4()),
+                    email="instructor@globalmasonry.edu",
+                    name="Lead Masonry Instructor",
+                    role="class_admin",
+                    organization_id=default_org.id,
+                    is_approved=True,
+                    is_active=True,
+                    auth_provider="email"
+                )
+                db.session.add(class_admin)
+                db.session.commit()
+        except Exception as seed_err:
+            print(f"Org/User Seed note: {seed_err}")
 
         # Seed Demo Certificate
         cert_code = "GWI-DEMO2026"
@@ -2934,6 +3004,16 @@ def create_app(config_class=Config):
     def verify_token_for_admin(token, max_age=86400 * 7):
         return verify_mobile_admin_token(token, app_instance=app, max_age=max_age)
 
+    def is_authenticated_as(role=None):
+        if not session.get("is_admin"):
+            return False
+        user_role = session.get("user_role")
+        if role == "system_admin":
+            return bool(session.get("is_system_admin") or user_role == "system_admin" or ("is_system_admin" not in session and "user_role" not in session))
+        if role == "class_admin":
+            return bool(session.get("is_class_admin") or session.get("is_system_admin") or user_role in ["class_admin", "system_admin"] or ("is_class_admin" not in session and "user_role" not in session))
+        return True
+
     def admin_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -2941,6 +3021,8 @@ def create_app(config_class=Config):
             token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
             if token and verify_token_for_admin(token):
                 session["is_admin"] = True
+                session["is_system_admin"] = True
+                session["is_class_admin"] = True
                 session.permanent = True
 
             if not session.get("is_admin"):
@@ -2951,12 +3033,79 @@ def create_app(config_class=Config):
             return f(*args, **kwargs)
         return decorated_function
 
+    def system_admin_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
+            if token and verify_token_for_admin(token):
+                session["is_admin"] = True
+                session["is_system_admin"] = True
+                session["is_class_admin"] = True
+                session.permanent = True
+
+            if not session.get("is_admin"):
+                if request.path.startswith("/api/") or (request.method in ["POST", "DELETE"] and not request.path.startswith("/admin/login")):
+                    return jsonify({"error": "Admin authentication required"}), 401
+                next_path = request.full_path if request.query_string else request.path
+                return redirect(url_for("admin_login", next=next_path))
+
+            if not is_authenticated_as("system_admin"):
+                if request.path.startswith("/api/") or request.method in ["POST", "DELETE"]:
+                    return jsonify({"error": "System Admin privilege required"}), 403
+                return render_template("admin_login.html", error="System Admin privileges required for this platform workstation.", next_url=request.path), 403
+            return f(*args, **kwargs)
+        return decorated_function
+
+    def class_admin_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
+            if token and verify_token_for_admin(token):
+                session["is_admin"] = True
+                session["is_system_admin"] = True
+                session["is_class_admin"] = True
+                session.permanent = True
+
+            if not session.get("is_admin"):
+                if request.path.startswith("/api/") or (request.method in ["POST", "DELETE"] and not request.path.startswith("/admin/login")):
+                    return jsonify({"error": "Admin authentication required"}), 401
+                next_path = request.full_path if request.query_string else request.path
+                return redirect(url_for("admin_login", next=next_path))
+
+            if not is_authenticated_as("class_admin"):
+                if request.path.startswith("/api/") or request.method in ["POST", "DELETE"]:
+                    return jsonify({"error": "Class Admin privilege required"}), 403
+                return render_template("admin_login.html", error="Class Admin privileges required for this classroom portal.", next_url=request.path), 403
+            return f(*args, **kwargs)
+        return decorated_function
+
     @app.context_processor
     def inject_admin_status():
         is_admin = session.get("is_admin", False)
+        user_role = session.get("user_role", "system_admin" if is_admin else "student")
+        is_sys = is_admin and (session.get("is_system_admin", True) if "user_role" not in session else user_role == "system_admin")
+        is_cls = is_admin and (session.get("is_class_admin", True) if "user_role" not in session else user_role in ["class_admin", "system_admin"])
         admin_token = generate_token_for_admin() if is_admin else None
+
+        curr_org_id = session.get("organization_id")
+        curr_org = None
+        if curr_org_id:
+            try:
+                curr_org = db.session.get(Organization, curr_org_id)
+            except Exception:
+                curr_org = None
+        if not curr_org:
+            try:
+                curr_org = Organization.query.filter_by(code="GWI-GENERAL").first()
+            except Exception:
+                curr_org = None
+
         return {
             "is_admin": is_admin,
+            "is_system_admin": is_sys,
+            "is_class_admin": is_cls,
+            "user_role": user_role,
+            "current_organization": curr_org,
             "mobile_admin_token": admin_token
         }
 
@@ -2974,6 +3123,10 @@ def create_app(config_class=Config):
 
             if (password and password == expected_password) or (pin and pin == expected_pin):
                 session["is_admin"] = True
+                session["is_system_admin"] = True
+                session["is_class_admin"] = True
+                session["user_role"] = "system_admin"
+                session["user_name"] = "Master Instructor"
                 session.permanent = True
                 if request.is_json:
                     return jsonify({"success": True, "redirect": next_url})
@@ -2997,6 +3150,13 @@ def create_app(config_class=Config):
     @app.route("/admin/logout")
     def admin_logout():
         session.pop("is_admin", None)
+        session.pop("is_system_admin", None)
+        session.pop("is_class_admin", None)
+        session.pop("user_role", None)
+        session.pop("user_id", None)
+        session.pop("user_email", None)
+        session.pop("user_name", None)
+        session.pop("organization_id", None)
         return redirect(url_for("index"))
 
     @app.route("/")
@@ -3576,6 +3736,384 @@ def create_app(config_class=Config):
             selected_assignment=selected_assignment,
             top_missed=top_missed
         )
+
+    # =========================================================================
+    # CLASS ADMIN: School & Cohort Management Workstation (/admin/class)
+    # =========================================================================
+    @app.route("/admin/class")
+    @class_admin_required
+    def class_admin_dashboard():
+        """
+        Class Admin Workstation: Scoped to an individual school or organization.
+        Manages student cohorts, generates student PINs, configures examination batteries,
+        and reviews school-specific diagnostic heatmaps and performance.
+        """
+        org_id = request.args.get("org_id")
+        current_org = None
+        if org_id and (session.get("is_system_admin") or session.get("is_admin")):
+            current_org = db.session.get(Organization, org_id)
+
+        if not current_org:
+            user_org_id = session.get("organization_id")
+            if user_org_id:
+                current_org = db.session.get(Organization, user_org_id)
+
+        if not current_org:
+            current_org = Organization.query.filter_by(code="GWI-GENERAL").first() or Organization.query.first()
+
+        all_orgs = Organization.query.filter_by(is_active=True).order_by(Organization.name.asc()).all() if (session.get("is_system_admin") or session.get("is_admin")) else [current_org]
+
+        students = Student.query.filter_by(organization_id=current_org.id).order_by(Student.name.asc()).all() if current_org else []
+        student_ids = [s.id for s in students]
+
+        cohorts = sorted(list(set(s.cohort_code for s in students if s.cohort_code)))
+        if not cohorts:
+            cohorts = ["GENERAL"]
+
+        selected_cohort = request.args.get("cohort", "").strip().upper()
+        if selected_cohort:
+            filtered_students = [s for s in students if s.cohort_code == selected_cohort]
+        else:
+            filtered_students = students
+
+        assignments = Assignment.query.filter_by(organization_id=current_org.id).order_by(Assignment.created_at.desc()).all() if current_org else []
+
+        attempts_query = AssessmentAttempt.query
+        if student_ids:
+            attempts_query = attempts_query.filter(
+                (AssessmentAttempt.student_id.in_(student_ids)) |
+                (AssessmentAttempt.cohort_code.in_(cohorts))
+            )
+        else:
+            attempts_query = attempts_query.filter(AssessmentAttempt.cohort_code.in_(cohorts))
+
+        if selected_cohort:
+            attempts_query = attempts_query.filter_by(cohort_code=selected_cohort)
+
+        attempts_raw = attempts_query.order_by(AssessmentAttempt.created_at.desc()).all()
+        attempts = attempts_raw[:40]
+
+        total_attempts = len(attempts_raw)
+        total_passed = sum(1 for a in attempts_raw if getattr(a, 'passed', False))
+        pass_rate = round((total_passed / total_attempts * 100), 1) if total_attempts > 0 else 0.0
+        avg_score = round(sum(a.score_percentage for a in attempts_raw) / total_attempts, 1) if total_attempts > 0 else 0.0
+
+        missed_counts = {}
+        for a in attempts_raw:
+            if a.feedback_notes and isinstance(a.feedback_notes, dict):
+                for item in a.feedback_notes.get("items", []):
+                    if item.get("status") in ["missed", "misclassified"]:
+                        fault_label = item.get("title", item.get("category", "Unspecified"))
+                        missed_counts[fault_label] = missed_counts.get(fault_label, 0) + 1
+
+        top_missed = sorted(missed_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+        student_stats = {}
+        for s in students:
+            s_attempts = [a for a in attempts_raw if a.student_id == s.id or (a.student_name and a.student_name.lower() == s.name.lower())]
+            cnt = len(s_attempts)
+            avg = round(sum(a.score_percentage for a in s_attempts) / cnt, 1) if cnt > 0 else 0.0
+            passed_cnt = sum(1 for a in s_attempts if getattr(a, 'passed', False))
+            student_stats[s.id] = {
+                "attempts_count": cnt,
+                "avg_score": avg,
+                "passed_count": passed_cnt
+            }
+
+        return render_template(
+            "class_admin_dashboard.html",
+            current_org=current_org,
+            all_orgs=all_orgs,
+            students=filtered_students,
+            total_students_count=len(students),
+            cohorts=cohorts,
+            selected_cohort=selected_cohort,
+            assignments=assignments,
+            attempts=attempts,
+            total_attempts=total_attempts,
+            pass_rate=pass_rate,
+            avg_score=avg_score,
+            top_missed=top_missed,
+            student_stats=student_stats
+        )
+
+    @app.route("/admin/class/students/add", methods=["POST"])
+    @class_admin_required
+    def class_admin_add_student():
+        """Enrolls a student into the organization and issues PIN credentials."""
+        name = (request.form.get("name") or (request.json.get("name") if request.is_json else "") or "").strip()
+        email = (request.form.get("email") or (request.json.get("email") if request.is_json else "") or "").strip()
+        cohort_code = (request.form.get("cohort_code") or (request.json.get("cohort_code") if request.is_json else "GENERAL") or "GENERAL").strip().upper()
+        pin = (request.form.get("pin") or (request.json.get("pin") if request.is_json else "") or "").strip()
+        org_id = request.form.get("org_id") or (request.json.get("org_id") if request.is_json else None) or session.get("organization_id")
+
+        if not name:
+            if request.is_json:
+                return jsonify({"success": False, "error": "Student name is required"}), 400
+            return redirect(url_for("class_admin_dashboard"))
+
+        if not pin:
+            pin = f"{random.randint(1000, 9999)}"
+
+        if not email:
+            import re
+            clean_name = re.sub(r'[^a-zA-Z0-9]', '', name).lower()
+            email = f"{clean_name}_{random.randint(100, 999)}@academy.wallinspector.org"
+
+        org = db.session.get(Organization, org_id) if org_id else Organization.query.filter_by(code="GWI-GENERAL").first()
+        if not org:
+            org = Organization.query.first()
+
+        student = Student.query.filter_by(email=email).first()
+        if student:
+            student.name = name
+            student.pin = pin
+            student.cohort_code = cohort_code
+            student.organization_id = org.id
+        else:
+            student = Student(
+                id=str(uuid.uuid4()),
+                name=name,
+                email=email,
+                pin=pin,
+                cohort_code=cohort_code,
+                organization_id=org.id
+            )
+            db.session.add(student)
+
+        commit_with_retry()
+        if request.is_json:
+            return jsonify({"success": True, "student": student.to_dict()})
+        return redirect(url_for("class_admin_dashboard", org_id=org.id, cohort=cohort_code))
+
+    @app.route("/admin/class/cohort/create", methods=["POST"])
+    @class_admin_required
+    def class_admin_cohort_create():
+        """Creates or initializes a new classroom cohort with an optional initial student."""
+        cohort_code = (request.form.get("cohort_code") or (request.json.get("cohort_code") if request.is_json else "") or "").strip().upper()
+        student_name = (request.form.get("student_name") or (request.json.get("student_name") if request.is_json else "") or "").strip()
+        org_id = request.form.get("org_id") or (request.json.get("org_id") if request.is_json else None) or session.get("organization_id")
+
+        if not cohort_code:
+            if request.is_json:
+                return jsonify({"success": False, "error": "Cohort code is required"}), 400
+            return redirect(url_for("class_admin_dashboard"))
+
+        org = db.session.get(Organization, org_id) if org_id else Organization.query.filter_by(code="GWI-GENERAL").first()
+        if not org:
+            org = Organization.query.first()
+
+        if student_name:
+            import re
+            clean_name = re.sub(r'[^a-zA-Z0-9]', '', student_name).lower()
+            email = f"{clean_name}_{random.randint(100, 999)}@academy.wallinspector.org"
+            pin = f"{random.randint(1000, 9999)}"
+            new_student = Student(
+                id=str(uuid.uuid4()),
+                name=student_name,
+                email=email,
+                pin=pin,
+                cohort_code=cohort_code,
+                organization_id=org.id
+            )
+            db.session.add(new_student)
+            commit_with_retry()
+
+        if request.is_json:
+            return jsonify({"success": True, "cohort_code": cohort_code})
+        return redirect(url_for("class_admin_dashboard", org_id=org.id, cohort=cohort_code))
+
+    @app.route("/admin/class/battery/create", methods=["POST"])
+    @class_admin_required
+    def class_admin_battery_create():
+        """Provisions an examination battery scoped to this school or organization."""
+        title = (request.form.get("title") or (request.json.get("title") if request.is_json else "") or "Classroom Assessment Battery").strip()
+        battery_size = int(request.form.get("battery_size") or (request.json.get("battery_size") if request.is_json else 10) or 10)
+        time_limit = int(request.form.get("time_limit_minutes") or (request.json.get("time_limit_minutes") if request.is_json else 0) or 0)
+        enable_dry_run = request.form.get("enable_dry_run") in ["1", "true", "on", True]
+        randomize_order = request.form.get("randomize_order") in ["1", "true", "on", True]
+        notes = (request.form.get("director_notes") or (request.json.get("director_notes") if request.is_json else "") or "").strip()
+        org_id = request.form.get("org_id") or (request.json.get("org_id") if request.is_json else None) or session.get("organization_id")
+
+        org = db.session.get(Organization, org_id) if org_id else Organization.query.filter_by(code="GWI-GENERAL").first()
+        if not org:
+            org = Organization.query.first()
+
+        battery_code = f"BAT-{uuid.uuid4().hex[:6].upper()}"
+
+        assignment = Assignment(
+            id=str(uuid.uuid4()),
+            organization_id=org.id,
+            code=battery_code,
+            title=title,
+            battery_size=battery_size,
+            time_limit_minutes=time_limit,
+            enable_dry_run=enable_dry_run,
+            randomize_order=randomize_order,
+            director_notes=notes,
+            is_active=True
+        )
+        db.session.add(assignment)
+        commit_with_retry()
+
+        if request.is_json:
+            return jsonify({
+                "success": True,
+                "battery_code": battery_code,
+                "assignment": assignment.to_dict(),
+                "launch_url": f"/skill-assessment/battery/start?code={battery_code}"
+            })
+        return redirect(url_for("class_admin_dashboard", org_id=org.id))
+
+    @app.route("/admin/class/export-csv")
+    @class_admin_required
+    def class_admin_export_csv():
+        """Streams student assessment results CSV scoped strictly to the instructor's school/organization."""
+        import csv
+        import io
+        from flask import Response
+
+        org_id = request.args.get("org_id") or session.get("organization_id")
+        org = db.session.get(Organization, org_id) if org_id else Organization.query.filter_by(code="GWI-GENERAL").first()
+        if not org:
+            org = Organization.query.first()
+
+        students = Student.query.filter_by(organization_id=org.id).all() if org else []
+        student_ids = [s.id for s in students]
+        cohorts = list(set(s.cohort_code for s in students if s.cohort_code))
+
+        selected_cohort = request.args.get("cohort", "").strip().upper()
+        query = AssessmentAttempt.query
+        if student_ids:
+            query = query.filter((AssessmentAttempt.student_id.in_(student_ids)) | (AssessmentAttempt.cohort_code.in_(cohorts)))
+        else:
+            query = query.filter(AssessmentAttempt.cohort_code.in_(cohorts))
+
+        if selected_cohort:
+            query = query.filter_by(cohort_code=selected_cohort)
+
+        attempts = query.order_by(AssessmentAttempt.created_at.desc()).all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "School Name", "Cohort", "Student Name", "Attempt ID", "Date/Time UTC",
+            "Battery / Assignment", "Score %", "Result", "True Hits", "False Alarms", "Missed Faults"
+        ])
+        for a in attempts:
+            writer.writerow([
+                org.name if org else "All Schools",
+                a.cohort_code or "GENERAL",
+                a.student_name or "Anonymous",
+                a.id,
+                a.created_at.strftime("%Y-%m-%d %H:%M:%S") if getattr(a, 'created_at', None) else "",
+                a.assignment_code or "Diagnostic Practice",
+                a.score_percentage,
+                "PASSED" if a.passed else "REVISE",
+                a.true_positives,
+                a.false_positives,
+                a.false_negatives
+            ])
+
+        filename = f"{org.code if org else 'school'}_attempts_{selected_cohort or 'ALL'}.csv"
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+
+    # =========================================================================
+    # SYSTEM ADMIN: Platform & Ingestion Control Workstation (/admin/system)
+    # =========================================================================
+    @app.route("/admin/system")
+    @system_admin_required
+    def system_admin_dashboard():
+        """
+        System Admin Workstation: Top-level platform administration.
+        Manages master photographic specimen library, ground-truth defect annotations,
+        school/organization onboarding, instructor authorization control, and MLOps COCO export.
+        """
+        organizations = Organization.query.order_by(Organization.created_at.desc()).all()
+        users = User.query.order_by(User.created_at.desc()).all()
+
+        total_catalog_walls = Wall.query.filter_by(is_skill_assessment=False).count()
+        total_skill_walls = Wall.query.filter_by(is_skill_assessment=True).count()
+        total_defects = Defect.query.count()
+        total_students = Student.query.count()
+        total_attempts = AssessmentAttempt.query.count()
+
+        recent_specimens = Wall.query.filter_by(is_skill_assessment=True).order_by(Wall.id.desc()).limit(16).all()
+
+        return render_template(
+            "system_admin_dashboard.html",
+            organizations=organizations,
+            users=users,
+            total_catalog_walls=total_catalog_walls,
+            total_skill_walls=total_skill_walls,
+            total_defects=total_defects,
+            total_students=total_students,
+            total_attempts=total_attempts,
+            recent_specimens=recent_specimens
+        )
+
+    @app.route("/admin/system/organizations/create", methods=["POST"])
+    @system_admin_required
+    def system_admin_create_organization():
+        """Onboards a new school or vocational training partner organization."""
+        data = request.get_json(silent=True) if request.is_json else request.form
+        name = (data.get("name") or "").strip()
+        code = (data.get("code") or "").strip().upper()
+        domain = (data.get("domain") or "").strip().lower()
+        contact_email = (data.get("contact_email") or "").strip().lower()
+
+        if not name or not code:
+            if request.is_json:
+                return jsonify({"success": False, "error": "School name and unique code are required"}), 400
+            return redirect(url_for("system_admin_dashboard"))
+
+        existing = Organization.query.filter_by(code=code).first()
+        if existing:
+            if request.is_json:
+                return jsonify({"success": False, "error": f"Organization with code {code} already exists"}), 400
+            return redirect(url_for("system_admin_dashboard"))
+
+        org = Organization(
+            id=str(uuid.uuid4()),
+            name=name,
+            code=code,
+            domain=domain or None,
+            contact_email=contact_email or None,
+            is_active=True
+        )
+        db.session.add(org)
+        commit_with_retry()
+
+        if request.is_json:
+            return jsonify({"success": True, "organization": org.to_dict()})
+        return redirect(url_for("system_admin_dashboard"))
+
+    @app.route("/admin/system/users/approve", methods=["POST"])
+    @system_admin_required
+    def system_admin_approve_user():
+        """Toggles user approval, activation, or updates role permissions."""
+        data = request.get_json(silent=True) if request.is_json else request.form
+        user_id = data.get("user_id")
+        action = data.get("action")  # "toggle_approval", "toggle_active", "set_role"
+        new_role = data.get("role")
+
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        if action == "toggle_approval":
+            user.is_approved = not user.is_approved
+        elif action == "toggle_active":
+            user.is_active = not user.is_active
+        elif action == "set_role" and new_role in ["system_admin", "class_admin", "student"]:
+            user.role = new_role
+
+        commit_with_retry()
+        return jsonify({"success": True, "user": user.to_dict()})
 
     @app.route("/admin/walls/new", methods=["GET", "POST"])
     @admin_required

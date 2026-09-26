@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Admin | Platform &amp; Ingestion Control</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-card: #182234;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-purple: #a78bfa;
+      --accent-green: #34d399;
+      --accent-amber: #fbbf24;
+      --accent-red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #090e1a;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .sys-badge {
+      background: rgba(167, 139, 250, 0.2);
+      border: 1px solid var(--accent-purple);
+      color: var(--accent-purple);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.5rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: 1px solid var(--accent-blue);
+    }
+    .btn-purple {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      border: 1px solid var(--accent-purple);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white;
+      border: 1px solid #10b981;
+    }
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: #cbd5e1;
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover { background: #334155; color: white; }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+      border: 1px solid var(--accent-red);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Command Banner */
+    .command-banner {
+      background: linear-gradient(135deg, #1e1b4b, #0f172a);
+      border: 1.5px solid var(--accent-purple);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .command-banner h1 {
+      margin: 0 0 0.4rem;
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .command-banner p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.88rem;
+      max-width: 650px;
+      line-height: 1.5;
+    }
+
+    /* Action Deck Cards */
+    .action-deck {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .action-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+    .action-card:hover {
+      border-color: var(--accent-purple);
+      transform: translateY(-2px);
+    }
+    .action-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0.5rem;
+    }
+    .action-card-header i {
+      font-size: 1.4rem;
+    }
+    .action-card h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .action-card p {
+      margin: 0 0 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .metric-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent-purple);
+      line-height: 1.2;
+    }
+    .metric-lbl {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 0.35rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Sections */
+    .section-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 2.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      background: rgba(15, 23, 42, 0.7);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .section-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #090e1a;
+      padding: 0.85rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+    }
+    td {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+    tr:hover td {
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-active {
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid #10b981;
+      color: var(--accent-green);
+    }
+    .badge-pending {
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid #f59e0b;
+      color: var(--accent-amber);
+    }
+    .badge-role-sys {
+      background: rgba(167, 139, 250, 0.2);
+      border: 1px solid var(--accent-purple);
+      color: #c4b5fd;
+    }
+    .badge-role-class {
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .modal-header {
+      background: #090e1a;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .modal-header h3 { margin: 0; font-size: 1.2rem; }
+    .modal-body { padding: 1.5rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .form-control {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.65rem 0.9rem;
+      color: white;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+    }
+    .modal-footer {
+      background: #090e1a;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/" class="brand-link">
+        <span>🏛️</span>
+        <span>Global Wall Inspector</span>
+      </a>
+      <span class="sys-badge">
+        <i class="fa-solid fa-shield-halved"></i> System Admin
+      </span>
+    </div>
+
+    <div class="topbar-actions">
+      <a href="/skill-assessment/admin" class="btn btn-success">
+        <i class="fa-solid fa-bullseye"></i> Intake Sentinel
+      </a>
+      <a href="/admin/class" class="btn btn-secondary">
+        <i class="fa-solid fa-school"></i> Class Admin
+      </a>
+      <a href="/dashboard" class="btn btn-secondary">
+        <i class="fa-solid fa-chart-pie"></i> Diagnostic View
+      </a>
+      <a href="/admin/logout" class="btn btn-danger">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Platform Control Header Banner -->
+    <div class="command-banner">
+      <div>
+        <h1><span>🛡️</span> Platform Command &amp; Central Specimen Hub</h1>
+        <p>
+          Master administration of authentic photographic masonry specimens, autonomous Intake Sentinel quality audits, multi-school onboarding, and instructor authorization controls.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <a href="/skill-assessment/admin" class="btn btn-success" style="font-weight: 700; padding: 0.65rem 1.1rem;">
+          <i class="fa-solid fa-camera"></i> Ingest New Specimen
+        </a>
+        <button type="button" onclick="openOrgModal()" class="btn btn-purple" style="font-weight: 700; padding: 0.65rem 1.1rem;">
+          <i class="fa-solid fa-plus-circle"></i> Onboard School
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Action Deck -->
+    <div class="action-deck">
+      <div class="action-card">
+        <div>
+          <div class="action-card-header">
+            <i class="fa-solid fa-camera-retro" style="color: var(--accent-green);"></i>
+            <h3>Intake Sentinel</h3>
+          </div>
+          <p>Audit uploaded wall photos across 4 photogrammetric pillars (lighting, angle, scope, resolution).</p>
+        </div>
+        <a href="/skill-assessment/admin" class="btn btn-secondary" style="border-color: #10b981;">
+          Launch Sentinel &rarr;
+        </a>
+      </div>
+
+      <div class="action-card">
+        <div>
+          <div class="action-card-header">
+            <i class="fa-solid fa-vector-square" style="color: var(--accent-blue);"></i>
+            <h3>Ground-Truth Annotation</h3>
+          </div>
+          <p>Calibrate defect point coordinates, tolerance radii, and remedial actions across master specimens.</p>
+        </div>
+        <a href="/skill-assessment/admin#specimens" class="btn btn-secondary" style="border-color: var(--accent-blue);">
+          Specimen Library &rarr;
+        </a>
+      </div>
+
+      <div class="action-card">
+        <div>
+          <div class="action-card-header">
+            <i class="fa-solid fa-file-export" style="color: var(--accent-purple);"></i>
+            <h3>COCO 1.0 MLOps Export</h3>
+          </div>
+          <p>Export ground-truth defect bounding boxes in standard COCO 1.0 JSON for YOLOv8 and CVAT.</p>
+        </div>
+        <a href="/api/skill-assessment/export-coco" target="_blank" class="btn btn-purple">
+          <i class="fa-solid fa-download"></i> Download Dataset
+        </a>
+      </div>
+
+      <div class="action-card">
+        <div>
+          <div class="action-card-header">
+            <i class="fa-solid fa-heart-pulse" style="color: var(--accent-amber);"></i>
+            <h3>Platform Telemetry</h3>
+          </div>
+          <p>Review database latency, health metrics, and active background services.</p>
+        </div>
+        <a href="/api/health" target="_blank" class="btn btn-secondary">
+          View Health API &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- High-Level Platform Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-val">{{ total_skill_walls }}</div>
+        <div class="metric-lbl">Skill Specimens</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color: var(--accent-blue);">{{ organizations|length }}</div>
+        <div class="metric-lbl">Partner Schools</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color: var(--accent-green);">{{ total_students }}</div>
+        <div class="metric-lbl">Registered Students</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color: var(--accent-amber);">{{ total_defects }}</div>
+        <div class="metric-lbl">Ground-Truth Defect Labels</div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: PARTNER SCHOOLS & ORGANIZATIONS -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-building-columns"></i> Partner Schools &amp; Organizations</h2>
+        <button type="button" onclick="openOrgModal()" class="btn btn-purple" style="padding: 0.4rem 0.75rem; font-size: 0.78rem;">
+          <i class="fa-solid fa-plus"></i> Onboard School
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>School / Organization</th>
+              <th>Code</th>
+              <th>Domain</th>
+              <th>Contact Email</th>
+              <th>Students</th>
+              <th>Batteries</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for org in organizations %}
+              <tr>
+                <td>
+                  <strong>{{ org.name }}</strong>
+                </td>
+                <td>
+                  <span class="badge" style="background: #020617; border: 1px solid var(--accent-purple); color: var(--accent-purple); font-family: monospace;">
+                    {{ org.code }}
+                  </span>
+                </td>
+                <td style="color: var(--text-muted);">{{ org.domain or '—' }}</td>
+                <td style="color: var(--text-muted);">{{ org.contact_email or '—' }}</td>
+                <td><strong>{{ org.students|length }}</strong> students</td>
+                <td>{{ org.assignments|length }} batteries</td>
+                <td>
+                  {% if org.is_active %}
+                    <span class="badge badge-active"><i class="fa-solid fa-check"></i> Active</span>
+                  {% else %}
+                    <span class="badge" style="background: #334155; color: #94a3b8;">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="/admin/class?org_id={{ org.id }}" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;">
+                    <i class="fa-solid fa-door-open"></i> Class View
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 2: USERS & INSTRUCTOR AUTHORIZATION -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-user-shield"></i> User Directory &amp; Assessor Authorization</h2>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ users|length }} registered accounts</span>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>User Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Organization</th>
+              <th>Provider</th>
+              <th>Authorization</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr>
+                <td><strong>{{ u.name }}</strong></td>
+                <td style="color: var(--text-muted); font-family: monospace;">{{ u.email }}</td>
+                <td>
+                  {% if u.role == 'system_admin' %}
+                    <span class="badge badge-role-sys"><i class="fa-solid fa-shield"></i> System Admin</span>
+                  {% elif u.role == 'class_admin' %}
+                    <span class="badge badge-role-class"><i class="fa-solid fa-school"></i> Class Admin</span>
+                  {% else %}
+                    <span class="badge" style="background: #334155; color: #cbd5e1;"><i class="fa-solid fa-user"></i> Student</span>
+                  {% endif %}
+                </td>
+                <td>{{ u.organization.name if u.organization else 'Global Platform' }}</td>
+                <td>
+                  <span style="text-transform: capitalize; color: var(--text-muted); font-size: 0.8rem;">
+                    {{ u.auth_provider }}
+                  </span>
+                </td>
+                <td>
+                  {% if u.is_approved %}
+                    <span class="badge badge-active"><i class="fa-solid fa-check"></i> Approved</span>
+                  {% else %}
+                    <span class="badge badge-pending"><i class="fa-solid fa-hourglass-half"></i> Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" onclick="toggleApproval('{{ u.id }}')" class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.72rem;">
+                      {{ 'Suspend' if u.is_approved else 'Approve' }}
+                    </button>
+                    <select onchange="updateRole('{{ u.id }}', this.value)" style="background: #0f172a; border: 1px solid var(--border-color); color: #cbd5e1; font-size: 0.72rem; padding: 2px 4px; border-radius: 4px;">
+                      <option value="system_admin" {% if u.role == 'system_admin' %}selected{% endif %}>System Admin</option>
+                      <option value="class_admin" {% if u.role == 'class_admin' %}selected{% endif %}>Class Admin</option>
+                      <option value="student" {% if u.role == 'student' %}selected{% endif %}>Student</option>
+                    </select>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 3: RECENT SPECIMEN INGESTION QUEUE -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-images"></i> Master Photographic Specimen Library</h2>
+        <a href="/skill-assessment/admin" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.78rem;">
+          <i class="fa-solid fa-camera"></i> Ingest &amp; Grade Workstation
+        </a>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; padding: 1.25rem;">
+        {% for spec in recent_specimens %}
+          <div style="background: #090e1a; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="height: 120px; background: #020617; position: relative;">
+              {% if spec.image_url_direct %}
+                <img src="{{ spec.image_url_direct }}" alt="{{ spec.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+              {% elif spec.image_filename %}
+                <img src="/static/img/walls/{{ spec.image_filename }}" alt="{{ spec.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+              {% else %}
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.8rem;">
+                  No image asset
+                </div>
+              {% endif %}
+              <span class="badge" style="position: absolute; top: 6px; left: 6px; background: rgba(15, 23, 42, 0.85); color: var(--accent-blue); font-size: 0.7rem;">
+                {{ spec.defects|length }} Ground Truth
+              </span>
+            </div>
+            <div style="padding: 0.85rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+              <strong style="font-size: 0.85rem; color: #f8fafc; line-height: 1.3; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                {{ spec.title }}
+              </strong>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">{{ spec.wall_type }}</span>
+                <a href="/skill-assessment/admin/grade/{{ spec.slug }}" class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.72rem;">
+                  Grade &rarr;
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ONBOARD SCHOOL -->
+  <div id="modal-org" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-plus-circle" style="color: var(--accent-purple);"></i> Onboard Partner School</h3>
+        <button type="button" onclick="closeOrgModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">&times;</button>
+      </div>
+      <form method="POST" action="/admin/system/organizations/create">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>School / Organization Name *</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. TU Dublin School of Architecture" required>
+          </div>
+          <div class="form-group">
+            <label>Unique Code *</label>
+            <input type="text" name="code" class="form-control" placeholder="e.g. TUD-MASONRY" required style="font-family: monospace; text-transform: uppercase;">
+          </div>
+          <div class="form-group">
+            <label>Official Email Domain</label>
+            <input type="text" name="domain" class="form-control" placeholder="e.g. tudublin.ie">
+          </div>
+          <div class="form-group">
+            <label>Lead Administrator Email</label>
+            <input type="email" name="contact_email" class="form-control" placeholder="e.g. headofschool@tudublin.ie">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" onclick="closeOrgModal()" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-purple"><i class="fa-solid fa-check"></i> Onboard School</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openOrgModal() {
+      document.getElementById('modal-org').classList.add('active');
+    }
+    function closeOrgModal() {
+      document.getElementById('modal-org').classList.remove('active');
+    }
+    function toggleApproval(userId) {
+      fetch('/admin/system/users/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, action: 'toggle_approval' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert('Error updating user: ' + (data.error || 'Server error'));
+        }
+      });
+    }
+    function updateRole(userId, newRole) {
+      fetch('/admin/system/users/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, action: 'set_role', role: newRole })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Role updated to ' + newRole);
+          window.location.reload();
+        } else {
+          alert('Error updating role: ' + (data.error || 'Server error'));
+        }
+      });
+    }
+
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal-backdrop')) {
+        event.target.classList.remove('active');
+      }
+    };
+  </script>
+</body>
+</html>

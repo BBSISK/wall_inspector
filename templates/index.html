@@ -601,15 +601,14 @@
         <a href="/portal" class="nav-link btn-nav-student">
           <i class="fa-solid fa-graduation-cap"></i> Student Portal
         </a>
+        <a href="/admin/class" class="nav-link btn-nav-admin" style="border-color: #38bdf8; color: #7dd3fc !important;">
+          <i class="fa-solid fa-school"></i> Class Admin
+        </a>
+        <a href="/admin/system" class="nav-link btn-nav-admin" style="border-color: #8b5cf6; color: #d8b4fe !important;">
+          <i class="fa-solid fa-shield-halved"></i> System Admin
+        </a>
         {% if is_admin %}
-          <a href="/skill-assessment/admin" class="nav-link btn-nav-admin" style="border-color: #8b5cf6; color: #d8b4fe !important;">
-            <i class="fa-solid fa-shield-halved"></i> Assessor Studio
-          </a>
           <a href="/admin/logout" class="nav-link" style="color: #f87171;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
-        {% else %}
-          <a href="/skill-assessment/admin" class="nav-link btn-nav-admin">
-            <i class="fa-solid fa-key"></i> Assessor Studio
-          </a>
         {% endif %}
       </div>
     </div>
@@ -662,17 +661,22 @@
             <h3 class="door-title">Assessor &amp; Admin Studio</h3>
           </div>
           <p class="door-desc">
-            Curate examination batteries, audit field photography quality with the Intake Sentinel, and review class cohort analytics.
+            Dual-tiered administrative control: manage local classroom cohorts and batteries, or govern global photographic specimen ingestion and ground-truth grading.
           </p>
           <ul class="door-features">
-            <li><i class="fa-solid fa-check"></i> <strong>Autonomous Intake Sentinel</strong> auditing 4 photogrammetry pillars</li>
-            <li><i class="fa-solid fa-check"></i> <strong>Curriculum Director Agent</strong> analyzing class defect blind spots</li>
-            <li><i class="fa-solid fa-check"></i> <strong>Phone Camera QR Pairing</strong> for direct field photo uploads</li>
-            <li><i class="fa-solid fa-check"></i> <strong>MLOps COCO 1.0 Dataset Export</strong> for CVAT &amp; YOLOv8 training</li>
+            <li><i class="fa-solid fa-school" style="color: #38bdf8;"></i> <strong>Class Admin:</strong> Cohort rosters, student 4-digit PINs, and custom test battery provisioning</li>
+            <li><i class="fa-solid fa-shield-halved" style="color: #a78bfa;"></i> <strong>System Admin:</strong> Photographic Intake Sentinel audits, ground-truth grading, and school onboarding</li>
+            <li><i class="fa-solid fa-qrcode" style="color: #34d399;"></i> <strong>Mobile QR Field Pairing:</strong> Direct camera capture from field sites into live database</li>
+            <li><i class="fa-solid fa-download" style="color: #fbbf24;"></i> <strong>MLOps COCO 1.0 Export:</strong> Instant JSON dataset download for CVAT &amp; YOLOv8 training</li>
           </ul>
-          <a href="/skill-assessment/admin" class="btn-door btn-door-admin">
-            <i class="fa-solid fa-key"></i> Enter Assessor Studio &rarr;
-          </a>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: auto;">
+            <a href="/admin/class" class="btn-door btn-door-student" style="flex: 1; min-width: 170px; padding: 0.8rem 1rem; font-size: 0.88rem;">
+              <i class="fa-solid fa-school"></i> Class Admin &rarr;
+            </a>
+            <a href="/admin/system" class="btn-door btn-door-admin" style="flex: 1; min-width: 170px; padding: 0.8rem 1rem; font-size: 0.88rem;">
+              <i class="fa-solid fa-shield-halved"></i> System Admin &rarr;
+            </a>
+          </div>
         </div>
 
       </div>
