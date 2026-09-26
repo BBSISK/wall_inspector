@@ -600,6 +600,10 @@
                     <span class="badge" style="background: rgba(0, 164, 239, 0.15); border: 1px solid rgba(0, 164, 239, 0.4); color: #38bdf8; font-size: 0.72rem;">
                       <i class="fa-brands fa-microsoft"></i> Microsoft
                     </span>
+                  {% elif u.auth_provider == 'pending_login' %}
+                    <span class="badge" style="background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.4); color: #c4b5fd; font-size: 0.72rem;">
+                      <i class="fa-solid fa-key"></i> Whitelisted (Pre-Authorized)
+                    </span>
                   {% else %}
                     <span class="badge" style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #cbd5e1; font-size: 0.72rem;">
                       <i class="fa-solid fa-envelope"></i> Email OTP

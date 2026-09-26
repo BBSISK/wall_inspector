@@ -3184,11 +3184,13 @@ def create_app(config_class=Config):
             db.session.commit()
         else:
             user.auth_provider = provider
+            if name and (not user.name or user.name == user.email.split("@")[0].replace(".", " ").title() or user.name == user.email.split("@")[0].capitalize()):
+                user.name = name
             if oauth_id:
                 user.oauth_id = oauth_id
             if avatar_url:
                 user.avatar_url = avatar_url
-            if is_system_superuser and user.role != "system_admin":
+            if is_system_superuser:
                 user.role = "system_admin"
                 user.is_approved = True
             user.last_login_at = datetime.now(timezone.utc)
@@ -4375,13 +4377,40 @@ def create_app(config_class=Config):
     @app.route("/admin/system")
     @system_admin_required
     def system_admin_dashboard():
-        """
-        System Admin Workstation: Top-level platform administration.
-        Manages master photographic specimen library, ground-truth defect annotations,
-        school/organization onboarding, instructor authorization control, and MLOps COCO export.
-        """
+        """System Admin Workstation: Top-level platform administration."""
+        # Auto-sync and pre-provision any whitelisted SYSTEM_ADMIN_EMAILS in the directory
+        system_admin_emails = app.config.get("SYSTEM_ADMIN_EMAILS", [])
+        synced_new = False
+        default_org = Organization.query.filter_by(code="GWI-GENERAL").first()
+        for sa_email in system_admin_emails:
+            sa_email = sa_email.strip().lower()
+            if not sa_email:
+                continue
+            existing = User.query.filter_by(email=sa_email).first()
+            if not existing:
+                name_guess = sa_email.split("@")[0].replace(".", " ").title()
+                new_sa = User(
+                    id=str(uuid.uuid4()),
+                    email=sa_email,
+                    name=name_guess,
+                    role="system_admin",
+                    organization_id=default_org.id if default_org else None,
+                    is_approved=True,
+                    is_active=True,
+                    auth_provider="pending_login"
+                )
+                db.session.add(new_sa)
+                synced_new = True
+            elif not existing.is_approved or existing.role != "system_admin":
+                existing.is_approved = True
+                existing.role = "system_admin"
+                synced_new = True
+
+        if synced_new:
+            commit_with_retry()
+
         organizations = Organization.query.order_by(Organization.created_at.desc()).all()
-        users = User.query.order_by(User.created_at.desc()).all()
+        users = User.query.order_by(User.id.asc()).all()
 
         total_catalog_walls = Wall.query.filter_by(is_skill_assessment=False).count()
         total_skill_walls = Wall.query.filter_by(is_skill_assessment=True).count()
