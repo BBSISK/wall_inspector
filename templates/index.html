@@ -3,252 +3,845 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Global Wall Inspector</title>
+  <title>Global Wall Inspector — Clinical Masonry Diagnostics & Skills Certification</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2rem; background: #0f172a; color: #f8fafc; }
-    .header { max-width: 1150px; margin: 0 auto 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; }
-    .header h1 { margin: 0 0 0.5rem; font-size: 2rem; }
-    .header p { margin: 0; color: #94a3b8; }
-    .nav-actions { display: flex; gap: 0.75rem; }
-    .btn-action { padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
-    .btn-dash { background: #334155; color: #93c5fd; }
-    .btn-dash:hover { background: #475569; }
-    .btn-upload { background: #2563eb; color: white; }
-    .btn-upload:hover { background: #1d4ed8; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #090e1a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    .top-nav {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid #1e293b;
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.85rem 1.5rem;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #f8fafc;
+    }
+    .brand-icon {
+      font-size: 1.6rem;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin: 0;
+    }
+    .brand-badge {
+      font-size: 0.65rem;
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid #0284c7;
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-link:hover {
+      color: #f8fafc;
+      background: #1e293b;
+    }
+    .btn-nav-student {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white !important;
+      border: 1px solid #38bdf8;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+    .btn-nav-student:hover {
+      background: #0284c7;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+    }
+    .btn-nav-admin {
+      background: #1e293b;
+      color: #cbd5e1 !important;
+      border: 1px solid #334155;
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .btn-nav-admin:hover {
+      background: #334155;
+      color: white !important;
+    }
+
+    /* Main Container */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+      width: 100%;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      padding: 1rem 0;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1.25rem;
+    }
+    .hero-title {
+      font-size: 2.85rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin: 0 0 1rem;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: #94a3b8;
+      max-width: 760px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
+
+    /* The Two Front Doors (Hero Portal Cards) */
+    .portal-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.75rem;
+      margin-bottom: 4rem;
+    }
+    .door-card {
+      background: #0f172a;
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .door-card:hover {
+      transform: translateY(-5px);
+    }
+
+    /* Student Door */
+    .door-student {
+      border: 2px solid #0284c7;
+      background: linear-gradient(180deg, rgba(2, 132, 199, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);
+    }
+    .door-student:hover {
+      box-shadow: 0 15px 40px rgba(2, 132, 199, 0.3);
+      border-color: #38bdf8;
+    }
+
+    /* Admin Door */
+    .door-admin {
+      border: 2px solid #8b5cf6;
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);
+    }
+    .door-admin:hover {
+      box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3);
+      border-color: #a78bfa;
+    }
+
+    .door-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+      align-self: flex-start;
+    }
+    .door-student .door-badge {
+      background: rgba(2, 132, 199, 0.2);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+    }
+    .door-admin .door-badge {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c4b5fd;
+      border: 1px solid #8b5cf6;
+    }
+
+    .door-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0.75rem;
+    }
+    .door-icon {
+      font-size: 2rem;
+    }
+    .door-title {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .door-desc {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin: 0 0 1.5rem;
+    }
+
+    .door-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex: 1;
+    }
+    .door-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+    .door-features li i {
+      margin-top: 3px;
+    }
+    .door-student .door-features li i { color: #38bdf8; }
+    .door-admin .door-features li i { color: #a78bfa; }
+
+    .btn-door {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0.9rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-door-student {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: 1px solid #38bdf8;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+    }
+    .btn-door-student:hover {
+      background: #0284c7;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+      color: white;
+    }
+    .btn-door-admin {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      color: white;
+      border: 1px solid #8b5cf6;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+    .btn-door-admin:hover {
+      background: #7c3aed;
+      box-shadow: 0 0 25px rgba(167, 139, 250, 0.6);
+      color: white;
+    }
+
+    /* Study Tools Quick Bar */
+    .study-bar {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .study-bar-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .study-bar-items {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .study-chip {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .study-chip:hover {
+      background: #243248;
+      color: #f8fafc;
+      border-color: #38bdf8;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 1rem;
+    }
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin: 0 0 0.35rem;
+      color: #f8fafc;
+    }
+    .section-desc {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin: 0;
+    }
 
     /* Filter Bar */
-    .filter-bar { max-width: 1150px; margin: 0 auto 2rem; background: #1e293b; padding: 1rem 1.25rem; border-radius: 8px; border: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-    .filter-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 180px; }
-    .filter-group label { font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
-    .filter-group select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; }
-    .btn-reset { background: #334155; color: #f8fafc; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; height: fit-content; }
-    .btn-reset:hover { background: #475569; }
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .filter-pill {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 0.45rem 1rem;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .filter-pill:hover {
+      color: #f8fafc;
+      border-color: #64748b;
+    }
+    .filter-pill.active {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
 
-    .grid { max-width: 1150px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
-    .card { background: #1e293b; border-radius: 8px; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
-    .card-img { width: 100%; height: 200px; object-fit: cover; background: #0b1329; }
-    .card-body { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #334155; color: #cbd5e1; margin-right: 0.4rem; margin-bottom: 0.5rem; text-transform: capitalize; }
-    .badge-diff { background: #065f46; color: #6ee7b7; }
-    .card-title { margin: 0.25rem 0 0.5rem; font-size: 1.15rem; }
-    .card-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; margin-bottom: 1.25rem; }
-    .btn-group { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .btn { text-align: center; padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
-    .btn-primary { background: #059669; color: #fff; }
-    .btn-primary:hover { background: #047857; }
-    .btn-secondary { background: #334155; color: #93c5fd; }
-    .btn-secondary:hover { background: #475569; }
-    .admin-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .btn-edit { background: #1e3a8a; color: #93c5fd; }
-    .btn-edit:hover { background: #1d4ed8; color: white; }
-    .btn-delete { background: #7f1d1d; color: #fca5a5; }
-    .btn-delete:hover { background: #991b1b; }
+    /* Specimen Cards Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+    .card {
+      background: #0f172a;
+      border-radius: 12px;
+      border: 1px solid #1e293b;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #38bdf8;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    .card-img-wrap {
+      position: relative;
+      width: 100%;
+      height: 190px;
+      background: #020617;
+      overflow: hidden;
+    }
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .card:hover .card-img {
+      transform: scale(1.05);
+    }
+    .badge-chip {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(6px);
+      background: rgba(15, 23, 42, 0.85);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .diff-chip {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      backdrop-filter: blur(6px);
+    }
+    .diff-beginner { background: rgba(34, 197, 94, 0.85); color: #022c22; }
+    .diff-intermediate { background: rgba(245, 158, 11, 0.85); color: #451a03; }
+    .diff-advanced { background: rgba(239, 68, 68, 0.85); color: #450a0a; }
+
+    .card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .card-title {
+      margin: 0 0 0.4rem;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #f8fafc;
+      line-height: 1.35;
+    }
+    .card-desc {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+    .btn-group {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .btn-card {
+      text-align: center;
+      padding: 0.55rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-card-primary {
+      background: #0284c7;
+      color: white;
+      border: 1px solid #38bdf8;
+    }
+    .btn-card-primary:hover {
+      background: #0369a1;
+      color: white;
+    }
+    .btn-card-secondary {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+    .btn-card-secondary:hover {
+      background: #243248;
+      color: #f8fafc;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid #1e293b;
+      background: #090e1a;
+      padding: 2.5rem 1.5rem;
+      margin-top: auto;
+    }
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .footer-left p {
+      margin: 0.25rem 0 0;
+      color: #64748b;
+      font-size: 0.82rem;
+    }
+    .footer-chips {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .badge-tech {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <h1>Global Wall Inspector</h1>
-      <p>Structural defect identification, diagnostics, and masonry assessment platform.</p>
-    </div>
-      <a href="/portal" class="btn-action" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; font-weight: 800; font-size: 0.92rem; border: 1px solid #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.45); padding: 0.5rem 1rem;">
-        🎓 Student Portal &amp; Assessment
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <span class="brand-icon">🏛️</span>
+        <div>
+          <h1 class="brand-title">Global Wall Inspector</h1>
+        </div>
+        <span class="brand-badge">Clinical Diagnostics</span>
       </a>
-      <a href="/field-guide" class="btn-action" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155;">📄 Field Guide</a>
-      <a href="/cards" class="btn-action" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155;">📇 Flashcards</a>
-      <a href="/quiz" class="btn-action" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155;">⚡ Reflex Quiz</a>
-      <a href="/map" class="btn-action" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155;">🗺️ Map Atlas</a>
-      <button type="button" class="btn-action" onclick="openMobileAppsModal()" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; cursor: pointer;">📲 Mobile (QR)</button>
 
-      {% if is_admin %}
-        <div style="display: flex; gap: 0.5rem; align-items: center; background: rgba(30, 58, 138, 0.35); border: 1px solid #3b82f6; border-radius: 6px; padding: 2px 6px;">
-          <span style="font-size: 0.72rem; color: #93c5fd; font-weight: 800; padding: 0 4px;">👨‍🏫 INSTRUCTOR:</span>
-          <a href="/skill-assessment/admin" class="btn-action" style="background: #047857; color: #a7f3d0; border: 1px solid #10b981; padding: 0.4rem 0.75rem; font-size: 0.8rem;">🎯 Grade Skills</a>
-          <button type="button" onclick="openAdminQrModal()" class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: 1px solid #38bdf8; font-weight: 700; padding: 0.4rem 0.75rem; font-size: 0.8rem; cursor: pointer;">📸 Field QR</button>
-          <a href="/admin/cohorts" class="btn-action" style="background: #6366f1; color: white; padding: 0.4rem 0.75rem; font-size: 0.8rem;">👥 Cohorts</a>
-          <a href="/dashboard" class="btn-action btn-dash" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Dashboard</a>
-          <a href="/admin/assignments" class="btn-action" style="background: #475569; color: #f8fafc; padding: 0.4rem 0.75rem; font-size: 0.8rem;">Assignments</a>
-          <a href="/admin/walls/new" class="btn-action btn-upload" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">+ Add Wall</a>
-          <a href="/admin/logout" class="btn-action" style="background: #7f1d1d; color: #fca5a5; padding: 0.4rem 0.75rem; font-size: 0.8rem;">Logout</a>
-        </div>
-      {% else %}
-        <a href="/admin/login" class="btn-action" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155;">🔐 Instructor Login</a>
-      {% endif %}
+      <div class="nav-links">
+        <a href="/portal" class="nav-link btn-nav-student">
+          <i class="fa-solid fa-graduation-cap"></i> Student Portal
+        </a>
+        {% if is_admin %}
+          <a href="/skill-assessment/admin" class="nav-link btn-nav-admin" style="border-color: #8b5cf6; color: #d8b4fe !important;">
+            <i class="fa-solid fa-shield-halved"></i> Assessor Studio
+          </a>
+          <a href="/admin/logout" class="nav-link" style="color: #f87171;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+        {% else %}
+          <a href="/skill-assessment/admin" class="nav-link btn-nav-admin">
+            <i class="fa-solid fa-key"></i> Assessor Studio
+          </a>
+        {% endif %}
+      </div>
     </div>
-  </div>
+  </nav>
 
-  <form method="GET" action="/" class="filter-bar">
-    <div class="filter-group">
-      <label>Wall Archetype</label>
-      <select name="wall_type" onchange="this.form.submit()">
-        <option value="">All Archetypes</option>
+  <!-- Main View -->
+  <main class="main-content">
+
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+      <span class="hero-pill">
+        <i class="fa-solid fa-circle-check"></i> Standardized Masonry Competency Framework
+      </span>
+      <h2 class="hero-title">
+        Clinical Masonry Diagnostics &amp; Skills Certification
+      </h2>
+      <p class="hero-subtitle">
+        Interactive photogrammetric defect detection, autonomous quality sentinels, and adaptive examination batteries designed for civil engineering and historic conservation training.
+      </p>
+
+      <!-- THE TWO FRONT DOORS (KISS) -->
+      <div class="portal-cards-grid">
+
+        <!-- DOOR 1: STUDENT & CANDIDATE PORTAL -->
+        <div class="door-card door-student">
+          <span class="door-badge"><i class="fa-solid fa-user-graduate"></i> Candidates &amp; Students</span>
+          <div class="door-header">
+            <span class="door-icon">🎓</span>
+            <h3 class="door-title">Student Portal &amp; Exams</h3>
+          </div>
+          <p class="door-desc">
+            Complete assigned examination batteries, practice individual masonry defect specimens, and earn certified competency tiers.
+          </p>
+          <ul class="door-features">
+            <li><i class="fa-solid fa-check"></i> <strong>10-Question Balanced Battery</strong> with side-by-side anti-collusion shuffle</li>
+            <li><i class="fa-solid fa-check"></i> <strong>Interactive Dry-Run Tutorial</strong> with zero scoring penalties</li>
+            <li><i class="fa-solid fa-check"></i> <strong>32 Open Practice Specimens</strong> across 4 authentic wall archetypes</li>
+            <li><i class="fa-solid fa-check"></i> <strong>Skills Passport &amp; CPD Radar</strong> tracking personal precision</li>
+          </ul>
+          <a href="/portal" class="btn-door btn-door-student">
+            <i class="fa-solid fa-play"></i> Enter Student Portal &rarr;
+          </a>
+        </div>
+
+        <!-- DOOR 2: ASSESSOR & INSTRUCTOR STUDIO -->
+        <div class="door-card door-admin">
+          <span class="door-badge"><i class="fa-solid fa-shield-halved"></i> Instructors &amp; Assessors</span>
+          <div class="door-header">
+            <span class="door-icon">🛡️</span>
+            <h3 class="door-title">Assessor &amp; Admin Studio</h3>
+          </div>
+          <p class="door-desc">
+            Curate examination batteries, audit field photography quality with the Intake Sentinel, and review class cohort analytics.
+          </p>
+          <ul class="door-features">
+            <li><i class="fa-solid fa-check"></i> <strong>Autonomous Intake Sentinel</strong> auditing 4 photogrammetry pillars</li>
+            <li><i class="fa-solid fa-check"></i> <strong>Curriculum Director Agent</strong> analyzing class defect blind spots</li>
+            <li><i class="fa-solid fa-check"></i> <strong>Phone Camera QR Pairing</strong> for direct field photo uploads</li>
+            <li><i class="fa-solid fa-check"></i> <strong>MLOps COCO 1.0 Dataset Export</strong> for CVAT &amp; YOLOv8 training</li>
+          </ul>
+          <a href="/skill-assessment/admin" class="btn-door btn-door-admin">
+            <i class="fa-solid fa-key"></i> Enter Assessor Studio &rarr;
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- STUDY TOOLS QUICK BAR -->
+    <div class="study-bar">
+      <div class="study-bar-label">
+        <i class="fa-solid fa-book-open" style="color: #38bdf8;"></i> Companion Learning Studios:
+      </div>
+      <div class="study-bar-items">
+        <a href="/field-guide" class="study-chip"><i class="fa-solid fa-file-lines" style="color: #38bdf8;"></i> Field Guide</a>
+        <a href="/cards" class="study-chip"><i class="fa-solid fa-clone" style="color: #a78bfa;"></i> Flashcards</a>
+        <a href="/quiz" class="study-chip"><i class="fa-solid fa-bolt" style="color: #facc15;"></i> Reflex Quiz</a>
+        <a href="/map" class="study-chip"><i class="fa-solid fa-map-location-dot" style="color: #34d399;"></i> Map Atlas</a>
+        <button type="button" onclick="openMobileAppsModal()" class="study-chip" style="cursor: pointer; background: #0f172a; border-color: #0284c7; color: #38bdf8;">
+          <i class="fa-solid fa-mobile-screen"></i> Mobile QR
+        </button>
+      </div>
+    </div>
+
+    <!-- SPECIMEN EXPLORER SECTION -->
+    <section>
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">Masonry Specimen Archive &amp; Pathology Catalog</h3>
+          <p class="section-desc">Browse real-world historical masonry walls across Europe with verified defects and conservation reports.</p>
+        </div>
+      </div>
+
+      <!-- Archetype Filter Pills -->
+      <div class="filter-bar">
+        <a href="/" class="filter-pill {% if not selected_type %}active{% endif %}">All Types</a>
         {% for t in wall_types %}
-          <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t.replace('_', ' ').title() }}</option>
+          <a href="/?wall_type={{ t }}" class="filter-pill {% if selected_type == t %}active{% endif %}">
+            {{ t.replace('_', ' ').title() }}
+          </a>
         {% endfor %}
-      </select>
-    </div>
+      </div>
 
-    <div class="filter-group">
-      <label>Difficulty Tier</label>
-      <select name="difficulty" onchange="this.form.submit()">
-        <option value="">All Difficulties</option>
-        {% for d in difficulties %}
-          <option value="{{ d }}" {% if selected_difficulty == d %}selected{% endif %}>{{ d.title() }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Country / Location</label>
-      <select name="country" onchange="this.form.submit()">
-        <option value="">All Locations</option>
-        {% for loc in locations %}
-          <option value="{{ loc }}" {% if selected_location == loc %}selected{% endif %}>{{ loc }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    {% if selected_type or selected_difficulty or selected_location %}
-      <a href="/" class="btn-reset">Reset Filters</a>
-    {% endif %}
-  </form>
-
-  <div class="grid">
-    {% for wall in walls %}
-      <div class="card">
-        <img class="card-img" src="{{ wall.image_url }}" alt="{{ wall.title }}" onerror="this.src='https://placehold.co/600x400/1e293b/94a3b8?text=Image+Pending'">
-        <div class="card-body">
-          <div>
-            <span class="badge badge-diff">{{ wall.difficulty }}</span>
-            <span class="badge">{{ wall.wall_type.replace('_', ' ') }}</span>
-            <span class="badge">{{ wall.country }}</span>
-          </div>
-          <h3 class="card-title">{{ wall.title }}</h3>
-          <p class="card-desc">{{ wall.description or 'No notes provided.' }}</p>
-          <div class="btn-group">
-            <a href="/inspect/{{ wall.slug }}" class="btn btn-primary">Start Inspection</a>
-            <a href="/wall/{{ wall.slug }}/restoration" class="btn" style="background: #0d9488; color: white;">✨ Restoration</a>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
-            <a href="/survey/report/{{ wall.slug }}" target="_blank" class="btn" style="background: #0284c7; color: white; padding: 0.45rem; font-size: 0.78rem;">📄 RICS Report</a>
-            <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="btn" style="background: #334155; color: #93c5fd; padding: 0.45rem; font-size: 0.78rem;">⚖️ Compare</a>
-          </div>
-          {% if is_admin %}
-            <div class="admin-controls" style="grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; margin-top: 0.4rem;">
-              <a href="/admin/walls/{{ wall.id }}/tagger" class="btn btn-secondary">Tagger</a>
-              <a href="/admin/walls/{{ wall.id }}/edit" class="btn btn-edit">Edit</a>
-              <form action="/admin/walls/{{ wall.id }}/delete" method="POST" onsubmit="return confirm('Permanently delete this wall?');" style="margin: 0;">
-                <button type="submit" class="btn btn-delete" style="width: 100%;">Delete</button>
-              </form>
+      <!-- Wall Grid -->
+      <div class="grid">
+        {% for wall in walls %}
+          <div class="card">
+            <div class="card-img-wrap">
+              <img class="card-img" src="{{ wall.image_url }}" alt="{{ wall.title }}" loading="lazy" onerror="this.src='https://placehold.co/600x400/1e293b/94a3b8?text=Image+Pending'">
+              <span class="badge-chip">{{ wall.wall_type.replace('_', ' ') }}</span>
+              <span class="diff-chip diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span>
             </div>
-          {% endif %}
-        </div>
+            <div class="card-body">
+              <h4 class="card-title">{{ wall.title }}</h4>
+              <p class="card-desc">{{ wall.description or 'Authentic structural masonry specimen with verified defect pathology.' }}</p>
+              
+              <div class="card-meta">
+                <span><i class="fa-solid fa-location-dot" style="color: #38bdf8;"></i> {{ wall.country }}</span>
+                <span><i class="fa-solid fa-layer-group" style="color: #10b981;"></i> {{ wall.structural_function|title }}</span>
+              </div>
+
+              <div class="btn-group">
+                <a href="/inspect/{{ wall.slug }}" class="btn-card btn-card-primary">
+                  <i class="fa-solid fa-crosshairs"></i> Inspect Wall
+                </a>
+                <a href="/survey/report/{{ wall.slug }}" target="_blank" class="btn-card btn-card-secondary">
+                  <i class="fa-solid fa-file-lines"></i> RICS Report
+                </a>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: #94a3b8; background: #0f172a; border-radius: 12px; border: 1px dashed #334155;">
+            <i class="fa-solid fa-filter" style="font-size: 2rem; margin-bottom: 0.75rem; color: #64748b;"></i>
+            <h4 style="margin: 0 0 0.5rem; color: #f8fafc;">No masonry walls match your current filter criteria.</h4>
+            <a href="/" style="color: #38bdf8; text-decoration: none; font-weight: 700;">Clear all filters &rarr;</a>
+          </div>
+        {% endfor %}
       </div>
-    {% else %}
-      <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: #94a3b8;">
-        <h3>No masonry walls match your current filter criteria.</h3>
-        <a href="/" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Clear filters to view all walls &rarr;</a>
-      </div>
-    {% endfor %}
-  </div>
+    </section>
+
+  </main>
 
   <!-- Mobile Apps QR Launcher Modal -->
-  <div id="mobile-apps-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
-    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 14px; width: 100%; max-width: 540px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 1.25rem;">
+  <div id="mobile-apps-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 14px; width: 100%; max-width: 520px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 1.25rem;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #334155; padding-bottom: 1rem;">
         <div>
-          <h2 style="margin: 0; font-size: 1.4rem; color: #f8fafc; display: flex; align-items: center; gap: 0.5rem;">
-            📲 Pull Mobile Apps to Phone
-          </h2>
-          <p style="margin: 0.3rem 0 0; color: #94a3b8; font-size: 0.85rem;">
-            Scan with your smartphone camera to launch directly in your mobile browser. Zero app store downloads required.
+          <h3 style="margin: 0; font-size: 1.35rem; color: #f8fafc; display: flex; align-items: center; gap: 0.5rem;">
+            📱 Connect Mobile Device via QR
+          </h3>
+          <p style="margin: 0.3rem 0 0; color: #94a3b8; font-size: 0.82rem;">
+            Scan with your phone camera to launch directly in your mobile browser.
           </p>
         </div>
         <button onclick="closeMobileAppsModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.6rem; cursor: pointer; padding: 0 0.25rem;">&times;</button>
       </div>
 
-      <!-- App Tabs -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-        <button type="button" id="tab-app-student" onclick="switchMobileModalTab('student')" style="background: #059669; color: white; border: 1px solid #10b981; padding: 0.65rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
-          🎓 Student Field Portfolio
+        <button type="button" id="tab-app-student" onclick="switchMobileModalTab('student')" style="background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 0.65rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+          🎓 Student Portfolio
         </button>
         <button type="button" id="tab-app-admin" onclick="switchMobileModalTab('admin')" style="background: #0f172a; color: #94a3b8; border: 1px solid #334155; padding: 0.65rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
-          {% if is_admin %}📸 Admin Field Capture{% else %}🔒 Admin Capture (Instructor){% endif %}
+          📸 Admin Field Capture
         </button>
       </div>
 
-      <!-- Student Panel (Default for Students) -->
+      <!-- Student Panel -->
       <div id="panel-app-student" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem; background: #0f172a; padding: 1.5rem; border-radius: 10px; border: 1px solid #334155;">
         <div style="background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
-          <img id="qr-student-img" src="" alt="Student Portfolio QR" style="width: 190px; height: 190px; display: block;">
+          <img id="qr-student-img" src="" alt="Student Portfolio QR" style="width: 180px; height: 180px; display: block;">
         </div>
         <div>
-          <strong style="color: #34d399; font-size: 1.05rem; display: block;">Practical Stonework Portfolio & Self-Critique</strong>
-          <p style="margin: 0.35rem 0 0; font-size: 0.82rem; color: #cbd5e1; max-width: 380px; line-height: 1.4;">
-            Photograph your practical coursework mockups, grade joint flushness and alignment on the 4-star rubric, write self-reflections, and upload to your personal student cloud folder.
+          <strong style="color: #38bdf8; font-size: 1rem; display: block;">Student Practical Portfolio</strong>
+          <p style="margin: 0.35rem 0 0; font-size: 0.8rem; color: #cbd5e1; max-width: 380px; line-height: 1.4;">
+            Photograph practical coursework mockups, evaluate joint flushness, and sync reflections with your cloud profile.
           </p>
         </div>
         <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
-          <a id="link-student-open" href="/mobile/student" target="_blank" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; text-decoration: none; background: #059669;">Launch in Browser &rarr;</a>
-          <button type="button" onclick="copyAppUrl('student')" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">📋 Copy Link</button>
+          <a id="link-student-open" href="/mobile/student" target="_blank" class="btn-door btn-door-student" style="padding: 0.45rem 1rem; font-size: 0.82rem;">Launch &rarr;</a>
+          <button type="button" onclick="copyAppUrl('student')" class="btn-card btn-card-secondary" style="padding: 0.45rem 1rem; font-size: 0.82rem; cursor: pointer;">📋 Copy Link</button>
         </div>
       </div>
 
       <!-- Admin Panel -->
       <div id="panel-app-admin" style="display: none; flex-direction: column; align-items: center; text-align: center; gap: 1rem; background: #0f172a; padding: 1.5rem; border-radius: 10px; border: 1px solid #334155;">
-        {% if is_admin %}
-          <div style="background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
-            <img id="qr-admin-img" src="" alt="Admin Capture QR" style="width: 190px; height: 190px; display: block;">
-          </div>
-          <div>
-            <strong style="color: #38bdf8; font-size: 1.05rem; display: block;">On-Site Wall Capture & Publishing</strong>
-            <p style="margin: 0.35rem 0 0; font-size: 0.82rem; color: #cbd5e1; max-width: 380px; line-height: 1.4;">
-              Capture masonry subjects directly with your phone's rear camera, auto-populate GPS coordinates, classify into the 11-archetype taxonomy, and publish to the live catalog.
-            </p>
-          </div>
-          <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
-            <a id="link-admin-open" href="/mobile/admin" target="_blank" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; text-decoration: none;">Launch in Browser &rarr;</a>
-            <button type="button" onclick="copyAppUrl('admin')" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">📋 Copy Link</button>
-          </div>
-        {% else %}
-          <div style="padding: 2rem 1rem; color: #94a3b8; max-width: 380px;">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔒</div>
-            <strong style="color: #f8fafc; font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Instructor Access Required</strong>
-            <p style="font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.25rem;">
-              The Wall Capture Field App publishes directly to the live catalog and requires instructor authentication.
-            </p>
-            <a href="/admin/login?next=/?open_qr=admin" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; text-decoration: none; background: #0284c7;">🔐 Authenticate as Instructor &rarr;</a>
-          </div>
-        {% endif %}
+        <div style="background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+          <img id="qr-admin-img" src="" alt="Admin Capture QR" style="width: 180px; height: 180px; display: block;">
+        </div>
+        <div>
+          <strong style="color: #a78bfa; font-size: 1rem; display: block;">On-Site Wall Capture &amp; Ingestion</strong>
+          <p style="margin: 0.35rem 0 0; font-size: 0.8rem; color: #cbd5e1; max-width: 380px; line-height: 1.4;">
+            Capture masonry subjects with your phone camera, run the Intake Sentinel photogrammetry audit, and stream to Cloudinary.
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+          <a id="link-admin-open" href="/mobile/admin" target="_blank" class="btn-door btn-door-admin" style="padding: 0.45rem 1rem; font-size: 0.82rem;">Launch &rarr;</a>
+          <button type="button" onclick="copyAppUrl('admin')" class="btn-card btn-card-secondary" style="padding: 0.45rem 1rem; font-size: 0.82rem; cursor: pointer;">📋 Copy Link</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <script>
-    function openAdminQrModal() {
-      openMobileAppsModal('admin');
-    }
+  <!-- Modern Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <strong style="color: #f8fafc; font-size: 0.95rem;">🏛️ Global Wall Inspector</strong>
+        <p>Enterprise Heritage Conservation &amp; Masonry Defect Diagnostic Platform</p>
+      </div>
+      <div class="footer-chips">
+        <span class="badge-tech"><i class="fa-brands fa-docker"></i> Docker</span>
+        <span class="badge-tech"><i class="fa-solid fa-database"></i> PostgreSQL 15</span>
+        <span class="badge-tech"><i class="fa-solid fa-cloud"></i> Cloudinary CDN</span>
+        <span class="badge-tech"><i class="fa-solid fa-cube"></i> Terraform IaC</span>
+        <span class="badge-tech"><i class="fa-solid fa-network-wired"></i> MCP Protocol</span>
+      </div>
+    </div>
+  </footer>
 
+  <script>
     function openMobileAppsModal(defaultTab) {
       const origin = window.location.origin;
       const studentUrl = `${origin}/mobile/student`;
       document.getElementById("qr-student-img").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(studentUrl)}`;
       document.getElementById("link-student-open").href = studentUrl;
 
-      const qrAdminImg = document.getElementById("qr-admin-img");
-      if (qrAdminImg) {
-        const token = "{{ mobile_admin_token or '' }}";
-        const adminUrl = token
-          ? `${origin}/mobile/admin?token=${encodeURIComponent(token)}`
-          : `${origin}/mobile/admin`;
-        qrAdminImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(adminUrl)}`;
-        document.getElementById("link-admin-open").href = adminUrl;
-      }
+      const adminUrl = `${origin}/mobile/admin`;
+      document.getElementById("qr-admin-img").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(adminUrl)}`;
+      document.getElementById("link-admin-open").href = adminUrl;
 
-      const isAdmin = {{ 'true' if is_admin else 'false' }};
-      const initialTab = defaultTab || (isAdmin ? 'admin' : 'student');
-      switchMobileModalTab(initialTab);
+      switchMobileModalTab(defaultTab || 'student');
       document.getElementById("mobile-apps-modal").style.display = "flex";
     }
 
@@ -258,13 +851,13 @@
 
     function switchMobileModalTab(tab) {
       const isStudent = tab === 'student';
-      document.getElementById("tab-app-student").style.background = isStudent ? "#059669" : "#0f172a";
+      document.getElementById("tab-app-student").style.background = isStudent ? "#0284c7" : "#0f172a";
       document.getElementById("tab-app-student").style.color = isStudent ? "white" : "#94a3b8";
-      document.getElementById("tab-app-student").style.borderColor = isStudent ? "#10b981" : "#334155";
+      document.getElementById("tab-app-student").style.borderColor = isStudent ? "#38bdf8" : "#334155";
 
-      document.getElementById("tab-app-admin").style.background = !isStudent ? "#0284c7" : "#0f172a";
+      document.getElementById("tab-app-admin").style.background = !isStudent ? "#7c3aed" : "#0f172a";
       document.getElementById("tab-app-admin").style.color = !isStudent ? "white" : "#94a3b8";
-      document.getElementById("tab-app-admin").style.borderColor = !isStudent ? "#38bdf8" : "#334155";
+      document.getElementById("tab-app-admin").style.borderColor = !isStudent ? "#8b5cf6" : "#334155";
 
       document.getElementById("panel-app-student").style.display = isStudent ? "flex" : "none";
       document.getElementById("panel-app-admin").style.display = !isStudent ? "flex" : "none";
@@ -273,21 +866,14 @@
     function copyAppUrl(type) {
       const url = `${window.location.origin}/mobile/${type}`;
       navigator.clipboard.writeText(url).then(() => {
-        alert(`Copied ${type === 'admin' ? 'Admin Field Capture' : 'Student Portfolio'} link to clipboard:\n${url}`);
+        alert(`Copied link to clipboard:\n${url}`);
       });
     }
 
-    // Close on outside click
     document.getElementById("mobile-apps-modal").addEventListener("click", (e) => {
       if (e.target.id === "mobile-apps-modal") closeMobileAppsModal();
     });
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("open_qr") === "admin") {
-        openAdminQrModal();
-      }
-    });
   </script>
+
 </body>
 </html>
