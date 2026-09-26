@@ -116,15 +116,28 @@ flowchart TB
 
 ---
 
+### Pillar 7: Automated Notification Sentinel & Transactional Alerts ([`notification_service.py`](notification_service.py))
+
+* **Why We Used It**:
+  Administrative security demands instant visibility when new instructors or assessors request access. The notification service uses a non-blocking daemon thread pool to dispatch rich HTML emails (supporting Resend, SendGrid, and SMTP/Gmail) without injecting any latency into user web requests.
+
+---
+
+## 🧭 Architectural Roadmap & Backlog
+
+- 📌 **Pinned for Future Review**: **Class Admin Student Application Queue** — Enable approval gates on `/admin/class` so student self-registrations via school OAuth can be vetted and assigned to specific cohorts by their local instructor before accessing exam batteries.
+- 🚀 **Next Phase (Phase 3)**: **Multimodal RAG on Human-Graded Masonry Database** — Using expert human-annotated specimens, calibrated tolerance radii, and remedial defect rationale as a retrieval-augmented generation (RAG) vector ground-truth to continually elevate Gemini's automated grading precision.
+
+---
+
 ## 🛠️ Quick Reference Commands
 
 ```bash
-# 1. Run all 80 Unit, Agent, OAuth & DevOps Tests
+# 1. Run all 85 Unit, Agent, OAuth, Notification & DevOps Tests
 python3 -m unittest discover -s . -p "test_*.py" -v
 
 # 2. Run the Model Context Protocol (MCP) Server Self-Test
 python3 mcp_server.py --self-test
-
 
 # 3. Start the Full Stack Locally in Docker (Web + PostgreSQL 15)
 docker compose up --build
