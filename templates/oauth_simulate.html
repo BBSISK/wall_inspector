@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Sandbox Simulator — Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .sim-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 2.25rem;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+    }
+    .badge-provider {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+    .badge-google {
+      background: rgba(234, 67, 53, 0.15);
+      border: 1px solid rgba(234, 67, 53, 0.4);
+      color: #f87171;
+    }
+    .badge-microsoft {
+      background: rgba(0, 164, 239, 0.15);
+      border: 1px solid rgba(0, 164, 239, 0.4);
+      color: #38bdf8;
+    }
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.5rem;
+      color: #f8fafc;
+    }
+    p.sim-desc {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin: 0 0 1.5rem;
+    }
+    .persona-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .persona-btn {
+      background: #090e1a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      color: #f8fafc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .persona-btn:hover {
+      border-color: #38bdf8;
+      background: #141c2e;
+      transform: translateY(-2px);
+    }
+    .persona-info strong {
+      display: block;
+      font-size: 0.95rem;
+      color: #f8fafc;
+    }
+    .persona-info span {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .persona-role {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .role-sys { background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.4); }
+    .role-class { background: rgba(2, 132, 199, 0.25); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .role-student { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4); }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+      color: #64748b;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #334155;
+    }
+    .divider:not(:empty)::before { margin-right: .75em; }
+    .divider:not(:empty)::after { margin-left: .75em; }
+
+    .form-group {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 0.35rem;
+    }
+    input, select {
+      width: 100%;
+      background: #090e1a;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #38bdf8; }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: none;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .btn-submit:hover { background: #0284c7; }
+    .cancel-link {
+      display: block;
+      text-align: center;
+      margin-top: 1.25rem;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 0.82rem;
+    }
+    .cancel-link:hover { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+
+  <div class="sim-card">
+    {% if provider == 'google' %}
+      <span class="badge-provider badge-google"><i class="fa-brands fa-google"></i> Google OAuth Sandbox</span>
+    {% else %}
+      <span class="badge-provider badge-microsoft"><i class="fa-brands fa-microsoft"></i> Microsoft 365 OAuth Sandbox</span>
+    {% endif %}
+
+    <h2>Interactive OAuth Simulator</h2>
+    <p class="sim-desc">
+      Third-party API keys (<code>{{ 'GOOGLE_CLIENT_ID' if provider == 'google' else 'MICROSOFT_CLIENT_ID' }}</code>) are not configured in this runtime. Select an identity below to test authenticated role provisioning, session creation, and security gates.
+    </p>
+
+    <!-- 1-Click Persona Chooser -->
+    <div class="persona-grid">
+      <!-- Option 1: Student -->
+      <form method="POST" action="/auth/simulate/{{ provider }}">
+        <input type="hidden" name="email" value="alex.mason@academy.edu">
+        <input type="hidden" name="name" value="Alex Mason">
+        <input type="hidden" name="role" value="student">
+        <input type="hidden" name="next" value="{{ next_url or '/portal' }}">
+        <button type="submit" class="persona-btn">
+          <div class="persona-info">
+            <strong>Alex Mason</strong>
+            <span>alex.mason@academy.edu</span>
+          </div>
+          <span class="persona-role role-student"><i class="fa-solid fa-graduation-cap"></i> Student</span>
+        </button>
+      </form>
+
+      <!-- Option 2: Class Admin -->
+      <form method="POST" action="/auth/simulate/{{ provider }}">
+        <input type="hidden" name="email" value="dr.jane@academy.edu">
+        <input type="hidden" name="name" value="Dr. Jane Doe">
+        <input type="hidden" name="role" value="class_admin">
+        <input type="hidden" name="next" value="{{ next_url or '/admin/class' }}">
+        <button type="submit" class="persona-btn">
+          <div class="persona-info">
+            <strong>Dr. Jane Doe</strong>
+            <span>dr.jane@academy.edu</span>
+          </div>
+          <span class="persona-role role-class"><i class="fa-solid fa-school"></i> Class Admin</span>
+        </button>
+      </form>
+
+      <!-- Option 3: System Admin -->
+      <form method="POST" action="/auth/simulate/{{ provider }}">
+        <input type="hidden" name="email" value="barry.sisk@wallinspector.org">
+        <input type="hidden" name="name" value="Prof. Barry Sisk">
+        <input type="hidden" name="role" value="system_admin">
+        <input type="hidden" name="next" value="{{ next_url or '/admin/system' }}">
+        <button type="submit" class="persona-btn">
+          <div class="persona-info">
+            <strong>Prof. Barry Sisk</strong>
+            <span>barry.sisk@wallinspector.org</span>
+          </div>
+          <span class="persona-role role-sys"><i class="fa-solid fa-shield-halved"></i> System Admin</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="divider">Or Authenticate Custom Institutional Account</div>
+
+    <!-- Custom Account Input -->
+    <form method="POST" action="/auth/simulate/{{ provider }}">
+      <input type="hidden" name="next" value="{{ next_url or '' }}">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" name="name" placeholder="e.g. Eleanor Vance" required>
+      </div>
+      <div class="form-group">
+        <label>Institutional Email</label>
+        <input type="email" name="email" placeholder="e.g. evance@university.edu" required>
+      </div>
+      <div class="form-group">
+        <label>Intended Role</label>
+        <select name="role">
+          <option value="student" {% if intended_role == 'student' %}selected{% endif %}>Candidate / Student (Self-Enrolling)</option>
+          <option value="class_admin" {% if intended_role == 'class_admin' %}selected{% endif %}>Class Admin / School Instructor</option>
+          <option value="system_admin" {% if intended_role == 'system_admin' %}selected{% endif %}>System Admin / Platform Director</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-submit">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Simulate {{ 'Google' if provider == 'google' else 'Microsoft' }} Sign-In
+      </button>
+    </form>
+
+    <a href="{{ next_url or '/' }}" class="cancel-link">&larr; Return to previous screen</a>
+  </div>
+
+</body>
+</html>

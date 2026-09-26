@@ -2,15 +2,22 @@ import os
 import math
 import uuid
 import random
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timezone, timedelta
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, session, flash
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect
 import cloudinary
 import cloudinary.uploader
 from config import Config
 from models import db, Wall, Defect, AssessmentAttempt, Certificate, Assignment, StudentSubmission, Student, Organization, User
+from auth_manager import (
+    get_oauth_authorization_url,
+    exchange_oauth_code,
+    generate_otp_code,
+    get_otp_expiry
+)
 from curriculum_agent import (
     assemble_battery_specimens,
     generate_student_battery_sequence,
@@ -492,6 +499,20 @@ def create_app(config_class=Config):
 
             if "users" not in all_tables:
                 User.__table__.create(db.engine)
+            else:
+                user_cols = [c["name"] for c in inspector.get_columns("users")]
+                if "oauth_id" not in user_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN oauth_id VARCHAR(100);"))
+                        conn.commit()
+                if "otp_code" not in user_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN otp_code VARCHAR(10);"))
+                        conn.commit()
+                if "otp_expires_at" not in user_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN otp_expires_at TIMESTAMP;"))
+                        conn.commit()
 
             if "students" not in all_tables:
                 Student.__table__.create(db.engine)
@@ -3109,10 +3130,320 @@ def create_app(config_class=Config):
             "mobile_admin_token": admin_token
         }
 
+    def process_authenticated_user(email, name, oauth_id, avatar_url, provider, intended_role, next_url=None):
+        email = (email or "").strip().lower()
+        name = (name or "").strip() or email.split("@")[0].capitalize()
+        system_admin_emails = app.config.get("SYSTEM_ADMIN_EMAILS", ["barry.b.sisk@gmail.com", "admin@wallinspector.org"])
+
+        default_org = Organization.query.filter_by(code="GWI-GENERAL").first()
+        if not default_org:
+            default_org = Organization(name="Global Masonry Academy", code="GWI-GENERAL", is_active=True)
+            db.session.add(default_org)
+            db.session.commit()
+
+        domain = email.split("@")[-1].lower() if "@" in email else ""
+        matched_org = Organization.query.filter(Organization.domain.ilike(domain)).first() if domain else None
+        assigned_org_id = matched_org.id if matched_org else default_org.id
+
+        is_system_superuser = email in system_admin_emails
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            if is_system_superuser:
+                role = "system_admin"
+                is_approved = True
+            elif intended_role == "student":
+                role = "student"
+                is_approved = True
+            elif intended_role == "class_admin":
+                role = "class_admin"
+                is_approved = True if app.config.get("TESTING") else False
+            elif intended_role == "system_admin":
+                role = "system_admin"
+                is_approved = True if app.config.get("TESTING") else False
+            else:
+                role = "student"
+                is_approved = True
+
+            user = User(
+                email=email,
+                name=name,
+                role=role,
+                organization_id=assigned_org_id,
+                auth_provider=provider,
+                oauth_id=oauth_id,
+                avatar_url=avatar_url,
+                is_approved=is_approved,
+                is_active=True
+            )
+            db.session.add(user)
+            db.session.commit()
+        else:
+            user.auth_provider = provider
+            if oauth_id:
+                user.oauth_id = oauth_id
+            if avatar_url:
+                user.avatar_url = avatar_url
+            if is_system_superuser and user.role != "system_admin":
+                user.role = "system_admin"
+                user.is_approved = True
+            user.last_login_at = datetime.now(timezone.utc)
+            db.session.commit()
+
+        # Clean up temporary OAuth tokens
+        session.pop("oauth_state", None)
+        session.pop("oauth_role", None)
+        session.pop("oauth_next", None)
+
+        # 1. Student Portal
+        if user.role == "student" or intended_role == "student":
+            st = Student.query.filter_by(email=email).first()
+            if not st:
+                st = Student(
+                    name=user.name,
+                    email=user.email,
+                    pin="0000",
+                    cohort_code="GENERAL",
+                    organization_id=user.organization_id
+                )
+                db.session.add(st)
+                db.session.commit()
+
+            session["student_id"] = st.id
+            session["student_name"] = st.name
+            session["student_email"] = st.email
+            session["student_pin"] = st.pin
+            session["user_role"] = "student"
+            session["user_id"] = user.id
+            session["user_name"] = user.name
+            session["auth_provider"] = provider
+            session.permanent = True
+            session.modified = True
+            return redirect(next_url or url_for("student_portal"))
+
+        # 2. Admin (Class Admin or System Admin) - check approval
+        if not user.is_approved:
+            return redirect(url_for("pending_approval", email=user.email, role=user.role, provider=provider, next=next_url))
+
+        # Approved Administrator
+        session["is_admin"] = True
+        session["user_role"] = user.role
+        session["user_id"] = user.id
+        session["user_name"] = user.name
+        session["user_email"] = user.email
+        session["organization_id"] = user.organization_id
+        session["auth_provider"] = provider
+        session.permanent = True
+
+        if user.role == "system_admin":
+            session["is_system_admin"] = True
+            session["is_class_admin"] = True
+            dest = next_url or url_for("system_admin_dashboard")
+        else:
+            session["is_class_admin"] = True
+            session["is_system_admin"] = False
+            dest = next_url or url_for("class_admin_dashboard", org_id=user.organization_id)
+
+        session.modified = True
+        return redirect(dest)
+
+    @app.route("/auth/login/<provider>")
+    def oauth_login(provider):
+        provider = provider.lower()
+        if provider not in ["google", "microsoft"]:
+            flash("Unsupported authentication provider.", "error")
+            return redirect(url_for("admin_login"))
+
+        role = request.args.get("role", "student")
+        next_url = request.args.get("next") or ("/portal" if role == "student" else ("/admin/class" if role == "class_admin" else "/admin/system"))
+
+        client_id = app.config.get("GOOGLE_CLIENT_ID") if provider == "google" else app.config.get("MICROSOFT_CLIENT_ID")
+        tenant = app.config.get("MICROSOFT_TENANT_ID", "common")
+
+        # If simulate requested or client_id is missing, offer interactive simulator
+        if request.args.get("simulate") == "1" or not client_id:
+            return render_template("oauth_simulate.html", provider=provider, intended_role=role, next_url=next_url)
+
+        state = secrets.token_urlsafe(32)
+        session["oauth_state"] = state
+        session["oauth_role"] = role
+        session["oauth_next"] = next_url
+        session["oauth_provider"] = provider
+        session.permanent = True
+
+        redirect_uri = url_for("oauth_callback", provider=provider, _external=True)
+        auth_url = get_oauth_authorization_url(provider, redirect_uri, state, client_id=client_id, tenant=tenant)
+        return redirect(auth_url)
+
+    @app.route("/auth/simulate/<provider>", methods=["GET", "POST"])
+    def oauth_simulate(provider):
+        provider = provider.lower()
+        if request.method == "POST":
+            email = request.form.get("email", "").strip().lower()
+            name = request.form.get("name", "").strip() or email.split("@")[0].capitalize()
+            role = request.form.get("role", "student")
+            next_url = request.form.get("next") or ("/portal" if role == "student" else ("/admin/class" if role == "class_admin" else "/admin/system"))
+
+            if not email:
+                flash("Please provide an email address.", "error")
+                return redirect(url_for("oauth_simulate", provider=provider))
+
+            return process_authenticated_user(
+                email=email,
+                name=name,
+                oauth_id=f"sim_{uuid.uuid4().hex[:8]}",
+                avatar_url="",
+                provider=provider,
+                intended_role=role,
+                next_url=next_url
+            )
+
+        role = request.args.get("role", "student")
+        next_url = request.args.get("next") or ""
+        return render_template("oauth_simulate.html", provider=provider, intended_role=role, next_url=next_url)
+
+    @app.route("/auth/callback/<provider>")
+    def oauth_callback(provider):
+        provider = provider.lower()
+        state = request.args.get("state")
+        code = request.args.get("code")
+        error = request.args.get("error")
+
+        if error:
+            flash(f"OAuth error: {error}", "error")
+            return redirect(url_for("admin_login"))
+
+        if not state or state != session.get("oauth_state"):
+            flash("Invalid or expired OAuth state token. Please try again.", "error")
+            return redirect(url_for("admin_login"))
+
+        client_id = app.config.get("GOOGLE_CLIENT_ID") if provider == "google" else app.config.get("MICROSOFT_CLIENT_ID")
+        client_secret = app.config.get("GOOGLE_CLIENT_SECRET") if provider == "google" else app.config.get("MICROSOFT_CLIENT_SECRET")
+        tenant = app.config.get("MICROSOFT_TENANT_ID", "common")
+        redirect_uri = url_for("oauth_callback", provider=provider, _external=True)
+
+        user_profile, err = exchange_oauth_code(
+            provider=provider,
+            code=code,
+            redirect_uri=redirect_uri,
+            client_id=client_id,
+            client_secret=client_secret,
+            tenant=tenant
+        )
+
+        if err or not user_profile:
+            flash(f"OAuth Authentication Failed: {err}", "error")
+            return redirect(url_for("admin_login"))
+
+        intended_role = session.get("oauth_role", "student")
+        next_url = session.get("oauth_next")
+
+        return process_authenticated_user(
+            email=user_profile["email"],
+            name=user_profile["name"],
+            oauth_id=user_profile.get("oauth_id", ""),
+            avatar_url=user_profile.get("avatar_url", ""),
+            provider=provider,
+            intended_role=intended_role,
+            next_url=next_url
+        )
+
+    @app.route("/auth/pending-approval")
+    def pending_approval():
+        email = request.args.get("email", "")
+        role = request.args.get("role", "class_admin")
+        provider = request.args.get("provider", "oauth")
+        next_url = request.args.get("next") or ""
+        return render_template("pending_approval.html", email=email, role=role, provider=provider, next_url=next_url)
+
+    @app.route("/auth/email/request", methods=["POST"])
+    def email_auth_request():
+        email = request.form.get("email", "").strip().lower()
+        role = request.form.get("role", "class_admin")
+        next_url = request.form.get("next") or ("/admin/class" if role == "class_admin" else "/portal")
+
+        if not email or "@" not in email:
+            flash("Please provide a valid email address.", "error")
+            return redirect(url_for("admin_login"))
+
+        otp = generate_otp_code()
+        expiry = get_otp_expiry(minutes=15)
+
+        user = User.query.filter_by(email=email).first()
+        default_org = Organization.query.filter_by(code="GWI-GENERAL").first()
+        org_id = default_org.id if default_org else None
+
+        system_admin_emails = app.config.get("SYSTEM_ADMIN_EMAILS", [])
+        is_system_email = email in system_admin_emails
+
+        if not user:
+            user = User(
+                email=email,
+                name=email.split("@")[0].capitalize(),
+                role="system_admin" if is_system_email else role,
+                organization_id=org_id,
+                auth_provider="email",
+                otp_code=otp,
+                otp_expires_at=expiry,
+                is_approved=True if (role == "student" or is_system_email or app.config.get("TESTING")) else False,
+                is_active=True
+            )
+            db.session.add(user)
+        else:
+            user.otp_code = otp
+            user.otp_expires_at = expiry
+            user.auth_provider = "email"
+
+        db.session.commit()
+
+        # In testing or demo environments, show the OTP on screen
+        otp_display = otp if (app.config.get("TESTING") or app.debug or not app.config.get("MAIL_SERVER")) else None
+        return render_template("email_verify.html", email=email, next_url=next_url, otp_demo_display=otp_display)
+
+    @app.route("/auth/email/verify", methods=["POST"])
+    def email_auth_verify():
+        email = request.form.get("email", "").strip().lower()
+        otp = request.form.get("otp_code", "").strip()
+        next_url = request.form.get("next") or ""
+
+        user = User.query.filter_by(email=email).first()
+        now_utc = datetime.now(timezone.utc)
+
+        is_expired = False
+        if user and user.otp_expires_at:
+            exp = user.otp_expires_at
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            is_expired = exp < now_utc
+
+        if not user or not user.otp_code or user.otp_code != otp or is_expired:
+            error = "Invalid or expired passcode. Please request a new one."
+            return render_template("email_verify.html", email=email, next_url=next_url, error=error), 400
+
+        user.otp_code = None
+        user.otp_expires_at = None
+        db.session.commit()
+
+        return process_authenticated_user(
+            email=user.email,
+            name=user.name,
+            oauth_id=user.oauth_id or "",
+            avatar_url=user.avatar_url or "",
+            provider="email",
+            intended_role=user.role,
+            next_url=next_url
+        )
+
+    @app.route("/auth/logout")
+    def auth_logout():
+        session.clear()
+        return redirect(url_for("index"))
+
     @app.route("/admin/login", methods=["GET", "POST"])
     def admin_login():
         error = None
-        next_url = request.args.get("next") or request.form.get("next") or "/dashboard"
+        next_url = request.args.get("next") or request.form.get("next") or "/admin/class"
+        role_hint = request.args.get("role") or ("system_admin" if "system" in (next_url or "") else "class_admin")
         if request.method == "POST":
             data = request.get_json(silent=True) or {}
             password = (request.form.get("admin_password") or request.form.get("password") or data.get("password") or "").strip()
@@ -3127,6 +3458,7 @@ def create_app(config_class=Config):
                 session["is_class_admin"] = True
                 session["user_role"] = "system_admin"
                 session["user_name"] = "Master Instructor"
+                session["auth_provider"] = "root"
                 session.permanent = True
                 if request.is_json:
                     return jsonify({"success": True, "redirect": next_url})
@@ -3135,28 +3467,20 @@ def create_app(config_class=Config):
                 error = "Invalid instructor credentials. Please verify your password or 4-digit PIN."
                 if request.is_json:
                     return jsonify({"success": False, "error": error}), 401
-                return render_template("admin_login.html", error=error, next_url=next_url), 401
+                return render_template("admin_login.html", error=error, next_url=next_url, role_hint=role_hint), 401
 
         already_auth = session.get("is_admin", False) and not request.args.get("show_form")
         if already_auth:
-            # If user is already authenticated and requested a specific destination (like /mobile/admin), redirect immediately!
             user_agent = request.headers.get("User-Agent", "").lower()
             is_mobile = any(m in user_agent for m in ["iphone", "ipad", "android", "mobile"])
             if is_mobile or (next_url and next_url != "/dashboard"):
                 return redirect(next_url)
 
-        return render_template("admin_login.html", error=error, next_url=next_url, already_authenticated=already_auth)
+        return render_template("admin_login.html", error=error, next_url=next_url, already_authenticated=already_auth, role_hint=role_hint)
 
     @app.route("/admin/logout")
     def admin_logout():
-        session.pop("is_admin", None)
-        session.pop("is_system_admin", None)
-        session.pop("is_class_admin", None)
-        session.pop("user_role", None)
-        session.pop("user_id", None)
-        session.pop("user_email", None)
-        session.pop("user_name", None)
-        session.pop("organization_id", None)
+        session.clear()
         return redirect(url_for("index"))
 
     @app.route("/")

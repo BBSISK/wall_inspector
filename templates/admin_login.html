@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instructor & Admin Authentication - Global Wall Inspector</title>
+  <title>Instructor & Assessor Authentication — Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -19,10 +20,10 @@
     }
     .login-card {
       background: #1e293b;
-      border-radius: 14px;
+      border-radius: 16px;
       border: 1px solid #334155;
-      padding: 2.5rem;
-      max-width: 460px;
+      padding: 2.25rem 2rem;
+      max-width: 480px;
       width: 100%;
       box-shadow: 0 20px 45px rgba(0,0,0,0.5);
       position: relative;
@@ -30,45 +31,115 @@
     .header-icon {
       width: 54px;
       height: 54px;
-      background: #0284c7;
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
       border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.9rem;
-      margin: 0 auto 1rem;
-      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+      font-size: 1.6rem;
+      margin: 0 auto 0.85rem;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
     }
     .header-icon.success {
       background: #059669;
+      color: white;
       box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
     }
     h2 {
-      margin: 0 0 0.4rem;
-      font-size: 1.6rem;
+      margin: 0 0 0.35rem;
+      font-size: 1.5rem;
       text-align: center;
       color: #f8fafc;
+      font-weight: 800;
+      letter-spacing: -0.3px;
     }
     p.card-sub {
       color: #94a3b8;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       text-align: center;
-      margin: 0 0 1.5rem;
-      line-height: 1.4;
+      margin: 0 0 1.25rem;
+      line-height: 1.45;
     }
+
+    /* OAuth Buttons */
+    .oauth-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 1.25rem;
+    }
+    .btn-oauth {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-oauth-google {
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+    }
+    .btn-oauth-google:hover {
+      background: #f3f4f6;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+    }
+    .btn-oauth-ms {
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #334155;
+    }
+    .btn-oauth-ms:hover {
+      background: #111827;
+      border-color: #00a4ef;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 164, 239, 0.25);
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.25rem 0;
+      color: #64748b;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #334155;
+    }
+    .divider:not(:empty)::before { margin-right: .75em; }
+    .divider:not(:empty)::after { margin-left: .75em; }
+
+    /* Auth Mode Tabs */
     .auth-tabs {
       display: flex;
       background: #0f172a;
       border-radius: 8px;
       padding: 3px;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       border: 1px solid #334155;
+      gap: 3px;
     }
     .auth-tab {
       flex: 1;
-      padding: 0.5rem;
+      padding: 0.45rem 0.5rem;
       text-align: center;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: #94a3b8;
       border: none;
@@ -81,6 +152,7 @@
       background: #0284c7;
       color: white;
     }
+
     .error-alert {
       background: rgba(239, 68, 68, 0.15);
       border: 1px solid #ef4444;
@@ -93,6 +165,7 @@
       align-items: center;
       gap: 8px;
     }
+
     label {
       display: block;
       font-size: 0.75rem;
@@ -102,18 +175,18 @@
       font-weight: 700;
       letter-spacing: 0.5px;
     }
-    input {
+    input, select {
       width: 100%;
       background: #0f172a;
       border: 1px solid #334155;
       color: #f8fafc;
       padding: 0.75rem 1rem;
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       outline: none;
       transition: border-color 0.2s;
     }
-    input:focus {
+    input:focus, select:focus {
       border-color: #38bdf8;
     }
     .pin-input {
@@ -134,7 +207,7 @@
       font-weight: 700;
       font-size: 0.95rem;
       cursor: pointer;
-      margin-top: 1.25rem;
+      margin-top: 1.1rem;
       transition: background 0.2s, transform 0.1s;
       display: block;
       text-align: center;
@@ -147,19 +220,18 @@
       transform: scale(0.99);
     }
     .footer-links {
-      margin-top: 1.75rem;
+      margin-top: 1.5rem;
       text-align: center;
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      font-size: 0.85rem;
+      justify-content: space-between;
+      font-size: 0.8rem;
     }
     .footer-links a {
       color: #64748b;
       text-decoration: none;
     }
     .footer-links a:hover {
-      color: #94a3b8;
+      color: #cbd5e1;
     }
 
     /* Post-Login QR Success View */
@@ -200,47 +272,98 @@
 
     <!-- STATE A: Login Credentials Form -->
     <div id="login-view" style="display: {% if already_authenticated or login_success %}none{% else %}block{% endif %};">
-      <div class="header-icon">🔐</div>
-      <h2>Instructor Portal</h2>
-      <p class="card-sub">Administrative access to student analytics, catalog pathology tagging, and cohort grading.</p>
+      <div class="header-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h2>Instructor &amp; Assessor Portal</h2>
+      <p class="card-sub">Dual-tiered access for Class Administration and Platform Command.</p>
 
       <div id="ajax-error-alert" class="error-alert" style="display: {% if error %}flex{% else %}none{% endif %};">
         <span>⚠️</span>
         <span id="error-message-text">{{ error or '' }}</span>
       </div>
 
-      <div class="auth-tabs">
-        <button type="button" class="auth-tab active" id="tab-pass" onclick="switchAuthMode('pass')">Password</button>
-        <button type="button" class="auth-tab" id="tab-pin" onclick="switchAuthMode('pin')">4-Digit PIN</button>
+      <!-- OAUTH FAST ACCESS -->
+      <div class="oauth-grid">
+        <a href="/auth/login/google?role={{ role_hint or 'class_admin' }}&next={{ next_url or '' }}" class="btn-oauth btn-oauth-google">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span>Continue with Google Workspace</span>
+        </a>
+        <a href="/auth/login/microsoft?role={{ role_hint or 'class_admin' }}&next={{ next_url or '' }}" class="btn-oauth btn-oauth-ms">
+          <svg width="18" height="18" viewBox="0 0 21 21">
+            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+          <span>Continue with Microsoft 365 / Entra</span>
+        </a>
       </div>
 
-      <form id="login-form" method="POST" action="/admin/login">
+      <div class="divider">Or Authenticate via Email / Root Access</div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-email" onclick="switchAuthMode('email')">
+          <i class="fa-solid fa-envelope"></i> Email Passcode
+        </button>
+        <button type="button" class="auth-tab" id="tab-pass" onclick="switchAuthMode('pass')">
+          <i class="fa-solid fa-key"></i> Master Password
+        </button>
+        <button type="button" class="auth-tab" id="tab-pin" onclick="switchAuthMode('pin')">
+          <i class="fa-solid fa-hashtag"></i> 4-Digit PIN
+        </button>
+      </div>
+
+      <!-- MODE 1: Email Fallback Request -->
+      <form id="email-fallback-form" method="POST" action="/auth/email/request">
+        <input type="hidden" name="next" value="{{ next_url or '' }}">
+        <div id="mode-email">
+          <div style="margin-bottom: 0.85rem;">
+            <label>Institutional Email</label>
+            <input type="email" name="email" id="input-email" placeholder="e.g. instructor@masonryacademy.edu" required>
+          </div>
+          <div>
+            <label>Workstation Access</label>
+            <select name="role">
+              <option value="class_admin" {% if role_hint != 'system_admin' %}selected{% endif %}>Class Admin (Cohort &amp; Test Management)</option>
+              <option value="system_admin" {% if role_hint == 'system_admin' %}selected{% endif %}>System Admin (Platform Command)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-submit"><i class="fa-solid fa-paper-plane"></i> Send Access Passcode &rarr;</button>
+        </div>
+      </form>
+
+      <!-- MODE 2 & 3: Master Password & PIN -->
+      <form id="login-form" method="POST" action="/admin/login" style="display: none;">
         <input type="hidden" name="next" value="{{ next_url or '' }}">
         
         <!-- Password Mode -->
-        <div id="mode-pass">
-          <label>Instructor Password</label>
-          <input type="password" name="admin_password" id="input-pass" placeholder="Enter instructor password" autofocus>
+        <div id="mode-pass" style="display: none;">
+          <label>Root Master Password</label>
+          <input type="password" name="admin_password" id="input-pass" placeholder="Enter root system password">
+          <button type="submit" id="btn-login-pass" class="btn-submit"><i class="fa-solid fa-lock-open"></i> Authenticate &rarr;</button>
         </div>
 
         <!-- Quick PIN Mode -->
         <div id="mode-pin" style="display: none;">
-          <label style="text-align: center;">4-Digit Mobile / Quick PIN</label>
+          <label style="text-align: center;">Root 4-Digit Master PIN</label>
           <input type="password" name="admin_pin" id="input-pin" class="pin-input" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
+          <button type="submit" id="btn-login-pin" class="btn-submit"><i class="fa-solid fa-hashtag"></i> Verify PIN &rarr;</button>
         </div>
-
-        <button type="submit" id="btn-login-submit" class="btn-submit">Authenticate & Access Portal &rarr;</button>
       </form>
 
       <div class="footer-links">
         <a href="/">&larr; Return to Public Catalog</a>
-        <a href="/portal">Student Inspection Portal &rarr;</a>
+        <a href="/portal"><i class="fa-solid fa-graduation-cap"></i> Student Portal &rarr;</a>
       </div>
     </div>
 
     <!-- STATE B: Authentication Success & Immediate QR Access Screen -->
     <div id="qr-success-view" style="display: {% if already_authenticated or login_success %}block{% else %}none{% endif %};">
-      <div class="header-icon success">📸</div>
+      <div class="header-icon success"><i class="fa-solid fa-camera"></i></div>
       <h2 style="color: #34d399;">Authentication Granted</h2>
       <p class="card-sub" style="margin-bottom: 1rem;">
         Scan below with your phone camera to launch <strong>Wall Capture</strong> and upload photos on-site.
@@ -264,11 +387,11 @@
       </div>
 
       <div class="action-row">
-        <a id="btn-proceed-dash" href="{{ next_url or '/dashboard' }}" class="btn-submit" style="margin-top: 0; background: #0284c7; flex: 1.2;">
-          📊 Proceed to Dashboard &rarr;
+        <a id="btn-proceed-dash" href="{{ next_url or '/admin/class' }}" class="btn-submit" style="margin-top: 0; background: #0284c7; flex: 1.2;">
+          Proceed to Workstation &rarr;
         </a>
         <a href="/" class="btn-submit" style="margin-top: 0; background: #1e293b; border: 1px solid #334155; color: #94a3b8; flex: 0.8;">
-          🧱 Catalog
+          Catalog
         </a>
       </div>
 
@@ -282,25 +405,39 @@
 
   <script>
     function switchAuthMode(mode) {
+      const tabEmail = document.getElementById('tab-email');
       const tabPass = document.getElementById('tab-pass');
       const tabPin = document.getElementById('tab-pin');
+
+      const formEmail = document.getElementById('email-fallback-form');
+      const formLogin = document.getElementById('login-form');
       const modePass = document.getElementById('mode-pass');
       const modePin = document.getElementById('mode-pin');
-      const inputPass = document.getElementById('input-pass');
-      const inputPin = document.getElementById('input-pin');
 
-      if (mode === 'pin') {
-        tabPin.classList.add('active');
-        tabPass.classList.remove('active');
-        modePin.style.display = 'block';
-        modePass.style.display = 'none';
-        inputPin.focus();
-      } else {
+      // Reset tabs
+      tabEmail.classList.remove('active');
+      tabPass.classList.remove('active');
+      tabPin.classList.remove('active');
+
+      if (mode === 'email') {
+        tabEmail.classList.add('active');
+        formEmail.style.display = 'block';
+        formLogin.style.display = 'none';
+        document.getElementById('input-email').focus();
+      } else if (mode === 'pass') {
         tabPass.classList.add('active');
-        tabPin.classList.remove('active');
+        formEmail.style.display = 'none';
+        formLogin.style.display = 'block';
         modePass.style.display = 'block';
         modePin.style.display = 'none';
-        inputPass.focus();
+        document.getElementById('input-pass').focus();
+      } else if (mode === 'pin') {
+        tabPin.classList.add('active');
+        formEmail.style.display = 'none';
+        formLogin.style.display = 'block';
+        modePass.style.display = 'none';
+        modePin.style.display = 'block';
+        document.getElementById('input-pin').focus();
       }
     }
 
@@ -347,7 +484,7 @@
       });
     }
 
-    // Interactive AJAX Login Handler: Redirects instantly on mobile or reveals QR Code on desktop
+    // Interactive AJAX Login Handler for password/pin
     const loginForm = document.getElementById('login-form');
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -357,11 +494,7 @@
 
       const passVal = document.getElementById('input-pass').value.trim();
       const pinVal = document.getElementById('input-pin').value.trim();
-      const nextVal = document.querySelector('input[name="next"]').value || '/dashboard';
-      const btnSubmit = document.getElementById('btn-login-submit');
-
-      btnSubmit.innerText = "Verifying credentials...";
-      btnSubmit.disabled = true;
+      const nextVal = document.querySelector('input[name="next"]').value || '/admin/class';
 
       try {
         const res = await fetch('/admin/login', {
@@ -389,11 +522,8 @@
         } else {
           errMsg.innerText = data.error || "Invalid instructor credentials.";
           errBox.style.display = 'flex';
-          btnSubmit.innerText = "Authenticate & Access Portal \u2192";
-          btnSubmit.disabled = false;
         }
       } catch (err) {
-        // Fallback to standard form submission if fetch is blocked
         loginForm.submit();
       }
     });
@@ -403,7 +533,7 @@
       const nextVal = "{{ next_url or '' }}";
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isAlreadyAuth) {
-        if (isMobile || (nextVal && nextVal !== '/dashboard')) {
+        if (isMobile || (nextVal && nextVal !== '/dashboard' && nextVal !== '/admin/class')) {
           window.location.href = nextVal || '/mobile/admin';
           return;
         }

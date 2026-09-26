@@ -103,14 +103,28 @@ flowchart TB
 
 ---
 
+### Pillar 6: Dual Admin Architecture & Unified Multi-Provider OAuth ([`auth_manager.py`](auth_manager.py), [`models.py`](models.py))
+
+* **Why We Used It**:
+  In multi-organization civil engineering and conservation education, platform governance must be cleanly partitioned between:
+  1. **Class Administration (`/admin/class`)**: Focused strictly on student rosters, cohort analytics, 4-digit PIN provisioning, and examination batteries.
+  2. **System Administration (`/admin/system`)**: Focused on global master specimen curation, school tenant onboarding, Intake Sentinel quality audits, and assessor authorization control.
+* **Unified OAuth & Email Fallback Implementation**:
+  - **Google OAuth 2.0 & Microsoft 365 / Entra ID**: Single sign-on for students, instructors, and system administrators via OpenID Connect.
+  - **Zero-Crash Interactive Sandbox Simulator (`/auth/simulate/<provider>`)**: When cloud API credentials are not yet injected into `.env`, the system provides an interactive simulation mode with pre-configured personas (Dr. Jane Doe for Class Admin, Prof. Barry Sisk for System Admin, Alex Mason for Student). This allows interviewers and evaluators to test the entire authentication and session lifecycle without cloud secrets.
+  - **Email Passcode Fallback & Approval Gate (`/auth/email/request`)**: Users without OAuth can authenticate via a time-limited 6-digit cryptographic OTP. Newly registered instructors are held in a pending verification queue (`is_approved = False`) until authorized by the System Administrator in 1-click.
+
+---
+
 ## 🛠️ Quick Reference Commands
 
 ```bash
-# 1. Run all 61 Unit, Agent & DevOps Tests
+# 1. Run all 80 Unit, Agent, OAuth & DevOps Tests
 python3 -m unittest discover -s . -p "test_*.py" -v
 
 # 2. Run the Model Context Protocol (MCP) Server Self-Test
 python3 mcp_server.py --self-test
+
 
 # 3. Start the Full Stack Locally in Docker (Web + PostgreSQL 15)
 docker compose up --build

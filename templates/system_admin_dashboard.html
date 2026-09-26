@@ -592,9 +592,19 @@
                 </td>
                 <td>{{ u.organization.name if u.organization else 'Global Platform' }}</td>
                 <td>
-                  <span style="text-transform: capitalize; color: var(--text-muted); font-size: 0.8rem;">
-                    {{ u.auth_provider }}
-                  </span>
+                  {% if u.auth_provider == 'google' %}
+                    <span class="badge" style="background: rgba(234, 67, 53, 0.15); border: 1px solid rgba(234, 67, 53, 0.4); color: #f87171; font-size: 0.72rem;">
+                      <i class="fa-brands fa-google"></i> Google
+                    </span>
+                  {% elif u.auth_provider == 'microsoft' %}
+                    <span class="badge" style="background: rgba(0, 164, 239, 0.15); border: 1px solid rgba(0, 164, 239, 0.4); color: #38bdf8; font-size: 0.72rem;">
+                      <i class="fa-brands fa-microsoft"></i> Microsoft
+                    </span>
+                  {% else %}
+                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #cbd5e1; font-size: 0.72rem;">
+                      <i class="fa-solid fa-envelope"></i> Email OTP
+                    </span>
+                  {% endif %}
                 </td>
                 <td>
                   {% if u.is_approved %}

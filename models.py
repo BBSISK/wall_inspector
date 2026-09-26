@@ -134,6 +134,9 @@ class User(db.Model):
     is_approved = db.Column(db.Boolean, default=True)
     is_active = db.Column(db.Boolean, default=True)
     auth_provider = db.Column(db.String(30), default="email")  # "google", "microsoft", "email"
+    oauth_id = db.Column(db.String(100), nullable=True, index=True)
+    otp_code = db.Column(db.String(10), nullable=True)
+    otp_expires_at = db.Column(db.DateTime, nullable=True)
     avatar_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     last_login_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -150,6 +153,7 @@ class User(db.Model):
             "is_approved": self.is_approved,
             "is_active": self.is_active,
             "auth_provider": self.auth_provider,
+            "oauth_id": self.oauth_id or "",
             "avatar_url": self.avatar_url or "",
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else "",
             "last_login_at": self.last_login_at.strftime("%Y-%m-%d %H:%M") if self.last_login_at else ""

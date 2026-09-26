@@ -17,3 +17,13 @@ class Config:
 
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "stonecraft2026")
     ADMIN_PIN = os.getenv("ADMIN_PIN", "2026")
+
+    # OAuth 2.0 Credentials (Google & Microsoft)
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID", "")
+    MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET", "")
+    MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID", "common")
+
+    # Authorized System Admin Emails
+    SYSTEM_ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("SYSTEM_ADMIN_EMAILS", "barry.b.sisk@gmail.com,admin@wallinspector.org,barry.sisk@wallinspector.org").split(",") if e.strip()]
