@@ -29,10 +29,13 @@
       <h1>Classroom Diagnostic Performance</h1>
       <p style="margin: 0.4rem 0 0; color: #94a3b8;">Cohort analytics, student precision metrics, and credentials.</p>
     </div>
-    <div>
-      <button type="button" onclick="toggleFieldCaptureCard()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #38bdf8; font-size: 0.85rem; font-weight: 700; margin-right: 0.5rem; cursor: pointer;">📸 Field Camera QR</button>
-      <a href="/admin/export/attempts.csv{% if selected_cohort %}?cohort={{ selected_cohort }}{% endif %}" style="background: #059669; color: white; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">📥 Export CSV</a>
-      <a href="/" style="background: #334155; color: #93c5fd; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem;">&larr; Catalog</a>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <a href="/skill-assessment/admin" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #10b981; font-size: 0.85rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);">
+        🎯 Guide & Ingest Specimen
+      </a>
+      <button type="button" onclick="toggleFieldCaptureCard()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #38bdf8; font-size: 0.85rem; font-weight: 700; cursor: pointer;">📸 Field Camera QR</button>
+      <a href="/admin/export/attempts.csv{% if selected_cohort %}?cohort={{ selected_cohort }}{% endif %}" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">📥 Export CSV</a>
+      <a href="/" style="background: #334155; color: #93c5fd; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">&larr; Catalog</a>
       <a href="/admin/logout" style="background: #7f1d1d; color: #fca5a5; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">🔒 Logout</a>
     </div>
   </div>
