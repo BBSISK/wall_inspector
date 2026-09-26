@@ -465,6 +465,27 @@ def create_app(config_class=Config):
                     conn.execute(text("ALTER TABLE walls ADD COLUMN sentinel_override BOOLEAN DEFAULT FALSE;"))
                     conn.commit()
 
+            if "grading_status" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN grading_status VARCHAR(30) DEFAULT 'auto_suggested';"))
+                    conn.commit()
+
+            if "graded_by_user_id" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN graded_by_user_id VARCHAR(36);"))
+                    conn.commit()
+
+            if "graded_by_user_name" not in wall_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE walls ADD COLUMN graded_by_user_name VARCHAR(120);"))
+                    conn.commit()
+
+            if "graded_at" not in wall_cols:
+                with db.engine.connect() as conn:
+                    col_type = "TIMESTAMP" if db.engine.dialect.name == "postgresql" else "DATETIME"
+                    conn.execute(text(f"ALTER TABLE walls ADD COLUMN graded_at {col_type};"))
+                    conn.commit()
+
             if db.engine.dialect.name == "postgresql":
                 with db.engine.connect() as conn:
                     try:
@@ -481,6 +502,14 @@ def create_app(config_class=Config):
             if "tolerance_radius" not in defect_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE defects ADD COLUMN tolerance_radius FLOAT DEFAULT 0.06;"))
+                    conn.commit()
+            if "provenance" not in defect_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE defects ADD COLUMN provenance VARCHAR(30) DEFAULT 'auto_suggested';"))
+                    conn.commit()
+            if "confidence_score" not in defect_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE defects ADD COLUMN confidence_score FLOAT DEFAULT 1.0;"))
                     conn.commit()
 
             attempt_cols = [c["name"] for c in inspector.get_columns("assessment_attempts")]
@@ -8481,7 +8510,9 @@ def create_app(config_class=Config):
                     severity=sev,
                     remedial_action=rem,
                     title=title,
-                    explanation=exp
+                    explanation=exp,
+                    provenance="auto_suggested",
+                    confidence_score=float(s.get("confidence", 0.88))
                 )
                 db.session.add(d)
                 created_defects.append(d)
@@ -8495,6 +8526,7 @@ def create_app(config_class=Config):
         wall.assessment_defect_modes = current_modes
         wall.is_ai_reviewed = True
         wall.ai_reviewed_at = datetime.now(timezone.utc)
+        wall.grading_status = "auto_suggested"
         commit_with_retry(wall)
         return created_defects
 
@@ -8515,6 +8547,10 @@ def create_app(config_class=Config):
             data["defect_count"] = d_count
             specimen_list.append(data)
 
+        count_human = sum(1 for s in specimen_list if s.get("grading_status") == "human_graded")
+        count_accepted = sum(1 for s in specimen_list if s.get("grading_status") == "auto_accepted")
+        count_auto = sum(1 for s in specimen_list if s.get("grading_status") in ["auto_suggested", "auto", None])
+
         active_batteries = [b.to_dict() for b in Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()]
         attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.created_at.desc()).limit(200).all()
         walls_map = {s.id: s for s in specimens}
@@ -8523,6 +8559,9 @@ def create_app(config_class=Config):
         return render_template(
             "skill_assessment_admin.html",
             specimens=specimen_list,
+            count_human=count_human,
+            count_accepted=count_accepted,
+            count_auto=count_auto,
             wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()),
             remedial_options=REMEDIAL_OPTIONS,
             batteries=active_batteries,
@@ -8673,12 +8712,24 @@ def create_app(config_class=Config):
             elif isinstance(cm, str):
                 current_mode_ids.add(cm)
 
+        has_ai_pins = False
+        has_human_pins = False
+
         for d in incoming_defects:
             x = float(d.get("x", 0.5))
             y = float(d.get("y", 0.5))
             tol = float(d.get("tolerance_radius", 0.08) or 0.08)
             cat = str(d.get("category", "core_voiding")).strip()
             title = str(d.get("title", "Ground Truth Defect")).strip()
+
+            is_ai = bool(d.get("is_ai_suggested") or d.get("provenance") in ["auto", "auto_suggested", "auto_accepted"])
+            prov = "auto_accepted" if is_ai else "human_graded"
+            if is_ai:
+                has_ai_pins = True
+            else:
+                has_human_pins = True
+
+            conf = float(d.get("confidence_score") or (0.92 if is_ai else 1.0))
 
             new_d = Defect(
                 wall_id=wall.id,
@@ -8692,7 +8743,9 @@ def create_app(config_class=Config):
                 severity=d.get("severity", "moderate"),
                 remedial_action=d.get("remedial_action", "repoint_lime"),
                 title=title,
-                explanation=d.get("explanation", "")
+                explanation=d.get("explanation", ""),
+                provenance=prov,
+                confidence_score=conf
             )
             db.session.add(new_d)
 
@@ -8702,8 +8755,22 @@ def create_app(config_class=Config):
                 current_mode_ids.add(cat)
 
         wall.assessment_defect_modes = current_modes
-        commit_with_retry()
-        return jsonify({"success": True, "count": len(incoming_defects)})
+        if has_ai_pins:
+            wall.grading_status = "auto_accepted"
+        else:
+            wall.grading_status = "human_graded"
+
+        wall.graded_by_user_id = session.get("user_id")
+        wall.graded_by_user_name = session.get("user_name") or session.get("user_email") or "Assessor"
+        wall.graded_at = datetime.now(timezone.utc)
+
+        commit_with_retry(wall)
+        return jsonify({
+            "success": True,
+            "count": len(incoming_defects),
+            "grading_status": wall.grading_status,
+            "graded_by_user_name": wall.graded_by_user_name
+        })
 
     @app.route("/api/skill-assessment/ai-suggest/<slug>", methods=["POST"], strict_slashes=False)
     @admin_required

@@ -71,6 +71,7 @@ class TestAiDefectSuggestions(unittest.TestCase):
             db_wall = Wall.query.filter_by(slug=self.test_slug).first()
             self.assertTrue(db_wall.is_ai_reviewed)
             self.assertIsNotNone(db_wall.ai_reviewed_at)
+            self.assertEqual(db_wall.grading_status, "auto_suggested")
 
             defects = Defect.query.filter_by(wall_id=db_wall.id).all()
             self.assertGreaterEqual(len(defects), 2)
@@ -82,11 +83,14 @@ class TestAiDefectSuggestions(unittest.TestCase):
                 self.assertGreater(d.tolerance_radius, 0.0)
                 self.assertTrue(bool(d.category))
                 self.assertTrue(bool(d.title))
+                self.assertEqual(d.provenance, "auto_suggested")
 
     def test_grader_can_edit_and_save_ai_suggested_defects(self):
         with self.app.app_context():
             with self.client.session_transaction() as sess:
                 sess["is_admin"] = True
+                sess["user_id"] = "test-assessor-id"
+                sess["user_name"] = "Barry Sisk"
 
             # First trigger AI suggestions
             res = self.client.post(f"/api/skill-assessment/ai-suggest/{self.test_slug}")
@@ -103,7 +107,8 @@ class TestAiDefectSuggestions(unittest.TestCase):
                         "severity": "critical",
                         "remedial_action": "repoint_lime",
                         "title": "Instructor Confirmed: Bed Joint Lime Mortar Washout",
-                        "explanation": "Verified deep binder erosion exceeding 25mm."
+                        "explanation": "Verified deep binder erosion exceeding 25mm.",
+                        "is_ai_suggested": True
                     }
                 ]
             }
@@ -116,15 +121,55 @@ class TestAiDefectSuggestions(unittest.TestCase):
             save_data = json.loads(save_res.data.decode("utf-8"))
             self.assertTrue(save_data.get("success"))
             self.assertEqual(save_data.get("count"), 1)
+            self.assertEqual(save_data.get("grading_status"), "auto_accepted")
 
-            # Wall should still be marked as AI Reviewed
+            # Wall should now be marked as Auto-Accepted
             db_wall = Wall.query.filter_by(slug=self.test_slug).first()
             self.assertTrue(db_wall.is_ai_reviewed)
+            self.assertEqual(db_wall.grading_status, "auto_accepted")
+            self.assertEqual(db_wall.graded_by_user_name, "Barry Sisk")
 
             defects = Defect.query.filter_by(wall_id=db_wall.id).all()
             self.assertEqual(len(defects), 1)
             self.assertEqual(defects[0].title, "Instructor Confirmed: Bed Joint Lime Mortar Washout")
             self.assertEqual(defects[0].severity, "critical")
+            self.assertEqual(defects[0].provenance, "auto_accepted")
+
+    def test_human_graded_provenance_when_placed_from_scratch(self):
+        with self.app.app_context():
+            with self.client.session_transaction() as sess:
+                sess["is_admin"] = True
+                sess["user_name"] = "Barry Sisk"
+
+            # Instructor marks defects directly from scratch (not AI suggested)
+            scratch_payload = {
+                "defects": [
+                    {
+                        "x": 0.30,
+                        "y": 0.40,
+                        "tolerance_radius": 0.08,
+                        "category": "stepped_crack",
+                        "severity": "severe",
+                        "remedial_action": "helical_stitch",
+                        "title": "Manual Expert Calibration: Stepped Fracture",
+                        "explanation": "Expert hand-placed marker.",
+                        "is_ai_suggested": False
+                    }
+                ]
+            }
+            res = self.client.post(
+                f"/api/skill-assessment/grade/{self.test_slug}",
+                data=json.dumps(scratch_payload),
+                content_type="application/json"
+            )
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.data.decode("utf-8"))
+            self.assertEqual(data.get("grading_status"), "human_graded")
+
+            db_wall = Wall.query.filter_by(slug=self.test_slug).first()
+            self.assertEqual(db_wall.grading_status, "human_graded")
+            defects = Defect.query.filter_by(wall_id=db_wall.id).all()
+            self.assertEqual(defects[0].provenance, "human_graded")
 
     def test_upload_auto_suggests_defects_and_tags_ai_reviewed(self):
         with self.client.session_transaction() as sess:

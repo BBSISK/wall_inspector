@@ -28,6 +28,10 @@ class Wall(db.Model):
     sentinel_report = db.Column(db.JSON, nullable=True)
     sentinel_override = db.Column(db.Boolean, default=False)
     assessment_defect_modes = db.Column(db.JSON, nullable=True)
+    grading_status = db.Column(db.String(30), default="auto_suggested")  # "auto_suggested", "auto_accepted", "human_graded"
+    graded_by_user_id = db.Column(db.String(36), nullable=True)
+    graded_by_user_name = db.Column(db.String(120), nullable=True)
+    graded_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -58,7 +62,10 @@ class Wall(db.Model):
             "sentinel_score": int(self.sentinel_score if self.sentinel_score is not None else 100),
             "sentinel_report": self.sentinel_report or {},
             "sentinel_override": bool(self.sentinel_override),
-            "assessment_defect_modes": self.assessment_defect_modes or []
+            "assessment_defect_modes": self.assessment_defect_modes or [],
+            "grading_status": self.grading_status or ("auto_suggested" if self.is_ai_reviewed else "human_graded"),
+            "graded_by_user_name": self.graded_by_user_name,
+            "graded_at": self.graded_at.strftime("%Y-%m-%d %H:%M") if self.graded_at else None
         }
 
 class Defect(db.Model):
@@ -77,6 +84,8 @@ class Defect(db.Model):
     remedial_action = db.Column(db.String(150), default="repoint_lime")
     title = db.Column(db.String(100), nullable=False)
     explanation = db.Column(db.Text)
+    provenance = db.Column(db.String(30), default="auto_suggested")  # "auto_suggested", "auto_accepted", "human_graded"
+    confidence_score = db.Column(db.Float, default=1.0)
 
     def to_dict(self):
         return {
@@ -92,7 +101,9 @@ class Defect(db.Model):
             "severity": self.severity,
             "remedial_action": self.remedial_action,
             "title": self.title,
-            "explanation": self.explanation
+            "explanation": self.explanation,
+            "provenance": getattr(self, 'provenance', 'auto_suggested') or 'auto_suggested',
+            "confidence_score": float(getattr(self, 'confidence_score', 1.0) or 1.0)
         }
 
 class Organization(db.Model):

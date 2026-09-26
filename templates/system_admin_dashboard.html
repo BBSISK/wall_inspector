@@ -661,6 +661,19 @@
               <span class="badge" style="position: absolute; top: 6px; left: 6px; background: rgba(15, 23, 42, 0.85); color: var(--accent-blue); font-size: 0.7rem;">
                 {{ spec.defects|length }} Ground Truth
               </span>
+              {% if spec.grading_status == 'human_graded' %}
+                <span class="badge" style="position: absolute; top: 6px; right: 6px; background: rgba(16, 185, 129, 0.9); color: #ffffff; font-size: 0.68rem; font-weight: 700;">
+                  <i class="fa-solid fa-user-check"></i> Human-Graded
+                </span>
+              {% elif spec.grading_status == 'auto_accepted' %}
+                <span class="badge" style="position: absolute; top: 6px; right: 6px; background: rgba(2, 132, 199, 0.9); color: #ffffff; font-size: 0.68rem; font-weight: 700;">
+                  <i class="fa-solid fa-handshake"></i> Auto-Accepted
+                </span>
+              {% else %}
+                <span class="badge" style="position: absolute; top: 6px; right: 6px; background: rgba(124, 58, 237, 0.9); color: #ffffff; font-size: 0.68rem; font-weight: 700;">
+                  <i class="fa-solid fa-bolt"></i> Auto-Suggested
+                </span>
+              {% endif %}
             </div>
             <div style="padding: 0.85rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
               <strong style="font-size: 0.85rem; color: #f8fafc; line-height: 1.3; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">

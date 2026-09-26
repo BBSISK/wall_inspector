@@ -813,7 +813,10 @@
         severity: d.severity || 'moderate',
         remedial_action: d.remedial_action || 'repoint_lime',
         title: d.title || 'Ground Truth Defect',
-        explanation: d.explanation || ''
+        explanation: d.explanation || '',
+        provenance: d.provenance || 'human_graded',
+        confidence_score: d.confidence_score || 1.0,
+        is_ai_suggested: d.provenance === 'auto_suggested'
       });
       // Register title/mode into modeLookup if missing
       if (!modeLookup[d.category]) {
@@ -1149,6 +1152,11 @@
       const tol = parseFloat(document.getElementById('modal-tol').value);
       const explanation = document.getElementById('modal-explanation').value.trim();
 
+      const orig = editingIndex >= 0 ? (defectList[editingIndex] || {}) : {};
+      const prov = (editingIndex >= 0)
+        ? ((orig.provenance === 'auto_suggested' || orig.is_ai_suggested) ? 'auto_accepted' : (orig.provenance || 'human_graded'))
+        : 'human_graded';
+
       const item = {
         x: pendingCoords.x,
         y: pendingCoords.y,
@@ -1157,7 +1165,10 @@
         severity: severity,
         remedial_action: remedial,
         title: title,
-        explanation: explanation
+        explanation: explanation,
+        provenance: prov,
+        confidence_score: orig.confidence_score || 1.0,
+        is_ai_suggested: prov === 'auto_suggested'
       };
 
       if (editingIndex >= 0) {
@@ -1230,11 +1241,21 @@
           const mode = modeLookup[d.category] || { label: d.title || d.category };
           const card = document.createElement('div');
           card.className = 'gt-card-item';
+
+          let provBadge = '';
+          if (d.provenance === 'human_graded' || (!d.provenance && !d.is_ai_suggested)) {
+            provBadge = '<span style="font-size: 0.65rem; background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #10b981; border-radius: 4px; padding: 1px 5px; font-weight: 700;"><i class="fa-solid fa-user-check"></i> Human</span>';
+          } else if (d.provenance === 'auto_accepted') {
+            provBadge = '<span style="font-size: 0.65rem; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; padding: 1px 5px; font-weight: 700;"><i class="fa-solid fa-handshake"></i> Accepted</span>';
+          } else {
+            provBadge = '<span style="font-size: 0.65rem; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid #a855f7; border-radius: 4px; padding: 1px 5px; font-weight: 700;"><i class="fa-solid fa-bolt"></i> AI Proposed</span>';
+          }
+
           card.innerHTML = `
             <div class="gt-card-header">
               <strong style="color: #00f2fe; font-size: 0.85rem;">#${idx + 1} • ${d.title}</strong>
               <div style="display: flex; align-items: center; gap: 6px;">
-                ${d.is_ai_suggested ? '<span style="font-size: 0.65rem; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid #a855f7; border-radius: 4px; padding: 1px 5px; font-weight: 700;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI</span>' : ''}
+                ${provBadge}
                 <button type="button" class="btn-del-gt" onclick="deleteDefect(${idx})" title="Delete target">&times;</button>
               </div>
             </div>
@@ -1257,14 +1278,26 @@
 
     async function saveAllDefects() {
       try {
+        const payloadDefects = defectList.map(d => ({
+          ...d,
+          provenance: (d.provenance === 'auto_suggested' || d.is_ai_suggested) ? 'auto_accepted' : (d.provenance || 'human_graded')
+        }));
+
         const response = await fetch(`/api/skill-assessment/grade/${wallSlug}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ defects: defectList })
+          body: JSON.stringify({ defects: payloadDefects })
         });
         const res = await response.json();
         if (res && res.success) {
-          alert('Ground truth defects saved successfully (' + res.count + ' targets)!');
+          defectList.forEach(d => {
+            if (d.provenance === 'auto_suggested' || d.is_ai_suggested) {
+              d.provenance = 'auto_accepted';
+              d.is_ai_suggested = false;
+            }
+          });
+          renderAll();
+          alert(`✅ Ground truth defects saved successfully (${res.count} targets)!\nStatus: ${res.grading_status === 'human_graded' ? '✍️ Human-Graded' : '🤝 Auto-Accepted'}`);
           // Also sync modes palette
           saveModesPalette();
         } else {
@@ -1306,6 +1339,8 @@
             remedial_action: d.remedial_action || 'repoint_lime',
             title: d.title || 'AI Suggested Defect',
             explanation: d.explanation || '',
+            provenance: 'auto_suggested',
+            confidence_score: d.confidence_score || 0.88,
             is_ai_suggested: true
           }));
 

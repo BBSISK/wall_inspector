@@ -742,9 +742,27 @@
 
       <!-- Specimen Queue Table -->
       <section class="queue-card">
-        <div class="queue-header">
-          <h3><i class="fa-solid fa-layer-group" style="color: #34d399;"></i> Assessment Specimen Queue ({{ specimens|length }})</h3>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Published & Candidate Specimens</span>
+        <div class="queue-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3><i class="fa-solid fa-layer-group" style="color: #34d399;"></i> Assessment Specimen Queue ({{ specimens|length }})</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Published & Candidate Specimens</span>
+          </div>
+
+          <!-- 3-Tier Provenance Filter Tabs -->
+          <div class="provenance-filter-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="prov-filter-btn active" onclick="filterByProvenance('all', this)" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #38bdf8; background: #0284c7; color: white; cursor: pointer; font-weight: 700;">
+              All ({{ specimens|length }})
+            </button>
+            <button type="button" class="prov-filter-btn" onclick="filterByProvenance('human_graded', this)" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.15); color: #34d399; cursor: pointer; font-weight: 700;">
+              <i class="fa-solid fa-user-check"></i> Human-Graded ({{ count_human }})
+            </button>
+            <button type="button" class="prov-filter-btn" onclick="filterByProvenance('auto_accepted', this)" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #38bdf8; background: rgba(56, 189, 248, 0.15); color: #38bdf8; cursor: pointer; font-weight: 700;">
+              <i class="fa-solid fa-handshake"></i> Auto-Accepted ({{ count_accepted }})
+            </button>
+            <button type="button" class="prov-filter-btn" onclick="filterByProvenance('auto_suggested', this)" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #a855f7; background: rgba(168, 85, 247, 0.15); color: #c084fc; cursor: pointer; font-weight: 700;">
+              <i class="fa-solid fa-bolt"></i> Auto-Suggested ({{ count_auto }})
+            </button>
+          </div>
         </div>
 
         <div style="overflow-x: auto;">
@@ -754,14 +772,14 @@
                 <th>Specimen</th>
                 <th>Archetype</th>
                 <th>Difficulty</th>
-                <th>Status</th>
+                <th>Status &amp; Lineage</th>
                 <th>Sentinel QA</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {% for wall in specimens %}
-                <tr>
+                <tr class="specimen-row" data-provenance="{{ wall.grading_status }}">
                   <td>
                     <div style="display: flex; align-items: center; gap: 10px;">
                       <img src="{{ wall.image_url }}" alt="" class="table-thumb" onerror="this.src='https://placehold.co/100x75/1e293b/94a3b8?text=Specimen'">
@@ -775,13 +793,22 @@
                   <td><span class="badge-diff diff-{{ wall.difficulty }}">{{ wall.difficulty }}</span></td>
                   <td>
                     {% if wall.defect_count > 0 %}
-                      <span class="badge-status-graded"><i class="fa-solid fa-check"></i> {{ wall.defect_count }} Defect Pins</span>
+                      <span class="badge-status-graded"><i class="fa-solid fa-check"></i> {{ wall.defect_count }} Pins</span>
                     {% else %}
                       <span class="badge-status-pending"><i class="fa-solid fa-clock"></i> Pending Pins</span>
                     {% endif %}
-                    {% if wall.is_ai_reviewed %}
-                      <span class="badge-status-ai" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #a855f7; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-left: 4px; display: inline-flex; align-items: center; gap: 4px;" title="Analyzed & suggested by AI{% if wall.ai_reviewed_at %} on {{ wall.ai_reviewed_at }}{% endif %}">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Reviewed
+
+                    {% if wall.grading_status == 'human_graded' %}
+                      <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; padding: 2px 7px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;" title="Calibrated &amp; verified by human expert{% if wall.graded_by_user_name %} ({{ wall.graded_by_user_name }}){% endif %}">
+                        <i class="fa-solid fa-user-check"></i> Human-Graded
+                      </span>
+                    {% elif wall.grading_status == 'auto_accepted' %}
+                      <span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 7px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;" title="AI suggested, confirmed by assessor{% if wall.graded_by_user_name %} ({{ wall.graded_by_user_name }}){% endif %}">
+                        <i class="fa-solid fa-handshake"></i> Auto-Accepted
+                      </span>
+                    {% else %}
+                      <span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; padding: 2px 7px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;" title="AI suggested defect pins awaiting human review">
+                        <i class="fa-solid fa-bolt"></i> Auto-Suggested
                       </span>
                     {% endif %}
                   </td>
@@ -1043,6 +1070,26 @@
           btn.innerHTML = origHtml;
         }
       }
+    }
+
+    function filterByProvenance(type, btn) {
+      document.querySelectorAll('.prov-filter-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = '';
+        b.style.color = '';
+      });
+      btn.classList.add('active');
+      btn.style.background = '#0284c7';
+      btn.style.color = 'white';
+
+      document.querySelectorAll('.specimen-row').forEach(row => {
+        const prov = row.getAttribute('data-provenance') || 'auto_suggested';
+        if (type === 'all' || prov === type || (type === 'auto_suggested' && (prov === 'auto' || !prov))) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
     }
   </script>
 
