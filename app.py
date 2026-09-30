@@ -4533,6 +4533,73 @@ def create_app(config_class=Config):
         commit_with_retry()
         return jsonify({"success": True, "user": user.to_dict()})
 
+    @app.route("/admin/system/users/add", methods=["POST"])
+    @system_admin_required
+    def system_admin_add_user():
+        """Pre-authorizes and whitelists a user directly from the System Admin dashboard."""
+        data = request.get_json(silent=True) if request.is_json else request.form
+        email = (data.get("email") or "").strip().lower()
+        name = (data.get("name") or "").strip()
+        role = (data.get("role") or "class_admin").strip()
+        org_id = data.get("organization_id")
+
+        if not email or "@" not in email:
+            if request.is_json:
+                return jsonify({"success": False, "error": "A valid email address is required"}), 400
+            flash("A valid email address is required.", "error")
+            return redirect(url_for("system_admin_dashboard"))
+
+        if role not in ["system_admin", "class_admin", "student"]:
+            role = "class_admin"
+
+        if not name:
+            name = email.split("@")[0].replace(".", " ").title()
+
+        default_org = Organization.query.filter_by(code="GWI-GENERAL").first()
+        assigned_org_id = org_id or (default_org.id if default_org else None)
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            user = User(
+                id=str(uuid.uuid4()),
+                email=email,
+                name=name,
+                role=role,
+                organization_id=assigned_org_id,
+                is_approved=True,
+                is_active=True,
+                auth_provider="pending_login"
+            )
+            db.session.add(user)
+        else:
+            user.role = role
+            user.is_approved = True
+            user.is_active = True
+            if org_id:
+                user.organization_id = org_id
+            if name and (not user.name or user.name == user.email.split("@")[0].replace(".", " ").title()):
+                user.name = name
+
+        commit_with_retry()
+
+        try:
+            from notification_service import notify_user_access_approved
+            app_base = request.host_url.rstrip("/") if request else "https://wall-inspector.onrender.com"
+            notify_user_access_approved(
+                user_name=user.name,
+                user_email=user.email,
+                assigned_role=user.role,
+                app_url=app_base,
+                app_config=app.config
+            )
+        except Exception as notify_err:
+            print(f"[WHITELIST NOTIFY NOTICE] Could not trigger user welcome email: {notify_err}")
+
+        if request.is_json:
+            return jsonify({"success": True, "user": user.to_dict()})
+        flash(f"User {email} successfully whitelisted as {role.replace('_', ' ').title()}.", "success")
+        return redirect(url_for("system_admin_dashboard"))
+
     @app.route("/admin/walls/new", methods=["GET", "POST"])
     @admin_required
     def admin_create_wall():

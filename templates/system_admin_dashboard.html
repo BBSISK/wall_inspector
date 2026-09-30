@@ -421,6 +421,9 @@
         <button type="button" onclick="openOrgModal()" class="btn btn-purple" style="font-weight: 700; padding: 0.65rem 1.1rem;">
           <i class="fa-solid fa-plus-circle"></i> Onboard School
         </button>
+        <button type="button" onclick="openWhitelistModal()" class="btn btn-primary" style="font-weight: 700; padding: 0.65rem 1.1rem;">
+          <i class="fa-solid fa-user-shield"></i> Whitelist Admin
+        </button>
       </div>
     </div>
 
@@ -559,8 +562,13 @@
     <!-- SECTION 2: USERS & INSTRUCTOR AUTHORIZATION -->
     <section class="section-card">
       <div class="section-header">
-        <h2><i class="fa-solid fa-user-shield"></i> User Directory &amp; Assessor Authorization</h2>
-        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ users|length }} registered accounts</span>
+        <div>
+          <h2 style="margin: 0 0 4px;"><i class="fa-solid fa-user-shield"></i> User Directory &amp; Assessor Authorization</h2>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">{{ users|length }} registered accounts</span>
+        </div>
+        <button type="button" onclick="openWhitelistModal()" class="btn btn-purple" style="padding: 0.4rem 0.75rem; font-size: 0.78rem;">
+          <i class="fa-solid fa-user-plus"></i> Add Whitelist Admin
+        </button>
       </div>
 
       <div class="table-responsive">
@@ -727,7 +735,60 @@
     </div>
   </div>
 
+  <!-- Modal: Whitelist / Add Administrator -->
+  <div id="modal-whitelist" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-user-shield" style="color: var(--accent-purple);"></i>
+          Whitelist &amp; Pre-Approve Administrator
+        </h3>
+        <button type="button" onclick="closeWhitelistModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">&times;</button>
+      </div>
+      <form method="POST" action="/admin/system/users/add">
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0; margin-bottom: 1.2rem; line-height: 1.4;">
+            Pre-authorizing an email allows this user to bypass the pending approval queue. When they sign in with Google or Microsoft, they will immediately be granted administrator privileges.
+          </p>
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" name="email" class="form-control" placeholder="e.g. colleague@university.edu" required>
+          </div>
+          <div class="form-group">
+            <label>Full Name (Optional)</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Dr. Jane Smith">
+          </div>
+          <div class="form-group">
+            <label>Assigned Role *</label>
+            <select name="role" class="form-control">
+              <option value="class_admin" selected>Class Admin (Upload Photos, Manage Cohorts &amp; Tests)</option>
+              <option value="system_admin">System Admin (Full Platform Control &amp; Specimen Ingestion)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Organization / School</label>
+            <select name="organization_id" class="form-control">
+              {% for org in organizations %}
+                <option value="{{ org.id }}">{{ org.name }} ({{ org.code }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" onclick="closeWhitelistModal()" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-purple"><i class="fa-solid fa-check"></i> Whitelist Admin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
+    function openWhitelistModal() {
+      document.getElementById('modal-whitelist').classList.add('active');
+    }
+    function closeWhitelistModal() {
+      document.getElementById('modal-whitelist').classList.remove('active');
+    }
     function openOrgModal() {
       document.getElementById('modal-org').classList.add('active');
     }

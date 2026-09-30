@@ -233,5 +233,40 @@ class TestRolesAndOrganizations(unittest.TestCase):
         data_role = resp_role.get_json()
         self.assertEqual(data_role["user"]["role"], "system_admin")
 
+    def test_system_admin_add_and_whitelist_user(self):
+        with self.client.session_transaction() as sess:
+            sess["is_admin"] = True
+            sess["is_system_admin"] = True
+            sess["user_role"] = "system_admin"
+
+        new_email = f"whitelisted_{uuid.uuid4().hex[:6]}@partner.edu"
+        payload = {
+            "email": new_email,
+            "name": "Prof. Jane Smith",
+            "role": "class_admin",
+            "organization_id": self.org_id
+        }
+
+        resp = self.client.post("/admin/system/users/add", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data.get("success"))
+        self.assertEqual(data["user"]["email"], new_email)
+        self.assertEqual(data["user"]["role"], "class_admin")
+        self.assertTrue(data["user"]["is_approved"])
+        self.assertEqual(data["user"]["auth_provider"], "pending_login")
+
+        # Verify in database
+        with self.app.app_context():
+            u = User.query.filter_by(email=new_email).first()
+            self.assertIsNotNone(u)
+            self.assertEqual(u.name, "Prof. Jane Smith")
+            self.assertTrue(u.is_approved)
+            self.assertEqual(u.role, "class_admin")
+
+            # Clean up
+            db.session.delete(u)
+            db.session.commit()
+
 if __name__ == "__main__":
     unittest.main()
