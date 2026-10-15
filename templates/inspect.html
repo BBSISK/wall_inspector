@@ -100,6 +100,12 @@
       <button type="button" class="btn-guide" onclick="openAIConservatorModal()" style="background: #7c3aed; color: white;">🤖 AI Conservator</button>
       <a href="/survey/report/{{ wall.slug }}" target="_blank" class="btn-guide" style="background: #0284c7; color: white; text-decoration: none;">📄 RICS Report</a>
       <a href="/compare?wall_a={{ wall.slug }}" target="_blank" class="btn-guide" style="background: #059669; color: white; text-decoration: none;">⚖️ Compare</a>
+      <a href="/admin/walls/{{ wall.slug }}/edit" class="btn-guide" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; text-decoration: none;">✏️ Edit Wall</a>
+      {% if not wall.is_skill_assessment %}
+        <a href="/admin/walls/{{ wall.slug }}/promote" class="btn-guide" style="background: #059669; color: white; text-decoration: none;">🎯 Promote to Grading</a>
+      {% else %}
+        <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-guide" style="background: #0284c7; color: white; text-decoration: none;">🎯 Grading Workstation</a>
+      {% endif %}
       <button type="button" class="btn-guide" id="btn-toggle-guide">📖 Field Guide</button>
       <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem; margin-left: 0.5rem;">&larr; Exit</a>
     </div>

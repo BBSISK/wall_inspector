@@ -77,6 +77,23 @@
         </div>
       </div>
 
+      <div style="background: rgba(5, 150, 105, 0.15); border: 1.5px solid #10b981; border-radius: 8px; padding: 14px; margin-top: 1.25rem;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #a7f3d0; font-size: 0.92rem; font-weight: 700; margin: 0; text-transform: none;">
+          <input type="checkbox" name="is_skill_assessment" id="is_skill_assessment" value="1" style="width: auto; accent-color: #059669; transform: scale(1.3);" {% if wall.is_skill_assessment %}checked{% endif %}>
+          <span>🎯 Register for Student Skill Assessment &amp; Defect Grading</span>
+        </label>
+        <small style="color: #94a3b8; font-size: 0.78rem; display: block; margin-top: 6px; line-height: 1.4;">
+          Makes this specimen available in the Assessor Workstation queue at <code>/skill-assessment/admin</code> and enables clinical defect grading.
+        </small>
+        {% if wall.is_skill_assessment %}
+          <div style="margin-top: 10px;">
+            <a href="/skill-assessment/admin/grade/{{ wall.slug }}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; background: #059669; color: white; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 700;">
+              <span>🎯 Open in Defect Grading Workstation &rarr;</span>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
       <button type="submit" class="btn">Save & Update Wall &rarr;</button>
     </form>
   </div>

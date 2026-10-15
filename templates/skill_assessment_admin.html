@@ -765,6 +765,40 @@
           </div>
         </div>
 
+        {% if catalog_walls and catalog_walls|length > 0 %}
+          <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #cbd5e1; display: flex; align-items: center; gap: 8px;">
+                <span style="background: #0284c7; color: white; padding: 2px 7px; border-radius: 12px; font-size: 0.72rem; font-weight: 800;">{{ catalog_walls|length }}</span>
+                <span>Unassigned Catalog Photos Available (Uploaded from phone or catalog)</span>
+              </span>
+              <button type="button" onclick="document.getElementById('catalog-import-panel').style.display = document.getElementById('catalog-import-panel').style.display === 'none' ? 'block' : 'none'" style="background: #1e293b; color: #38bdf8; border: 1px solid #0284c7; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                View &amp; Import to Grading Queue &darr;
+              </button>
+            </div>
+            <div id="catalog-import-panel" style="display: none; margin-top: 12px; border-top: 1px solid #334155; padding-top: 12px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto;">
+                {% for cw in catalog_walls %}
+                  <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                      <img src="{{ cw.image_url }}" alt="" style="width: 44px; height: 36px; object-fit: cover; border-radius: 4px; flex-shrink: 0;">
+                      <div style="overflow: hidden;">
+                        <strong style="color: #f8fafc; font-size: 0.8rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cw.title }}</strong>
+                        <small style="color: #94a3b8; font-size: 0.7rem;">{{ cw.wall_type }} &bull; {{ cw.country }}</small>
+                      </div>
+                    </div>
+                    <form action="/admin/walls/{{ cw.slug }}/promote-to-skill" method="POST" style="margin: 0; flex-shrink: 0;">
+                      <button type="submit" style="background: #059669; color: white; border: none; padding: 5px 9px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                        🎯 Import &rarr;
+                      </button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
         <div style="overflow-x: auto;">
           <table class="specimen-table">
             <thead>
