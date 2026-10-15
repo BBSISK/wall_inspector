@@ -3987,7 +3987,7 @@ def create_app(config_class=Config):
     @app.route("/admin/walls/<wall_id>/edit", methods=["GET", "POST"])
     @admin_required
     def admin_edit_wall(wall_id):
-        wall = Wall.query.get_or_404(wall_id)
+        wall = Wall.query.filter((Wall.id == wall_id) | (Wall.slug == wall_id)).first_or_404()
         if request.method == "GET":
             return render_template("admin_edit_wall.html", wall=wall.to_dict())
 
@@ -3998,6 +3998,25 @@ def create_app(config_class=Config):
             wall.region = request.form.get("region", wall.region)
             wall.wall_type = request.form.get("wall_type", wall.wall_type)
             wall.difficulty = request.form.get("difficulty", wall.difficulty)
+
+            prev_skill = bool(wall.is_skill_assessment)
+            is_skill = bool(request.form.get("is_skill_assessment") in ["1", "true", "True", True, "on"])
+            wall.is_skill_assessment = is_skill
+            if is_skill and not prev_skill:
+                if not wall.grading_status:
+                    wall.grading_status = "auto_suggested"
+                try:
+                    local_img_path = os.path.join(app.config["UPLOAD_FOLDER"], wall.image_filename)
+                    if os.path.exists(local_img_path):
+                        with open(local_img_path, "rb") as f_img:
+                            from sentinel_agent import run_sentinel_audit
+                            run_sentinel_audit(wall, f_img.read())
+                except Exception as s_err:
+                    print(f"Notice: Sentinel audit on wall edit promotion: {s_err}")
+                try:
+                    generate_ai_defect_suggestions(wall)
+                except Exception as ai_err:
+                    print(f"Notice: AI suggestion on wall edit promotion: {ai_err}")
 
             file = request.files.get("wall_image")
             if file and file.filename:
@@ -4033,10 +4052,40 @@ def create_app(config_class=Config):
                     wall.image_url_direct = None
 
             commit_with_retry(wall)
+            if is_skill and not prev_skill:
+                flash(f"'{wall.title}' is now registered for Skill Assessment & Defect Grading!", "success")
+                return redirect(url_for("skill_assessment_grader", slug=wall.slug))
             return redirect(url_for("index"))
         except Exception as e:
             db.session.rollback()
             return f"Error updating wall: {str(e)}", 500
+
+    @app.route("/admin/walls/<wall_id>/promote-to-skill", methods=["POST"])
+    @app.route("/admin/walls/<wall_id>/promote", methods=["GET", "POST"])
+    @admin_required
+    def admin_promote_wall_to_skill(wall_id):
+        wall = Wall.query.filter((Wall.id == wall_id) | (Wall.slug == wall_id)).first_or_404()
+        wall.is_skill_assessment = True
+        if not wall.grading_status:
+            wall.grading_status = "auto_suggested"
+
+        try:
+            local_img_path = os.path.join(app.config["UPLOAD_FOLDER"], wall.image_filename)
+            if os.path.exists(local_img_path):
+                with open(local_img_path, "rb") as f_img:
+                    from sentinel_agent import run_sentinel_audit
+                    run_sentinel_audit(wall, f_img.read())
+        except Exception as s_err:
+            print(f"Notice: Sentinel audit on direct promotion: {s_err}")
+
+        try:
+            generate_ai_defect_suggestions(wall)
+        except Exception as ai_err:
+            print(f"Notice: AI suggestion on direct promotion: {ai_err}")
+
+        commit_with_retry(wall)
+        flash(f"'{wall.title}' successfully promoted to the Ground-Truth Grading Repository!", "success")
+        return redirect(url_for("skill_assessment_grader", slug=wall.slug))
 
     @app.route("/admin/walls/<wall_id>/delete", methods=["POST"])
     @admin_required
@@ -6391,7 +6440,13 @@ def create_app(config_class=Config):
                 except Exception as cloud_err:
                     print(f"Cloudinary mobile upload notice (using local file): {cloud_err}")
 
-            is_skill_assessment = bool(request.form.get("is_skill_assessment") in ["1", "true", "True", True, "on"])
+            # Automatic Grading Pipeline: all mobile admin captures route to grading by default
+            raw_skill = request.form.get("is_skill_assessment")
+            if raw_skill is None or raw_skill == "":
+                is_skill_assessment = True  # AUTOMATIC DEFAULT FOR FIELD CAPTURES
+            else:
+                is_skill_assessment = raw_skill not in ["0", "false", "False", "off"]
+
             wall = Wall(
                 slug=slug,
                 title=title,
@@ -6404,9 +6459,35 @@ def create_app(config_class=Config):
                 image_filename=filename,
                 image_url_direct=image_url_direct,
                 is_published=True,
-                is_skill_assessment=is_skill_assessment
+                is_skill_assessment=is_skill_assessment,
+                grading_status="auto_suggested" if is_skill_assessment else None
             )
             commit_with_retry(wall)
+
+            if is_skill_assessment:
+                # Mirror to assessment folder if configured separately
+                assess_path = os.path.join(app.config.get("ASSESSMENT_FOLDER", app.config["UPLOAD_FOLDER"]), filename)
+                if assess_path != local_path:
+                    try:
+                        with open(assess_path, "wb") as f_out:
+                            f_out.write(file_bytes)
+                    except Exception as f_err:
+                        print(f"Notice: Assessment folder sync: {f_err}")
+
+                # Run Intake Sentinel QA Photogrammetric Audit
+                try:
+                    from sentinel_agent import run_sentinel_audit
+                    run_sentinel_audit(wall, file_bytes)
+                    commit_with_retry(wall)
+                except Exception as sentinel_err:
+                    print(f"Notice: Mobile Sentinel audit encountered: {sentinel_err}")
+
+                # Auto-suggest defects using AI immediately so pins are pre-loaded for grading
+                try:
+                    generate_ai_defect_suggestions(wall)
+                except Exception as ai_err:
+                    print(f"Notice: Mobile AI suggestion during upload encountered: {ai_err}")
+
             return jsonify({"success": True, "wall": wall.to_dict()})
         except Exception as e:
             db.session.rollback()

@@ -68,6 +68,72 @@ class TestMobileAuthAndPairing(unittest.TestCase):
         self.assertIn("modal-skill-qr", content)
         self.assertIn("openSkillQrModal", content)
 
+    def test_promote_wall_by_slug(self):
+        from app import db, Wall
+        with self.app.app_context():
+            slug = "test-catalog-wall-promo-slug"
+            existing = Wall.query.filter_by(slug=slug).first()
+            if existing:
+                db.session.delete(existing)
+                db.session.commit()
+            w = Wall(
+                slug=slug,
+                title="Unassigned Catalog Wall",
+                wall_type="brick_cavity",
+                difficulty="medium",
+                country="Ireland",
+                image_filename="ashlar_quarry.jpg",
+                is_published=True,
+                is_skill_assessment=False
+            )
+            db.session.add(w)
+            db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["is_admin"] = True
+
+        response = self.client.get(f"/admin/walls/{slug}/promote", follow_redirects=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f"/skill-assessment/admin/grade/{slug}", response.headers.get("Location", ""))
+
+        with self.app.app_context():
+            updated = Wall.query.filter_by(slug=slug).first()
+            self.assertTrue(updated.is_skill_assessment)
+            self.assertEqual(updated.grading_status, "auto_suggested")
+            db.session.delete(updated)
+            db.session.commit()
+
+    def test_mobile_upload_defaults_to_skill_assessment(self):
+        import io
+        from app import db, Wall
+        with self.client.session_transaction() as sess:
+            sess["is_admin"] = True
+
+        # 1x1 valid transparent PNG
+        dummy_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82'
+        data = {
+            "title": "Field Test Auto Skill Capture",
+            "wall_type": "brick_cavity",
+            "difficulty": "medium",
+            "wall_image": (io.BytesIO(dummy_png), "auto_field_test.png")
+            # is_skill_assessment intentionally omitted to test automatic default
+        }
+
+        response = self.client.post("/mobile/admin/upload", data=data, content_type="multipart/form-data")
+        self.assertEqual(response.status_code, 200)
+        res_json = response.get_json()
+        self.assertTrue(res_json.get("success"))
+        created_slug = res_json.get("wall", {}).get("slug")
+        self.assertTrue(res_json.get("wall", {}).get("is_skill_assessment"))
+
+        with self.app.app_context():
+            created_wall = Wall.query.filter_by(slug=created_slug).first()
+            if created_wall:
+                self.assertTrue(created_wall.is_skill_assessment)
+                self.assertEqual(created_wall.grading_status, "auto_suggested")
+                db.session.delete(created_wall)
+                db.session.commit()
+
 if __name__ == "__main__":
     unittest.main()
 
