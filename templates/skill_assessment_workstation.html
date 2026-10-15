@@ -767,6 +767,41 @@
         <span class="pin-count-badge" id="pin-badge">0 / {{ ground_truth_count }}</span>
       </div>
 
+      <!-- General Wall Issues Selection Box (Menu of 10 Issues) -->
+      <div class="general-issues-container" style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-dark); background: rgba(15, 23, 42, 0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #a5b4fc; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px; margin: 0;">
+            <i class="fa-solid fa-layer-group"></i> General Wall Issues
+          </label>
+          <span id="student-general-issues-badge" style="background: rgba(99, 102, 241, 0.15); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.35); font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 10px;">
+            0 / 3 Selected
+          </span>
+        </div>
+        <p style="font-size: 0.72rem; color: #94a3b8; margin: 0 0 0.5rem 0; line-height: 1.35;">
+          Select the <strong>2 or 3 overarching issues</strong> affecting this wall as a whole:
+        </p>
+
+        <!-- Dropdown select menu of 10 issues -->
+        <div style="display: flex; gap: 6px; margin-bottom: 0.5rem;">
+          <select id="student-general-issue-select" class="form-control" style="font-size: 0.78rem; padding: 0.4rem 0.5rem; background: #0b1120; border-color: #334155; color: #f1f5f9;">
+            <option value="">-- Select from 10 General Issues --</option>
+            {% for issue in general_wall_issues %}
+              <option value="{{ issue.id }}">{{ issue.label }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" onclick="studentAddGeneralIssue()" style="background: #4f46e5; border: 1px solid #6366f1; color: white; border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+            + Add
+          </button>
+        </div>
+
+        <!-- Selected issues chip list -->
+        <div id="student-general-issues-list" style="display: flex; flex-direction: column; gap: 4px;">
+          <div id="student-general-issues-empty" style="font-size: 0.7rem; color: #64748b; font-style: italic;">
+            No general issues selected yet. Select 2 or 3 from the dropdown above.
+          </div>
+        </div>
+      </div>
+
       <div class="sidebar-content" id="pinned-list">
         <div class="empty-state" id="empty-state">
           <i class="fa-solid fa-hand-pointer"></i>
@@ -881,6 +916,19 @@
           </thead>
           <tbody id="results-table-body"></tbody>
         </table>
+      </div>
+
+      <!-- General Wall Issues Evaluation Card -->
+      <div id="general-issues-eval-section" style="text-align: left; margin-top: 1.25rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.85rem; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="margin: 0; font-size: 0.85rem; color: #a5b4fc; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-layer-group"></i> General Wall Pathology Evaluation
+          </h4>
+          <span id="general-issues-eval-score-badge" style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid #10b981;">
+            100% Score
+          </span>
+        </div>
+        <div id="general-issues-eval-chips" style="display: flex; flex-direction: column; gap: 6px;"></div>
       </div>
 
       <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
@@ -1051,6 +1099,77 @@
     let pendingCoords = null;
     let isEvaluated = false;
     let currentZoom = 1.0;
+
+    let studentGeneralIssues = [];
+    const generalIssuesMap = {};
+    {% for issue in general_wall_issues %}
+      generalIssuesMap[{{ issue.id|tojson }}] = {{ issue|tojson }};
+    {% endfor %}
+
+    function studentAddGeneralIssue() {
+      if (isEvaluated) return;
+      const sel = document.getElementById('student-general-issue-select');
+      if (!sel || !sel.value) return;
+      const issueId = sel.value;
+      if (studentGeneralIssues.includes(issueId)) {
+        alert('You have already selected this general issue.');
+        return;
+      }
+      if (studentGeneralIssues.length >= 3) {
+        alert('You can select a maximum of 3 general issues for this wall specimen.');
+        return;
+      }
+      studentGeneralIssues.push(issueId);
+      sel.value = '';
+      renderStudentGeneralIssues();
+    }
+
+    function studentRemoveGeneralIssue(issueId) {
+      if (isEvaluated) return;
+      studentGeneralIssues = studentGeneralIssues.filter(id => id !== issueId);
+      renderStudentGeneralIssues();
+    }
+
+    function renderStudentGeneralIssues() {
+      const count = studentGeneralIssues.length;
+      const badge = document.getElementById('student-general-issues-badge');
+      if (badge) {
+        badge.textContent = `${count} / 3 Selected`;
+        if (count >= 2 && count <= 3) {
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.color = '#34d399';
+          badge.style.borderColor = '#10b981';
+        } else {
+          badge.style.background = 'rgba(99, 102, 241, 0.15)';
+          badge.style.color = '#c7d2fe';
+          badge.style.borderColor = 'rgba(99, 102, 241, 0.35)';
+        }
+      }
+
+      const listEl = document.getElementById('student-general-issues-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      if (studentGeneralIssues.length === 0) {
+        listEl.innerHTML = `
+          <div id="student-general-issues-empty" style="font-size: 0.7rem; color: #64748b; font-style: italic;">
+            No general issues selected yet. Select 2 or 3 from the dropdown above.
+          </div>
+        `;
+      } else {
+        studentGeneralIssues.forEach(issueId => {
+          const meta = generalIssuesMap[issueId] || { label: issueId };
+          const chip = document.createElement('div');
+          chip.style.cssText = 'background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px;';
+          chip.innerHTML = `
+            <span style="font-size: 0.75rem; font-weight: 600; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <i class="fa-solid fa-circle-notch" style="color: #818cf8; font-size: 0.65rem; margin-right: 4px;"></i>${meta.label}
+            </span>
+            ${!isEvaluated ? `<button type="button" onclick="studentRemoveGeneralIssue('${issueId}')" style="background: transparent; border: none; color: #94a3b8; font-size: 1rem; cursor: pointer; padding: 0 2px; line-height: 1;">&times;</button>` : ''}
+          `;
+          listEl.appendChild(chip);
+        });
+      }
+    }
 
     // Viewport pan/zoom
     function zoomIn() {
@@ -1532,6 +1651,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pins: studentPins,
+            general_issues: studentGeneralIssues,
             student_name: candidateName,
             student_id: candidateStudentId,
             candidate_token: candidateToken
@@ -1675,6 +1795,57 @@
                 <td><span style="color: #34d399; font-size: 0.75rem;">${remedialStr}</span></td>
               `;
               tbody.appendChild(tr);
+            });
+          }
+        }
+
+        // Populate General Wall Issues Evaluation Card
+        const genSection = document.getElementById('general-issues-eval-section');
+        const genBadge = document.getElementById('general-issues-eval-score-badge');
+        const genChips = document.getElementById('general-issues-eval-chips');
+        if (genSection && data.general_issues_evaluation) {
+          const ge = data.general_issues_evaluation;
+          genSection.style.display = 'block';
+          if (genBadge) {
+            genBadge.textContent = `${ge.score ?? 100}% Score (Weight: 30%)`;
+            if (ge.score >= 70) {
+              genBadge.style.background = 'rgba(52, 211, 153, 0.15)';
+              genBadge.style.color = '#34d399';
+              genBadge.style.borderColor = '#10b981';
+            } else {
+              genBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+              genBadge.style.color = '#f87171';
+              genBadge.style.borderColor = '#ef4444';
+            }
+          }
+          if (genChips && Array.isArray(ge.items)) {
+            genChips.innerHTML = '';
+            ge.items.forEach(it => {
+              const chip = document.createElement('div');
+              let bg = 'rgba(52, 211, 153, 0.1)';
+              let border = '#10b981';
+              let badgeText = '✅ Correct';
+              let badgeColor = '#34d399';
+              if (it.status === 'missed') {
+                bg = 'rgba(245, 158, 11, 0.1)';
+                border = '#f59e0b';
+                badgeText = '⚠️ Missed Primary';
+                badgeColor = '#fbbf24';
+              } else if (it.status === 'incorrect') {
+                bg = 'rgba(239, 68, 68, 0.1)';
+                border = '#ef4444';
+                badgeText = '❌ False Positive';
+                badgeColor = '#f87171';
+              }
+              chip.style.cssText = `background: ${bg}; border: 1px solid ${border}; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.78rem;`;
+              chip.innerHTML = `
+                <div>
+                  <strong style="color: #f1f5f9;">${it.label}</strong>
+                  <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">${it.explanation}</div>
+                </div>
+                <span style="font-size: 0.7rem; font-weight: 700; color: ${badgeColor}; white-space: nowrap;">${badgeText}</span>
+              `;
+              genChips.appendChild(chip);
             });
           }
         }

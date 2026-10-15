@@ -260,6 +260,130 @@ SKILL_DEFECT_MODES = [
     }
 ]
 
+GENERAL_WALL_ISSUES = [
+    {
+        "id": "structural_settlement_cracking",
+        "label": "Structural Settlement & Stepped Cracking",
+        "description": "Differential foundation movement causing diagonal stepped shear fractures through bed and perp joints."
+    },
+    {
+        "id": "moisture_rising_damp",
+        "label": "Moisture Ingress & Rising Damp",
+        "description": "Capillary uptake of sub-surface ground water or breached DPC causing low-level saturation and hygroscopic salt band."
+    },
+    {
+        "id": "mortar_joint_decay",
+        "label": "Mortar Binder Erosion & Joint Decay",
+        "description": "Dissolution of lime matrix, sandy wash-out, and voiding of bedding joints compromising structural bearing."
+    },
+    {
+        "id": "frost_spall_weathering",
+        "label": "Frost Attack & Arris Spalling",
+        "description": "Freeze-thaw hydraulic burst fracturing stone face arris edges, cryptoflorescence, and delaminating substrate layers."
+    },
+    {
+        "id": "lateral_bulge_instability",
+        "label": "Lateral Bulging & Out-of-Plumb Displacement",
+        "description": "Outward barrel distortion, delamination of outer wythe from rubble core, or dead-load shear yielding."
+    },
+    {
+        "id": "vegetation_root_jacking",
+        "label": "Vegetation Infiltration & Root Jacking",
+        "description": "Woody roots, ivy, or deep weed taproots penetrating joint recesses, forcing stones apart via radial mechanical pressure."
+    },
+    {
+        "id": "inappropriate_cement_pointing",
+        "label": "Inappropriate Cement Ribbon / Strap Pointing",
+        "description": "Hard, impermeable Portland cement pointing applied over softer historic masonry, trapping moisture and accelerating face spalling."
+    },
+    {
+        "id": "coping_capping_failure",
+        "label": "Coping & Capping Water Infiltration",
+        "description": "Defective crest stones, dislodged saddlebacks, or failed weather cappings allowing direct vertical precipitation penetration."
+    },
+    {
+        "id": "core_voiding_pinning_loss",
+        "label": "Internal Core Cavitation & Pinning Loss",
+        "description": "Loss of internal hearting stones, dislodged pinning wedges, or washed-out core fines creating hollow voids within the wall mass."
+    },
+    {
+        "id": "salt_efflorescence_cryptoflorescence",
+        "label": "Salt Efflorescence & Cryptoflorescence",
+        "description": "Sub-surface crystalline salt crystallization bursting stone pores or creating expansive white surface blooms."
+    }
+]
+
+GENERAL_WALL_ISSUES_MAP = {issue["id"]: issue for issue in GENERAL_WALL_ISSUES}
+
+def get_wall_general_issues(wall):
+    """
+    Returns the designated ground-truth general wall issues (2-3 items) for an assessment specimen.
+    If not explicitly configured by the instructor, auto-derives 2 to 3 standard issues based on
+    ground-truth defect pins and wall archetype.
+    """
+    if wall and getattr(wall, "general_wall_issues", None):
+        if isinstance(wall.general_wall_issues, list) and len(wall.general_wall_issues) > 0:
+            return wall.general_wall_issues
+
+    derived = []
+    pins = getattr(wall, "defects", [])
+    pin_cats = set()
+    if pins:
+        for p in pins:
+            cat = getattr(p, "category", "") or ""
+            pin_cats.add(cat.lower())
+
+    if any(c in pin_cats for c in ["spalling", "erosion", "delamination"]):
+        derived.append("frost_spall_weathering")
+    if any(c in pin_cats for c in ["mortar", "joint", "missing_mortar", "void"]):
+        derived.append("mortar_joint_decay")
+    if any(c in pin_cats for c in ["crack", "shear", "fracture"]):
+        derived.append("structural_settlement_cracking")
+    if any(c in pin_cats for c in ["bulge", "out_of_plumb", "displacement"]):
+        derived.append("lateral_bulge_instability")
+    if any(c in pin_cats for c in ["vegetation", "biological", "ivy", "moss"]):
+        derived.append("vegetation_root_jacking")
+    if any(c in pin_cats for c in ["cement", "ribbon", "hard_pointing"]):
+        derived.append("inappropriate_cement_pointing")
+    if any(c in pin_cats for c in ["damp", "moisture", "rising_damp", "efflorescence"]):
+        derived.append("moisture_rising_damp")
+
+    wtype = (getattr(wall, "wall_type", "") or "").lower()
+    if "dry_stone" in wtype:
+        if "core_voiding_pinning_loss" not in derived:
+            derived.append("core_voiding_pinning_loss")
+        if "lateral_bulge_instability" not in derived:
+            derived.append("lateral_bulge_instability")
+    elif "brick" in wtype:
+        if "mortar_joint_decay" not in derived:
+            derived.append("mortar_joint_decay")
+        if "moisture_rising_damp" not in derived:
+            derived.append("moisture_rising_damp")
+    else:
+        if "mortar_joint_decay" not in derived:
+            derived.append("mortar_joint_decay")
+        if "frost_spall_weathering" not in derived:
+            derived.append("frost_spall_weathering")
+
+    seen = set()
+    final_issues = []
+    for iss in derived:
+        if iss in GENERAL_WALL_ISSUES_MAP and iss not in seen:
+            seen.add(iss)
+            final_issues.append(iss)
+        if len(final_issues) >= 3:
+            break
+
+    if len(final_issues) < 2:
+        for fallback in ["mortar_joint_decay", "frost_spall_weathering", "structural_settlement_cracking"]:
+            if fallback not in seen:
+                seen.add(fallback)
+                final_issues.append(fallback)
+            if len(final_issues) >= 2:
+                break
+
+    return final_issues
+
 def calculate_iou(box_a, box_b):
     x_left = max(box_a["x_min"], box_b["x_min"])
     y_top = max(box_a["y_min"], box_b["y_min"])
@@ -460,6 +584,12 @@ def create_app(config_class=Config):
                     conn.execute(text(f"ALTER TABLE walls ADD COLUMN sentinel_report {col_type};"))
                     conn.commit()
 
+            if "general_wall_issues" not in wall_cols:
+                with db.engine.connect() as conn:
+                    col_type = "JSON" if db.engine.dialect.name == "postgresql" else "TEXT"
+                    conn.execute(text(f"ALTER TABLE walls ADD COLUMN general_wall_issues {col_type};"))
+                    conn.commit()
+
             if "sentinel_override" not in wall_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE walls ADD COLUMN sentinel_override BOOLEAN DEFAULT FALSE;"))
@@ -524,6 +654,11 @@ def create_app(config_class=Config):
             if "student_id" not in attempt_cols:
                 with db.engine.connect() as conn:
                     conn.execute(text("ALTER TABLE assessment_attempts ADD COLUMN student_id VARCHAR(36);"))
+                    conn.commit()
+            if "submitted_general_issues" not in attempt_cols:
+                with db.engine.connect() as conn:
+                    col_type = "JSON" if db.engine.dialect.name == "postgresql" else "TEXT"
+                    conn.execute(text(f"ALTER TABLE assessment_attempts ADD COLUMN submitted_general_issues {col_type};"))
                     conn.commit()
 
             all_tables = inspector.get_table_names()
@@ -7960,6 +8095,7 @@ def create_app(config_class=Config):
             all_modes=modes_bundle["all"],
             defect_modes=modes_bundle["all"],
             remedial_options=REMEDIAL_OPTIONS,
+            general_wall_issues=GENERAL_WALL_ISSUES,
             student_name=student_name,
             current_student=current_student,
             student_id=student_id,
@@ -8111,11 +8247,60 @@ def create_app(config_class=Config):
                     "explanation": f"Unidentified pathology: {gt_title} ({gt.get('severity', 'moderate')}). {gt.get('explanation', '')}"
                 })
 
+        # General Wall Issues Evaluation
+        submitted_general_issues = data.get("general_issues", [])
+        gt_general_issues = get_wall_general_issues(wall)
+        submitted_general_set = set(submitted_general_issues)
+        gt_general_set = set(gt_general_issues)
+
+        matched_issues = list(submitted_general_set & gt_general_set)
+        missed_issues = list(gt_general_set - submitted_general_set)
+        false_issues = list(submitted_general_set - gt_general_set)
+
+        general_issues_feedback = []
+        for issue_id in gt_general_issues:
+            issue_meta = GENERAL_WALL_ISSUES_MAP.get(issue_id, {"label": issue_id.replace("_", " ").title(), "description": ""})
+            is_matched = issue_id in submitted_general_set
+            general_issues_feedback.append({
+                "id": issue_id,
+                "label": issue_meta.get("label", issue_id),
+                "description": issue_meta.get("description", ""),
+                "status": "correct" if is_matched else "missed",
+                "explanation": "Primary wall pathology correctly identified." if is_matched else "Relevant wall pathology was not selected."
+            })
+
+        for issue_id in false_issues:
+            issue_meta = GENERAL_WALL_ISSUES_MAP.get(issue_id, {"label": issue_id.replace("_", " ").title(), "description": ""})
+            general_issues_feedback.append({
+                "id": issue_id,
+                "label": issue_meta.get("label", issue_id),
+                "description": issue_meta.get("description", ""),
+                "status": "incorrect",
+                "explanation": "Selected issue is not a primary pathology on this specimen."
+            })
+
         if total_gt > 0:
             raw_score = (earned_points / total_gt) * 100.0
-            score = max(0.0, min(100.0, round(raw_score - (false_positives * 5.0), 1)))
+            pin_score = max(0.0, min(100.0, round(raw_score - (false_positives * 5.0), 1)))
         else:
-            score = 100.0 if false_positives == 0 else 0.0
+            pin_score = 100.0 if false_positives == 0 else 0.0
+
+        if len(gt_general_set) > 0:
+            raw_issue_score = (len(matched_issues) / len(gt_general_set)) * 100.0
+            issue_score = max(0.0, min(100.0, round(raw_issue_score - (len(false_issues) * 10.0), 1)))
+        else:
+            issue_score = 100.0
+
+        # Blended score: 70% pins, 30% general issues if candidate interacted with general issues
+        if "general_issues" in data:
+            if total_gt > 0 and len(gt_general_set) > 0:
+                score = max(0.0, min(100.0, round(pin_score * 0.70 + issue_score * 0.30, 1)))
+            elif total_gt > 0:
+                score = pin_score
+            else:
+                score = issue_score
+        else:
+            score = pin_score
 
         if score >= 85.0:
             grade = "Distinction"
@@ -8145,6 +8330,7 @@ def create_app(config_class=Config):
                     assignment_code=battery_code or "SKILL-ASSESS",
                     student_name=student_name,
                     submitted_markers=submitted_pins,
+                    submitted_general_issues=submitted_general_issues,
                     true_positives=full_hits + partial_hits,
                     false_positives=false_positives,
                     false_negatives=missed_count,
@@ -8154,7 +8340,13 @@ def create_app(config_class=Config):
                         "grade": grade,
                         "earned_points": round(earned_points, 2),
                         "total_gt": total_gt,
-                        "items": feedback_items
+                        "items": feedback_items,
+                        "general_issues": {
+                            "score": issue_score,
+                            "matched": len(matched_issues),
+                            "total_gt": len(gt_general_set),
+                            "items": general_issues_feedback
+                        }
                     }
                 )
                 commit_with_retry(attempt)
@@ -8246,6 +8438,8 @@ def create_app(config_class=Config):
             "student_id": student.id if student else None,
             "student": student.to_dict() if student else None,
             "score": score,
+            "pin_score": pin_score,
+            "issue_score": issue_score,
             "grade": grade,
             "passed": passed,
             "earned_points": round(earned_points, 2),
@@ -8255,6 +8449,14 @@ def create_app(config_class=Config):
             "false_positives": false_positives,
             "missed_count": missed_count,
             "evaluated_pins": evaluated_pins,
+            "general_issues_evaluation": {
+                "score": issue_score,
+                "gt_issues": gt_general_issues,
+                "matched_issues": matched_issues,
+                "missed_issues": missed_issues,
+                "false_issues": false_issues,
+                "items": general_issues_feedback
+            },
             "ground_truth": gt_overlay,
             "feedback": feedback_items,
             "next_specimen_slug": next_wall_slug,
@@ -8811,6 +9013,7 @@ def create_app(config_class=Config):
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
         defects = Defect.query.filter_by(wall_id=wall.id).all()
         modes_bundle = get_wall_defect_modes(wall)
+        active_general_issues = get_wall_general_issues(wall)
         return render_template(
             "skill_assessment_grader.html",
             wall=wall.to_dict(),
@@ -8818,7 +9021,9 @@ def create_app(config_class=Config):
             prioritized_modes=modes_bundle["prioritized"],
             all_modes=modes_bundle["all"],
             defect_modes=modes_bundle["all"],
-            remedial_options=REMEDIAL_OPTIONS
+            remedial_options=REMEDIAL_OPTIONS,
+            general_wall_issues=GENERAL_WALL_ISSUES,
+            active_general_issues=active_general_issues
         )
 
     @app.route("/api/skill-assessment/modes/<slug>", methods=["POST"], strict_slashes=False)
@@ -8845,10 +9050,15 @@ def create_app(config_class=Config):
     @app.route("/api/skill-assessment/grade/<slug>", methods=["POST"], strict_slashes=False)
     @admin_required
     def api_skill_assessment_save_defects(slug):
-        """Saves or updates ground-truth defect points for an assessment specimen."""
+        """Saves or updates ground-truth defect points and general wall issues for an assessment specimen."""
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
         data = request.get_json(silent=True) or {}
         incoming_defects = data.get("defects", [])
+
+        if "general_wall_issues" in data:
+            raw_gen = data.get("general_wall_issues", [])
+            valid_gen = [iss for iss in raw_gen if iss in GENERAL_WALL_ISSUES_MAP]
+            wall.general_wall_issues = valid_gen[:5]
 
         Defect.query.filter_by(wall_id=wall.id).delete()
 
@@ -8917,7 +9127,8 @@ def create_app(config_class=Config):
             "success": True,
             "count": len(incoming_defects),
             "grading_status": wall.grading_status,
-            "graded_by_user_name": wall.graded_by_user_name
+            "graded_by_user_name": wall.graded_by_user_name,
+            "general_wall_issues": wall.general_wall_issues or []
         })
 
     @app.route("/api/skill-assessment/ai-suggest/<slug>", methods=["POST"], strict_slashes=False)

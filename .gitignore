@@ -9,3 +9,7 @@ instance/
 venv/
 env/
 scratch/
+static/img/walls/*test*
+static/img/assessments/*test*
+static/img/walls/*field-test*
+static/img/assessments/*field-test*

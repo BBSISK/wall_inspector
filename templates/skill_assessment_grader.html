@@ -551,6 +551,9 @@
         <button type="button" class="tab-btn" id="tab-btn-palette" onclick="switchSidebarTab('palette')">
           <i class="fa-solid fa-list-check"></i> Specimen Dropdown (<span id="palette-tab-count">0</span>)
         </button>
+        <button type="button" class="tab-btn" id="tab-btn-general" onclick="switchSidebarTab('general')">
+          <i class="fa-solid fa-layer-group"></i> General Issues (<span id="general-issues-tab-count">0</span>/3)
+        </button>
       </div>
 
       <!-- Tab 1: Defect Targets -->
@@ -558,6 +561,15 @@
         <div class="sidebar-header">
           <h2><i class="fa-solid fa-flag" style="color: #00f2fe;"></i> Ground Truth Targets</h2>
           <span class="defect-count-badge" id="gt-count-badge">0 Targets</span>
+        </div>
+
+        <!-- General Issues Mini Summary Banner in Tab 1 -->
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 0.6rem 0.75rem; margin: 0.5rem 1rem 0; font-size: 0.78rem; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <span style="color: #a5b4fc; font-weight: 700;"><i class="fa-solid fa-layer-group"></i> General Issues:</span>
+            <span id="gt-general-issues-summary-count" style="color: #f1f5f9; margin-left: 4px;">0 / 3 active</span>
+          </div>
+          <button type="button" onclick="switchSidebarTab('general')" style="background: transparent; border: 1px solid rgba(165, 180, 252, 0.4); color: #c7d2fe; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;">Configure</button>
         </div>
 
         <div class="sidebar-content" id="gt-list"></div>
@@ -632,6 +644,84 @@
         <div class="sidebar-footer">
           <button type="button" class="btn-top btn-save-all" style="justify-content: center; padding: 0.75rem;" onclick="saveModesPalette()">
             <i class="fa-solid fa-floppy-disk"></i> Save Specimen Dropdown Palette
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 3: General Wall Issues (2-3 items from 10) -->
+      <div id="tab-content-general" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
+        <div class="sidebar-header">
+          <h2><i class="fa-solid fa-layer-group" style="color: #818cf8;"></i> General Wall Issues</h2>
+          <span class="defect-count-badge" id="general-issues-badge" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4);">
+            0 / 3 Designated
+          </span>
+        </div>
+
+        <div class="sidebar-content" style="gap: 1rem;">
+          <!-- Informational Banner -->
+          <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
+            <strong style="color: #a5b4fc; display: block; margin-bottom: 2px;">
+              <i class="fa-solid fa-circle-info"></i> Whole-Wall Pathology (Select 2 or 3)
+            </strong>
+            Designate the 2 or 3 overarching structural/environmental issues affecting this specimen. Students select from this standardized menu of 10 issues alongside pinpoint defect mapping.
+          </div>
+
+          <!-- Quick Dropdown Selection Form -->
+          <div style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.85rem;">
+            <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #cbd5e1; margin-bottom: 0.4rem;">
+              <i class="fa-solid fa-plus" style="color: #818cf8;"></i> Add Issue From Menu (10 Standard)
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <select id="select-general-issue-dropdown" class="form-control" style="font-size: 0.8rem;">
+                <option value="">-- Choose General Issue --</option>
+                {% for issue in general_wall_issues %}
+                  <option value="{{ issue.id }}">{{ issue.label }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn-top btn-save-all" style="padding: 0.5rem 0.85rem; font-size: 0.78rem; white-space: nowrap; background: #4f46e5; border-color: #6366f1;" onclick="addGeneralIssueFromSelect()">
+                <i class="fa-solid fa-plus"></i> Add
+              </button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem;">
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Recommended: 2 to 3 issues</span>
+              <button type="button" onclick="autoDeriveGeneralIssues()" style="background: transparent; border: none; color: #818cf8; font-size: 0.72rem; cursor: pointer; text-decoration: underline;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-derive from pins
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Selected Issues Cards -->
+          <div>
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.5rem;">
+              Active Ground Truth Issues (<span id="active-issues-count">0</span> / 3)
+            </div>
+            <div id="general-issues-active-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+          </div>
+
+          <!-- All 10 Standard Issues Catalog for Reference / Toggle -->
+          <div style="margin-top: 0.5rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.5rem;">
+              Standard 10-Issue Pathology Catalog
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;" id="general-issues-toggle-catalog">
+              {% for issue in general_wall_issues %}
+                <div class="general-issue-card" id="issue-card-{{ issue.id }}" onclick="toggleGeneralIssue('{{ issue.id }}')" style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 6px; padding: 0.6rem 0.75rem; cursor: pointer; transition: all 0.2s;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #f1f5f9;" id="issue-label-{{ issue.id }}">{{ issue.label }}</span>
+                    <span class="issue-check-indicator" id="issue-check-{{ issue.id }}" style="font-size: 0.8rem; color: #64748b;">
+                      <i class="fa-regular fa-circle"></i>
+                    </span>
+                  </div>
+                  <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px; line-height: 1.35;">{{ issue.description }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <button type="button" class="btn-top btn-save-all" style="justify-content: center; padding: 0.75rem;" onclick="saveAllDefects()">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish Specimen Ground Truth
           </button>
         </div>
       </div>
@@ -797,6 +887,12 @@
     const modeLookup = {};
     allModes.forEach(m => { modeLookup[m.id] = m; });
 
+    let activeGeneralIssues = {{ active_general_issues|tojson }} || [];
+    const generalIssuesMap = {};
+    {% for issue in general_wall_issues %}
+      generalIssuesMap[{{ issue.id|tojson }}] = {{ issue|tojson }};
+    {% endfor %}
+
     let defectList = [];
     let editingIndex = -1;
     let pendingCoords = null;
@@ -830,13 +926,131 @@
     renderAll();
     renderPaletteUI();
     renderModalCategorySelect();
+    renderGeneralIssuesUI();
 
     function switchSidebarTab(tabName) {
       const isTargets = tabName === 'targets';
+      const isPalette = tabName === 'palette';
+      const isGeneral = tabName === 'general';
       document.getElementById('tab-btn-targets').classList.toggle('active', isTargets);
-      document.getElementById('tab-btn-palette').classList.toggle('active', !isTargets);
+      document.getElementById('tab-btn-palette').classList.toggle('active', isPalette);
+      document.getElementById('tab-btn-general').classList.toggle('active', isGeneral);
       document.getElementById('tab-content-targets').style.display = isTargets ? 'flex' : 'none';
-      document.getElementById('tab-content-palette').style.display = isTargets ? 'none' : 'flex';
+      document.getElementById('tab-content-palette').style.display = isPalette ? 'none' : 'flex';
+      document.getElementById('tab-content-general').style.display = isGeneral ? 'flex' : 'none';
+    }
+
+    function renderGeneralIssuesUI() {
+      const count = activeGeneralIssues.length;
+      const tabCountEl = document.getElementById('general-issues-tab-count');
+      if (tabCountEl) tabCountEl.textContent = count;
+      const badgeEl = document.getElementById('general-issues-badge');
+      if (badgeEl) badgeEl.textContent = `${count} / 3 Designated`;
+      const sumCountEl = document.getElementById('gt-general-issues-summary-count');
+      if (sumCountEl) sumCountEl.textContent = `${count} / 3 active`;
+      const activeCountEl = document.getElementById('active-issues-count');
+      if (activeCountEl) activeCountEl.textContent = count;
+
+      const listEl = document.getElementById('general-issues-active-list');
+      if (listEl) {
+        listEl.innerHTML = '';
+        if (activeGeneralIssues.length === 0) {
+          listEl.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 1rem; border: 1px dashed var(--border-dark); border-radius: 6px; font-size: 0.78rem;">
+              No general issues designated yet.<br><span style="color: #818cf8;">Choose 2 to 3 from the dropdown above.</span>
+            </div>
+          `;
+        } else {
+          activeGeneralIssues.forEach((issueId, idx) => {
+            const meta = generalIssuesMap[issueId] || { label: issueId, description: '' };
+            const card = document.createElement('div');
+            card.style.cssText = 'background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-left: 3px solid #6366f1; border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 8px;';
+            card.innerHTML = `
+              <div style="overflow: hidden;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.7rem; font-weight: 800; color: #818cf8;">#${idx + 1}</span>
+                  <span style="font-weight: 700; font-size: 0.82rem; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${meta.label}</span>
+                </div>
+                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">${meta.description}</div>
+              </div>
+              <button type="button" class="btn-remove-chip" onclick="removeGeneralIssue('${issueId}')" title="Remove issue">&times;</button>
+            `;
+            listEl.appendChild(card);
+          });
+        }
+      }
+
+      Object.keys(generalIssuesMap).forEach(issueId => {
+        const isSelected = activeGeneralIssues.includes(issueId);
+        const cardEl = document.getElementById(`issue-card-${issueId}`);
+        const checkEl = document.getElementById(`issue-check-${issueId}`);
+        if (cardEl && checkEl) {
+          if (isSelected) {
+            cardEl.style.borderColor = '#6366f1';
+            cardEl.style.background = 'rgba(99, 102, 241, 0.15)';
+            checkEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #818cf8;"></i>';
+          } else {
+            cardEl.style.borderColor = 'var(--border-dark)';
+            cardEl.style.background = 'var(--card-dark)';
+            checkEl.innerHTML = '<i class="fa-regular fa-circle" style="color: #64748b;"></i>';
+          }
+        }
+      });
+    }
+
+    function addGeneralIssueFromSelect() {
+      const sel = document.getElementById('select-general-issue-dropdown');
+      if (!sel || !sel.value) return;
+      const issueId = sel.value;
+      if (activeGeneralIssues.includes(issueId)) {
+        alert('This general issue is already selected.');
+        return;
+      }
+      if (activeGeneralIssues.length >= 3) {
+        if (!confirm('You already have 3 general issues selected (the recommended target is 2 to 3). Add this one anyway?')) {
+          return;
+        }
+      }
+      activeGeneralIssues.push(issueId);
+      sel.value = '';
+      renderGeneralIssuesUI();
+    }
+
+    function removeGeneralIssue(issueId) {
+      activeGeneralIssues = activeGeneralIssues.filter(id => id !== issueId);
+      renderGeneralIssuesUI();
+    }
+
+    function toggleGeneralIssue(issueId) {
+      if (activeGeneralIssues.includes(issueId)) {
+        removeGeneralIssue(issueId);
+      } else {
+        if (activeGeneralIssues.length >= 3) {
+          if (!confirm('You already have 3 issues selected (recommended 2-3). Add another?')) return;
+        }
+        activeGeneralIssues.push(issueId);
+        renderGeneralIssuesUI();
+      }
+    }
+
+    function autoDeriveGeneralIssues() {
+      const derived = [];
+      const pinCats = new Set(defectList.map(d => (d.category || '').toLowerCase()));
+      if ([...pinCats].some(c => c.includes('spall') || c.includes('erosion'))) derived.push('frost_spall_weathering');
+      if ([...pinCats].some(c => c.includes('mortar') || c.includes('joint') || c.includes('void'))) derived.push('mortar_joint_decay');
+      if ([...pinCats].some(c => c.includes('crack') || c.includes('shear'))) derived.push('structural_settlement_cracking');
+      if ([...pinCats].some(c => c.includes('bulge') || c.includes('plumb'))) derived.push('lateral_bulge_instability');
+      if ([...pinCats].some(c => c.includes('vegetation') || c.includes('root') || c.includes('ivy'))) derived.push('vegetation_root_jacking');
+      if ([...pinCats].some(c => c.includes('cement') || c.includes('ribbon'))) derived.push('inappropriate_cement_pointing');
+      if ([...pinCats].some(c => c.includes('damp') || c.includes('moisture') || c.includes('efflorescence'))) derived.push('moisture_rising_damp');
+
+      if (derived.length < 2) {
+        if (!derived.includes('mortar_joint_decay')) derived.push('mortar_joint_decay');
+        if (!derived.includes('frost_spall_weathering')) derived.push('frost_spall_weathering');
+      }
+
+      activeGeneralIssues = derived.slice(0, 3);
+      renderGeneralIssuesUI();
     }
 
     function renderPaletteUI() {
@@ -1286,7 +1500,10 @@
         const response = await fetch(`/api/skill-assessment/grade/${wallSlug}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ defects: payloadDefects })
+          body: JSON.stringify({
+            defects: payloadDefects,
+            general_wall_issues: activeGeneralIssues
+          })
         });
         const res = await response.json();
         if (res && res.success) {

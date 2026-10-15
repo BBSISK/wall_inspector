@@ -28,6 +28,7 @@ class Wall(db.Model):
     sentinel_report = db.Column(db.JSON, nullable=True)
     sentinel_override = db.Column(db.Boolean, default=False)
     assessment_defect_modes = db.Column(db.JSON, nullable=True)
+    general_wall_issues = db.Column(db.JSON, nullable=True)
     grading_status = db.Column(db.String(30), default="auto_suggested")  # "auto_suggested", "auto_accepted", "human_graded"
     graded_by_user_id = db.Column(db.String(36), nullable=True)
     graded_by_user_name = db.Column(db.String(120), nullable=True)
@@ -63,6 +64,7 @@ class Wall(db.Model):
             "sentinel_report": self.sentinel_report or {},
             "sentinel_override": bool(self.sentinel_override),
             "assessment_defect_modes": self.assessment_defect_modes or [],
+            "general_wall_issues": self.general_wall_issues or [],
             "grading_status": self.grading_status or ("auto_suggested" if self.is_ai_reviewed else "human_graded"),
             "graded_by_user_name": self.graded_by_user_name,
             "graded_at": self.graded_at.strftime("%Y-%m-%d %H:%M") if self.graded_at else None
@@ -208,6 +210,7 @@ class AssessmentAttempt(db.Model):
     assignment_code = db.Column(db.String(50), nullable=True)
     student_name = db.Column(db.String(100), default="Anonymous")
     submitted_markers = db.Column(db.JSON)
+    submitted_general_issues = db.Column(db.JSON, nullable=True)
     true_positives = db.Column(db.Integer, default=0)
     false_positives = db.Column(db.Integer, default=0)
     false_negatives = db.Column(db.Integer, default=0)
