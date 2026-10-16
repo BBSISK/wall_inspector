@@ -421,9 +421,9 @@
   <!-- Top Navigation -->
   <header class="top-nav">
     <div style="display: flex; align-items: center; gap: 10px;">
-      <a href="/skill-assessment" class="brand">
-        <i class="fa-solid fa-camera"></i>
-        Professional Skill Assessment &amp; Grading Studio
+      <a href="/skill-assessment/admin" class="brand">
+        <i class="fa-solid fa-bullseye"></i>
+        Ground-Truth Grader Studio
       </a>
       <span class="badge-admin">{% if is_admin %}Admin &amp; Grader Access{% else %}Certified Grader{% endif %}</span>
     </div>
@@ -431,11 +431,14 @@
       <button type="button" class="btn-nav" onclick="openSkillQrModal()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: 1px solid #10b981; font-weight: 700; cursor: pointer;">
         <i class="fa-solid fa-qrcode"></i> Connect Phone Camera
       </button>
-      <a href="/api/skill-assessment/export-coco?download=1&include_student_consensus=1" class="btn-nav" style="background: rgba(139, 92, 246, 0.2); color: #ddd6fe; border: 1px solid #8b5cf6; font-weight: 700;" title="Download Microsoft COCO 1.0 JSON dataset for CVAT / YOLOv8">
-        <i class="fa-solid fa-boxes-packing"></i> Export COCO / CVAT
-      </a>
-      <a href="/portal" class="btn-nav btn-back"><i class="fa-solid fa-graduation-cap"></i> Student Portal</a>
       {% if is_admin %}
+        <a href="/skill-assessment/admin/ingest" class="btn-nav" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; font-weight: 700;">
+          <i class="fa-solid fa-camera-retro"></i> Ingest &amp; Batteries
+        </a>
+        <a href="/api/skill-assessment/export-coco?download=1&include_student_consensus=1" class="btn-nav" style="background: rgba(139, 92, 246, 0.2); color: #ddd6fe; border: 1px solid #8b5cf6; font-weight: 700;" title="Download Microsoft COCO 1.0 JSON dataset for CVAT / YOLOv8">
+          <i class="fa-solid fa-boxes-packing"></i> Export COCO / CVAT
+        </a>
+        <a href="/admin/system" class="btn-nav btn-back"><i class="fa-solid fa-shield-halved"></i> System Admin</a>
         <a href="/dashboard" class="btn-nav btn-back"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
       {% endif %}
       <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-house"></i> Main Catalog</a>
@@ -445,310 +448,12 @@
 
   <main class="container">
 
-    <!-- PHOTOGRAPHY GUIDELINES HUD -->
-    <section class="guidelines-hud">
-      <div class="hud-header">
-        <h2 class="hud-title">
-          <i class="fa-solid fa-camera-viewfinder"></i> Photographic Capture Standards & Ingestion Protocol
-        </h2>
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <button type="button" onclick="openSkillQrModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-qrcode"></i> Connect Phone Camera [QR]
-          </button>
-          <span class="hud-pill"><i class="fa-solid fa-shield-halved"></i> Calibrated Ingestion Spec</span>
-        </div>
-      </div>
-
-      <div class="guidelines-grid">
-        <!-- 1. Lighting Requirements -->
-        <div class="guide-card">
-          <div class="guide-card-icon"><i class="fa-solid fa-sun-cloud"></i></div>
-          <h4>1. Lighting & Illumination</h4>
-          <ul>
-            <li><strong>Diffuse Overcast Daylight:</strong> Recommended 5000K–6500K overcast sky to eliminate harsh shadow masking and specular hot spots.</li>
-            <li><strong>Controlled Raking Light:</strong> Use 15°–30° shallow oblique sun ONLY when recording face bulges, delamination blisters, or contour scaling.</li>
-            <li><strong>Avoid Direct Midday Sun:</strong> Prevents deep shadows inside open bed and perpend joints.</li>
-          </ul>
-        </div>
-
-        <!-- 2. Orthogonal Camera Alignment -->
-        <div class="guide-card">
-          <div class="guide-card-icon"><i class="fa-solid fa-arrows-to-eye"></i></div>
-          <h4>2. Orthogonal Normal Angle</h4>
-          <ul>
-            <li><strong>Strict 90° Normal Angle:</strong> Position optical axis perpendicular to wall face plane.</li>
-            <li><strong>0° Pitch & 0° Roll Tilt:</strong> Eliminates trapezoidal keystoning, perspective tilt, and dimensional compression.</li>
-            <li><strong>Sensor Parallel:</strong> Maintain sensor plane strictly parallel to continuous bed courses.</li>
-          </ul>
-        </div>
-
-        <!-- 3. Scope & Spatial Framing -->
-        <div class="guide-card">
-          <div class="guide-card-icon"><i class="fa-solid fa-ruler-combined"></i></div>
-          <h4>3. Scope, Coursing & Scale</h4>
-          <ul>
-            <li><strong>3 to 5 Courses:</strong> Frame must capture 3 to 5 continuous horizontal courses to establish masonry bond rhythm.</li>
-            <li><strong>1.5m to 2.5m Width:</strong> Provides adequate structural context across the wythe.</li>
-            <li><strong>Visible Datum & Scale:</strong> Include plinth base/coping or place a 1m survey rule/scale coin at frame margin.</li>
-          </ul>
-        </div>
-
-        <!-- 4. Resolution & Focus -->
-        <div class="guide-card">
-          <div class="guide-card-icon"><i class="fa-solid fa-bullseye-pointer"></i></div>
-          <h4>4. Resolution & Depth of Field</h4>
-          <ul>
-            <li><strong>Minimum 1080p (2MP+):</strong> Native 4K / 8MP+ recommended for zoomable arris inspection.</li>
-            <li><strong>Arris Focus Lock:</strong> Lock autofocus sharply on bed and perpend joint arrises.</li>
-            <li><strong>Aperture f/5.6 – f/8:</strong> Deep depth of field ensures both proud and recessed stones remain in razor focus.</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Pre-flight Checklist -->
-      <div class="checklist-wrap">
-        <div class="checklist-title">
-          <i class="fa-solid fa-list-check"></i> Pre-Flight Field Verification:
-        </div>
-        <div class="checklist-items">
-          <label class="chk-label"><input type="checkbox" checked> 90° Orthogonal Alignment (No Keystoning)</label>
-          <label class="chk-label"><input type="checkbox" checked> Diffuse / Oblique Raking Light Verified</label>
-          <label class="chk-label"><input type="checkbox" checked> 3–5 Courses Framed with Datum</label>
-          <label class="chk-label"><input type="checkbox" checked> Joint Arrises in Razor Sharp Focus</label>
-          <label class="chk-label"><input type="checkbox" checked> Scale Marker Placed at Margin</label>
-        </div>
-      </div>
-    </section>
-
-    <!-- CURRICULUM DIRECTOR & BATTERY GENERATOR HUD -->
-    <section class="guidelines-hud" style="border-color: #8b5cf6; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.85) 100%);">
-      <div class="hud-header" style="border-bottom-color: rgba(139, 92, 246, 0.3);">
-        <h2 class="hud-title" style="color: #c4b5fd;">
-          <i class="fa-solid fa-graduation-cap" style="color: #a78bfa;"></i> Curriculum Director Agent & Exam Battery Orchestrator
-        </h2>
-        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <span class="hud-pill" style="background: rgba(139, 92, 246, 0.2); border-color: #a78bfa; color: #ddd6fe;">
-            <i class="fa-solid fa-shuffle"></i> Side-by-Side Anti-Collusion Active
-          </span>
-          <span class="hud-pill" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #6ee7b7;">
-            <i class="fa-solid fa-chart-pie"></i> Cohort Avg: {{ cohort_intel.cohort_avg_score if cohort_intel else 0 }}% ({{ cohort_intel.total_attempts if cohort_intel else 0 }} Attempts)
-          </span>
-        </div>
-      </div>
-
-      <!-- Director Insight Callout -->
-      <div style="background: rgba(15, 23, 42, 0.85); border-left: 4px solid #a78bfa; border-radius: 8px; padding: 12px 16px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
-        <div style="font-size: 0.84rem; color: #e2e8f0; flex: 1;">
-          <strong style="color: #c4b5fd; display: block; margin-bottom: 3px;"><i class="fa-solid fa-brain"></i> Autonomous Curriculum Director Prescription:</strong>
-          <span>{{ cohort_intel.director_recommendation if cohort_intel else 'Assemble a balanced 10-question assessment battery for candidate evaluation.' }}</span>
-        </div>
-      </div>
-
-      <!-- Battery Configuration Form & Active Batteries Grid -->
-      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; align-items: start;">
-        
-        <!-- Left: Create Battery Form -->
-        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 1.25rem;">
-          <h4 style="margin: 0 0 0.85rem 0; color: #f8fafc; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-sliders" style="color: #38bdf8;"></i> Configure Assessment Battery
-          </h4>
-          <form id="create-battery-form" onsubmit="submitCreateBattery(event)">
-            <div class="form-row">
-              <div class="form-group" style="flex: 2;">
-                <label>Battery Title</label>
-                <input type="text" class="form-control" id="bat-title" name="title" value="Cohort 10-Question Masonry Pathology Exam" required>
-              </div>
-              <div class="form-group" style="flex: 1;">
-                <label>Questions in Battery</label>
-                <input type="number" class="form-control" id="bat-size" name="battery_size" value="10" min="3" max="30" required title="Default is 10 questions">
-              </div>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; background: rgba(2, 6, 23, 0.5); padding: 10px 12px; border-radius: 8px; border: 1px solid #1e293b;">
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #f1f5f9; cursor: pointer;">
-                <input type="checkbox" id="bat-randomize" name="randomize_order" checked style="accent-color: #8b5cf6; width: 16px; height: 16px;">
-                <span><strong>🔀 Side-by-Side Randomization:</strong> Deliver unique sequence per student to prevent desk copying</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #f1f5f9; cursor: pointer;">
-                <input type="checkbox" id="bat-dry-run" name="enable_dry_run" checked style="accent-color: #10b981; width: 16px; height: 16px;">
-                <span><strong>🔰 Practice Dry-Run Sample:</strong> Start with interactive unscored calibration + skip toggle</span>
-              </label>
-            </div>
-
-            <button type="submit" id="btn-create-battery" class="btn-submit-upload" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border-color: #a78bfa;">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Balanced Battery (<span id="btn-bat-count-lbl">10</span> Questions)
-            </button>
-          </form>
-        </div>
-
-        <!-- Right: Active Assessment Batteries -->
-        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h4 style="margin: 0; color: #f8fafc; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i> Active Student Batteries
-            </h4>
-            <a href="/skill-assessment/battery/start?code=COHORT-10" target="_blank" style="font-size: 0.75rem; color: #38bdf8; text-decoration: none; font-weight: 700;">
-              <i class="fa-solid fa-external-link-alt"></i> Preview Student Battery Flow
-            </a>
-          </div>
-
-          <div id="active-batteries-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto;">
-            {% if batteries %}
-              {% for bat in batteries %}
-                <div style="background: #090e1a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                  <div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid #8b5cf6; font-family: monospace; font-size: 0.78rem; font-weight: 800; padding: 2px 7px; border-radius: 5px;">{{ bat.code }}</span>
-                      <strong style="color: #f8fafc; font-size: 0.85rem;">{{ bat.title }}</strong>
-                    </div>
-                    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; gap: 10px;">
-                      <span><i class="fa-solid fa-list-ol"></i> <strong>{{ bat.battery_size }}</strong> Questions</span>
-                      <span>{% if bat.randomize_order %}<i class="fa-solid fa-shuffle" style="color: #34d399;"></i> Randomized{% else %}Fixed Order{% endif %}</span>
-                      <span>{% if bat.enable_dry_run %}<i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> Dry-Run Included{% else %}Direct Start{% endif %}</span>
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 6px;">
-                    <a href="/skill-assessment/battery/start?code={{ bat.code }}" target="_blank" class="btn-action-small btn-grade" style="background: #059669; border-color: #10b981;">
-                      <i class="fa-solid fa-play"></i> Launch
-                    </a>
-                  </div>
-                </div>
-              {% endfor %}
-            {% else %}
-              <div style="color: #64748b; font-size: 0.8rem; padding: 1rem; text-align: center;">
-                No custom batteries created yet. Click "Generate Balanced Battery" to assemble a 10-question exam.
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Upload & Queue Management -->
-    <div class="section-grid">
-
-      <!-- Upload Ingestion Form -->
-      <section class="upload-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-          <h3 style="margin: 0;"><i class="fa-solid fa-cloud-arrow-up" style="color: #38bdf8;"></i> Ingest Assessment Specimen</h3>
-          <button type="button" onclick="openSkillQrModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-            <i class="fa-solid fa-qrcode"></i> Pair Mobile Camera
-          </button>
-        </div>
-
-        <!-- Mobile Phone Camera Pairing Callout -->
-        <div style="background: linear-gradient(135deg, rgba(6, 78, 59, 0.5), rgba(15, 23, 42, 0.9)); border: 1.5px solid #059669; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 0.25rem;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="background: #059669; color: white; width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
-              📱
-            </div>
-            <div>
-              <strong style="font-size: 0.88rem; color: #6ee7b7; display: block;">Connect Smartphone Camera</strong>
-              <small style="font-size: 0.74rem; color: #94a3b8;">Scan QR to launch rear camera with 90° live tilt guides</small>
-            </div>
-          </div>
-          <button type="button" onclick="openSkillQrModal()" style="background: #10b981; color: #022c22; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-            <i class="fa-solid fa-qrcode"></i> Show QR
-          </button>
-        </div>
-
-        <form action="/skill-assessment/admin/upload" method="POST" enctype="multipart/form-data" id="upload-form">
-
-          <!-- Dropzone with Live Camera / File Input -->
-          <div class="dropzone" id="dropzone" onclick="document.getElementById('wall-image-input').click()">
-            <i class="fa-solid fa-camera"></i>
-            <div class="dropzone-prompt">
-              <strong>Tap to capture with Camera</strong> or drag and drop image file<br>
-              <small>Adhering to 90° orthogonal, diffuse light guidelines</small>
-            </div>
-            <img id="preview-img" class="dropzone-img" alt="Preview">
-          </div>
-          <!-- Hidden inputs for Camera and File selection -->
-          <input type="file" id="wall-image-input" name="wall_image" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelected(event)" required>
-
-          <div class="form-group">
-            <label>Specimen Title</label>
-            <input type="text" class="form-control" name="title" placeholder="e.g. Limestone Field Boundary: Pinning Loss" required>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Masonry Archetype</label>
-              <select class="form-control" name="wall_type">
-                {% for t in wall_types %}
-                  <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Difficulty Tier</label>
-              <select class="form-control" name="difficulty">
-                <option value="beginner">Beginner</option>
-                <option value="intermediate" selected>Intermediate</option>
-                <option value="advanced">Advanced</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Country / Location</label>
-              <input type="text" class="form-control" name="country" value="Ireland">
-            </div>
-            <div class="form-group">
-              <label>Region / County</label>
-              <input type="text" class="form-control" name="region" placeholder="e.g. Co. Clare">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Structural Function</label>
-            <select class="form-control" name="structural_function">
-              <option value="boundary">Boundary / Field Wall</option>
-              <option value="retaining">Retaining Structure</option>
-              <option value="load_bearing">Load Bearing Masonry</option>
-              <option value="freestanding">Freestanding Enclosure</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Field Survey Notes & Historical Context</label>
-            <textarea class="form-control" name="description" rows="2" placeholder="Record mortar composition, exposure, bedding plane orientation..."></textarea>
-          </div>
-
-          <div class="form-group" style="margin-top: 0.5rem;">
-            <label>Next Step Workflow:</label>
-            <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: #cbd5e1;">
-              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                <input type="radio" name="grade_action" value="now" checked accent-color="#059669">
-                <strong>Grade Defect Points Now</strong> (Open Canvas)
-              </label>
-              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                <input type="radio" name="grade_action" value="later" accent-color="#059669">
-                Save & Grade Later
-              </label>
-            </div>
-          </div>
-
-          <button type="submit" class="btn-submit-upload">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Upload & Auto-Suggest Defects (AI Reviewed)
-          </button>
-          <div style="font-size: 0.72rem; color: #a855f7; text-align: center; margin-top: 4px;">
-            <i class="fa-solid fa-robot"></i> Defects will be automatically analyzed and suggested upon upload.
-          </div>
-          <div style="font-size: 0.72rem; color: #38bdf8; text-align: center; margin-top: 2px;">
-            <i class="fa-solid fa-shield-halved"></i> Intake Sentinel audits optics, EXIF & native geology (non-blocking quality advisories).
-          </div>
-        </form>
-      </section>
-
-      <!-- Specimen Queue Table -->
-      <section class="queue-card">
+      <!-- Specimen Queue Table (Full-Width Exclusive Grader Studio Queue) -->
+      <section class="queue-card" id="specimens">
         <div class="queue-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
             <h3><i class="fa-solid fa-layer-group" style="color: #34d399;"></i> Assessment Specimen Queue ({{ specimens|length }})</h3>
-            <span style="font-size: 0.8rem; color: var(--text-muted);">Published & Candidate Specimens</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Published &amp; Candidate Specimens — Intake Sentinel audits optics, EXIF &amp; native geology</span>
           </div>
 
           <!-- 3-Tier Provenance Filter Tabs -->
@@ -897,8 +602,6 @@
           </table>
         </div>
       </section>
-
-    </div>
 
   </main>
 
