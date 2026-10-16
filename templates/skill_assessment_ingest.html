@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Specimen Ingestion &amp; Battery Orchestrator — Global Wall Inspector</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #090e1a;
+      --bg-panel: #111827;
+      --bg-card: #1e293b;
+      --border-subtle: #334155;
+      --accent-blue: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    .top-nav {
+      background: rgba(17, 24, 39, 0.95);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.9rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .brand i { color: var(--accent-blue); font-size: 1.3rem; }
+    .badge-admin {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+      font-size: 0.72rem;
+      padding: 3px 10px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn-nav {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-back {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-back:hover { color: var(--text-main); border-color: var(--accent-blue); }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .guidelines-hud {
+      background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border: 1px solid #0284c7;
+      border-radius: 14px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .hud-title {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #38bdf8;
+    }
+    .hud-pill {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid #38bdf8;
+      color: #bae6fd;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .guidelines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 1.25rem;
+    }
+    .guide-card {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.15rem;
+    }
+    .guide-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    .guide-card h4 {
+      margin: 0 0 0.4rem 0;
+      font-size: 0.95rem;
+      color: #f8fafc;
+    }
+    .guide-card ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+    }
+    .guide-card li { margin-bottom: 0.3rem; }
+    .guide-card li strong { color: #38bdf8; }
+
+    .checklist-wrap {
+      margin-top: 1.25rem;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed #475569;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .checklist-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .checklist-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+    .chk-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      cursor: pointer;
+    }
+    .chk-label input { accent-color: #10b981; width: 15px; height: 15px; }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .upload-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+    .dropzone {
+      border: 2px dashed #0284c7;
+      background: rgba(2, 132, 199, 0.06);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dropzone:hover {
+      background: rgba(2, 132, 199, 0.14);
+      border-color: #38bdf8;
+    }
+    .dropzone i {
+      font-size: 2rem;
+      color: #38bdf8;
+      margin-bottom: 0.5rem;
+    }
+    .dropzone-prompt {
+      font-size: 0.88rem;
+      color: #e2e8f0;
+    }
+    .dropzone-img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      margin-top: 0.75rem;
+      display: none;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 0.85rem;
+    }
+    .form-group label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .form-control {
+      background: #0f172a;
+      border: 1px solid var(--border-subtle);
+      color: #f8fafc;
+      padding: 0.6rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-family: inherit;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .btn-submit-upload {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-action-small {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn-grade { background: #0284c7; color: white; border-color: #38bdf8; }
+
+    @media (max-width: 1024px) {
+      .section-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="/skill-assessment/admin/ingest" class="brand">
+        <i class="fa-solid fa-camera-retro"></i>
+        Specimen Ingestion &amp; Exam Battery Studio
+      </a>
+      <span class="badge-admin">Ingestion &amp; Curriculum Control</span>
+    </div>
+    <div class="nav-actions">
+      <button type="button" class="btn-nav" onclick="openSkillQrModal()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: 1px solid #10b981; font-weight: 700; cursor: pointer;">
+        <i class="fa-solid fa-qrcode"></i> Connect Phone Camera
+      </button>
+      <a href="/skill-assessment/admin" class="btn-nav" style="background: #0284c7; color: white; border: 1px solid #38bdf8;">
+        <i class="fa-solid fa-bullseye"></i> Grader Studio Queue ({{ specimens|length }})
+      </a>
+      <a href="/admin/system" class="btn-nav btn-back"><i class="fa-solid fa-shield-halved"></i> System Admin</a>
+      <a href="/admin/class" class="btn-nav btn-back"><i class="fa-solid fa-school"></i> Class Admin</a>
+      <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-house"></i> Main Catalog</a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- PHOTOGRAPHY GUIDELINES HUD -->
+    <section class="guidelines-hud">
+      <div class="hud-header">
+        <h2 class="hud-title">
+          <i class="fa-solid fa-camera-viewfinder"></i> Photographic Capture Standards &amp; Ingestion Protocol
+        </h2>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" onclick="openSkillQrModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-qrcode"></i> Connect Phone Camera [QR]
+          </button>
+          <span class="hud-pill"><i class="fa-solid fa-shield-halved"></i> Calibrated Ingestion Spec</span>
+        </div>
+      </div>
+
+      <div class="guidelines-grid">
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-sun-cloud"></i></div>
+          <h4>1. Lighting &amp; Illumination</h4>
+          <ul>
+            <li><strong>Diffuse Overcast Daylight:</strong> Recommended 5000K–6500K overcast sky to eliminate harsh shadow masking and specular hot spots.</li>
+            <li><strong>Controlled Raking Light:</strong> Use 15°–30° shallow oblique sun ONLY when recording face bulges, delamination blisters, or contour scaling.</li>
+            <li><strong>Avoid Direct Midday Sun:</strong> Prevents deep shadows inside open bed and perpend joints.</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-arrows-to-eye"></i></div>
+          <h4>2. Orthogonal Normal Angle</h4>
+          <ul>
+            <li><strong>Strict 90° Normal Angle:</strong> Position optical axis perpendicular to wall face plane.</li>
+            <li><strong>0° Pitch &amp; 0° Roll Tilt:</strong> Eliminates trapezoidal keystoning, perspective tilt, and dimensional compression.</li>
+            <li><strong>Sensor Parallel:</strong> Maintain sensor plane strictly parallel to continuous bed courses.</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-ruler-combined"></i></div>
+          <h4>3. Scope, Coursing &amp; Scale</h4>
+          <ul>
+            <li><strong>3 to 5 Courses:</strong> Frame must capture 3 to 5 continuous horizontal courses to establish masonry bond rhythm.</li>
+            <li><strong>1.5m to 2.5m Width:</strong> Provides adequate structural context across the wythe.</li>
+            <li><strong>Visible Datum &amp; Scale:</strong> Include plinth base/coping or place a 1m survey rule/scale coin at frame margin.</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-icon"><i class="fa-solid fa-bullseye-pointer"></i></div>
+          <h4>4. Resolution &amp; Depth of Field</h4>
+          <ul>
+            <li><strong>Minimum 1080p (2MP+):</strong> Native 4K / 8MP+ recommended for zoomable arris inspection.</li>
+            <li><strong>Arris Focus Lock:</strong> Lock autofocus sharply on bed and perpend joint arrises.</li>
+            <li><strong>Aperture f/5.6 – f/8:</strong> Deep depth of field ensures both proud and recessed stones remain in razor focus.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="checklist-wrap">
+        <div class="checklist-title">
+          <i class="fa-solid fa-list-check"></i> Pre-Flight Field Verification:
+        </div>
+        <div class="checklist-items">
+          <label class="chk-label"><input type="checkbox" checked> 90° Orthogonal Alignment (No Keystoning)</label>
+          <label class="chk-label"><input type="checkbox" checked> Diffuse / Oblique Raking Light Verified</label>
+          <label class="chk-label"><input type="checkbox" checked> 3–5 Courses Framed with Datum</label>
+          <label class="chk-label"><input type="checkbox" checked> Joint Arrises in Razor Sharp Focus</label>
+          <label class="chk-label"><input type="checkbox" checked> Scale Marker Placed at Margin</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRICULUM DIRECTOR & BATTERY GENERATOR HUD -->
+    <section class="guidelines-hud" style="border-color: #8b5cf6; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.85) 100%);">
+      <div class="hud-header" style="border-bottom-color: rgba(139, 92, 246, 0.3);">
+        <h2 class="hud-title" style="color: #c4b5fd;">
+          <i class="fa-solid fa-graduation-cap" style="color: #a78bfa;"></i> Curriculum Director Agent &amp; Exam Battery Orchestrator
+        </h2>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <span class="hud-pill" style="background: rgba(139, 92, 246, 0.2); border-color: #a78bfa; color: #ddd6fe;">
+            <i class="fa-solid fa-shuffle"></i> Side-by-Side Anti-Collusion Active
+          </span>
+          <span class="hud-pill" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #6ee7b7;">
+            <i class="fa-solid fa-chart-pie"></i> Cohort Avg: {{ cohort_intel.cohort_avg_score if cohort_intel else 0 }}% ({{ cohort_intel.total_attempts if cohort_intel else 0 }} Attempts)
+          </span>
+        </div>
+      </div>
+
+      <div style="background: rgba(15, 23, 42, 0.85); border-left: 4px solid #a78bfa; border-radius: 8px; padding: 12px 16px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="font-size: 0.84rem; color: #e2e8f0; flex: 1;">
+          <strong style="color: #c4b5fd; display: block; margin-bottom: 3px;"><i class="fa-solid fa-brain"></i> Autonomous Curriculum Director Prescription:</strong>
+          <span>{{ cohort_intel.director_recommendation if cohort_intel else 'Assemble a balanced 10-question assessment battery for candidate evaluation.' }}</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; align-items: start;">
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 1.25rem;">
+          <h4 style="margin: 0 0 0.85rem 0; color: #f8fafc; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-sliders" style="color: #38bdf8;"></i> Configure Assessment Battery
+          </h4>
+          <form id="create-battery-form" onsubmit="submitCreateBattery(event)">
+            <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                <label>Battery Title</label>
+                <input type="text" class="form-control" id="bat-title" name="title" value="Cohort 10-Question Masonry Pathology Exam" required>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Questions in Battery</label>
+                <input type="number" class="form-control" id="bat-size" name="battery_size" value="10" min="3" max="30" required title="Default is 10 questions">
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; background: rgba(2, 6, 23, 0.5); padding: 10px 12px; border-radius: 8px; border: 1px solid #1e293b;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #f1f5f9; cursor: pointer;">
+                <input type="checkbox" id="bat-randomize" name="randomize_order" checked style="accent-color: #8b5cf6; width: 16px; height: 16px;">
+                <span><strong>🔀 Side-by-Side Randomization:</strong> Deliver unique sequence per student to prevent desk copying</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #f1f5f9; cursor: pointer;">
+                <input type="checkbox" id="bat-dry-run" name="enable_dry_run" checked style="accent-color: #10b981; width: 16px; height: 16px;">
+                <span><strong>🔰 Practice Dry-Run Sample:</strong> Start with interactive unscored calibration + skip toggle</span>
+              </label>
+            </div>
+
+            <button type="submit" id="btn-create-battery" class="btn-submit-upload" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border-color: #a78bfa;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Balanced Battery (<span id="btn-bat-count-lbl">10</span> Questions)
+            </button>
+          </form>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h4 style="margin: 0; color: #f8fafc; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i> Active Student Batteries
+            </h4>
+            <a href="/skill-assessment/battery/start?code=COHORT-10" target="_blank" style="font-size: 0.75rem; color: #38bdf8; text-decoration: none; font-weight: 700;">
+              <i class="fa-solid fa-external-link-alt"></i> Preview Student Battery Flow
+            </a>
+          </div>
+
+          <div id="active-batteries-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto;">
+            {% if batteries %}
+              {% for bat in batteries %}
+                <div style="background: #090e1a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid #8b5cf6; font-family: monospace; font-size: 0.78rem; font-weight: 800; padding: 2px 7px; border-radius: 5px;">{{ bat.code }}</span>
+                      <strong style="color: #f8fafc; font-size: 0.85rem;">{{ bat.title }}</strong>
+                    </div>
+                    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: flex; gap: 10px;">
+                      <span><i class="fa-solid fa-list-ol"></i> <strong>{{ bat.battery_size }}</strong> Questions</span>
+                      <span>{% if bat.randomize_order %}<i class="fa-solid fa-shuffle" style="color: #34d399;"></i> Randomized{% else %}Fixed Order{% endif %}</span>
+                      <span>{% if bat.enable_dry_run %}<i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> Dry-Run Included{% else %}Direct Start{% endif %}</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <a href="/skill-assessment/battery/start?code={{ bat.code }}" target="_blank" class="btn-action-small btn-grade" style="background: #059669; border-color: #10b981;">
+                      <i class="fa-solid fa-play"></i> Launch
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div style="color: #64748b; font-size: 0.8rem; padding: 1rem; text-align: center;">
+                No custom batteries created yet. Click "Generate Balanced Battery" to assemble a 10-question exam.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Upload Form & Quick Jump to Grader Studio -->
+    <div class="section-grid">
+      <section class="upload-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <h3 style="margin: 0;"><i class="fa-solid fa-cloud-arrow-up" style="color: #38bdf8;"></i> Ingest Assessment Specimen</h3>
+          <button type="button" onclick="openSkillQrModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-qrcode"></i> Pair Mobile Camera
+          </button>
+        </div>
+
+        <form action="/skill-assessment/admin/upload" method="POST" enctype="multipart/form-data" id="upload-form">
+          <div class="dropzone" id="dropzone" onclick="document.getElementById('wall-image-input').click()">
+            <i class="fa-solid fa-camera"></i>
+            <div class="dropzone-prompt">
+              <strong>Tap to capture with Camera</strong> or drag and drop image file<br>
+              <small>Adhering to 90° orthogonal, diffuse light guidelines</small>
+            </div>
+            <img id="preview-img" class="dropzone-img" alt="Preview">
+          </div>
+          <input type="file" id="wall-image-input" name="wall_image" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelected(event)" required>
+
+          <div class="form-group">
+            <label>Specimen Title</label>
+            <input type="text" class="form-control" name="title" placeholder="e.g. Limestone Field Boundary: Pinning Loss" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Masonry Archetype</label>
+              <select class="form-control" name="wall_type">
+                {% for t in wall_types %}
+                  <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Difficulty Tier</label>
+              <select class="form-control" name="difficulty">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Country / Location</label>
+              <input type="text" class="form-control" name="country" value="Ireland">
+            </div>
+            <div class="form-group">
+              <label>Region / County</label>
+              <input type="text" class="form-control" name="region" placeholder="e.g. Co. Clare">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Structural Function</label>
+            <select class="form-control" name="structural_function">
+              <option value="boundary">Boundary / Field Wall</option>
+              <option value="retaining">Retaining Structure</option>
+              <option value="load_bearing">Load Bearing Masonry</option>
+              <option value="freestanding">Freestanding Enclosure</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Field Survey Notes &amp; Historical Context</label>
+            <textarea class="form-control" name="description" rows="2" placeholder="Record mortar composition, exposure, bedding plane orientation..."></textarea>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <label>Next Step Workflow:</label>
+            <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: #cbd5e1;">
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="radio" name="grade_action" value="now" checked>
+                <strong>Grade Defect Points Now</strong> (Open Canvas)
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="radio" name="grade_action" value="later">
+                Save &amp; Grade Later
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit-upload">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Upload &amp; Auto-Suggest Defects (AI Reviewed)
+          </button>
+          <div style="font-size: 0.72rem; color: #38bdf8; text-align: center; margin-top: 4px;">
+            <i class="fa-solid fa-shield-halved"></i> Intake Sentinel audits optics, EXIF &amp; native geology (non-blocking quality advisories).
+          </div>
+        </form>
+      </section>
+
+      <section class="upload-card" style="justify-content: space-between;">
+        <div>
+          <h3 style="margin: 0 0 0.75rem 0; color: #34d399;"><i class="fa-solid fa-bullseye"></i> Ground-Truth Grader Studio</h3>
+          <p style="font-size: 0.88rem; color: #cbd5e1; margin: 0 0 1.25rem 0;">
+            The dedicated <strong>Grader Studio</strong> houses the <strong>Assessment Specimen Queue ({{ specimens|length }})</strong> where certified graders calibrate ground-truth defect pins, general wall issues, and custom dropdown labels without clutter.
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+            <div style="background: #0f172a; border: 1px solid #10b981; border-radius: 8px; padding: 0.85rem; text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: 800; color: #34d399;">{{ count_human }}</div>
+              <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Human-Graded</div>
+            </div>
+            <div style="background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; padding: 0.85rem; text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: 800; color: #38bdf8;">{{ count_accepted }}</div>
+              <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Auto-Accepted</div>
+            </div>
+            <div style="background: #0f172a; border: 1px solid #a855f7; border-radius: 8px; padding: 0.85rem; text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: 800; color: #c084fc;">{{ count_auto }}</div>
+              <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Auto-Suggested</div>
+            </div>
+          </div>
+        </div>
+        <a href="/skill-assessment/admin" class="btn-submit-upload" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #38bdf8; text-decoration: none;">
+          <i class="fa-solid fa-layer-group"></i> Open Assessment Specimen Queue ({{ specimens|length }}) &rarr;
+        </a>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Smartphone Camera QR Pairing Modal -->
+  <div id="modal-skill-qr" style="display: none; position: fixed; inset: 0; background: rgba(9, 14, 26, 0.88); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #0f172a; border: 2px solid #059669; border-radius: 16px; width: 100%; max-width: 440px; padding: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 1.15rem; box-shadow: 0 15px 45px rgba(0,0,0,0.8); position: relative;">
+      <button type="button" onclick="closeSkillQrModal()" style="position: absolute; top: 12px; right: 14px; background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; line-height: 1;">&times;</button>
+      <div style="text-align: center;">
+        <h3 style="margin: 0; font-size: 1.2rem; color: #f8fafc;">Connect Smartphone Camera</h3>
+        <p style="margin: 4px 0 0; font-size: 0.82rem; color: #94a3b8;">
+          Instantly pairs your phone camera with the Skill Assessment Specimen Ingestion pipeline.
+        </p>
+      </div>
+      <div style="background: #ffffff; padding: 14px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <img id="skill-qr-img" src="" alt="Skill Assessment Field Camera QR" style="width: 210px; height: 210px; display: block;">
+      </div>
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-family: monospace; font-size: 0.7rem; color: #38bdf8; word-break: break-all; background: #090e1a; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; text-align: center;">
+          <span id="skill-qr-url-text">Loading secure pairing URL...</span>
+        </div>
+        <div style="display: flex; gap: 8px; width: 100%;">
+          <button type="button" onclick="copySkillCaptureUrl()" style="flex: 1; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+            <i class="fa-solid fa-copy"></i> Copy Link
+          </button>
+          <a id="btn-open-skill-mobile" href="#" target="_blank" style="flex: 1; background: #059669; color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; text-align: center;">
+            Open View &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mobileAdminToken = "{{ mobile_admin_token or '' }}";
+    function getSkillMobileUrl() {
+      const origin = window.location.origin;
+      const base = `${origin}/mobile/admin?mode=skill_assessment`;
+      return mobileAdminToken ? `${base}&token=${encodeURIComponent(mobileAdminToken)}` : base;
+    }
+    function openSkillQrModal() {
+      const modal = document.getElementById('modal-skill-qr');
+      const qrImg = document.getElementById('skill-qr-img');
+      const urlText = document.getElementById('skill-qr-url-text');
+      const openBtn = document.getElementById('btn-open-skill-mobile');
+      const fullUrl = getSkillMobileUrl();
+      if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=0&data=${encodeURIComponent(fullUrl)}`;
+      if (urlText) urlText.innerText = fullUrl;
+      if (openBtn) openBtn.href = fullUrl;
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeSkillQrModal() {
+      const modal = document.getElementById('modal-skill-qr');
+      if (modal) modal.style.display = 'none';
+    }
+    function copySkillCaptureUrl() {
+      const url = getSkillMobileUrl();
+      navigator.clipboard.writeText(url).catch(() => prompt("Copy this URL:", url));
+    }
+    function handleFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('preview-img');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    const batSizeInput = document.getElementById('bat-size');
+    const batCountLbl = document.getElementById('btn-bat-count-lbl');
+    if (batSizeInput && batCountLbl) {
+      batSizeInput.addEventListener('input', (e) => {
+        batCountLbl.textContent = e.target.value || '10';
+      });
+    }
+
+    async function submitCreateBattery(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-create-battery');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Assembling Balanced Battery...';
+      }
+      const payload = {
+        title: document.getElementById('bat-title').value.trim(),
+        battery_size: parseInt(document.getElementById('bat-size').value, 10) || 10,
+        randomize_order: document.getElementById('bat-randomize').checked,
+        enable_dry_run: document.getElementById('bat-dry-run').checked
+      };
+      try {
+        const res = await fetch('/api/skill-assessment/battery/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          window.location.reload();
+        } else {
+          alert('Error creating battery: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Failed to create battery.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

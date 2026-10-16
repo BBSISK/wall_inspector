@@ -119,6 +119,24 @@ class GraderAuthAndLabelSeparationTestCase(unittest.TestCase):
         self.assertTrue(modes_data["success"])
         self.assertTrue(any(m["id"] == "custom_basal_scour" for m in modes_data["prioritized_modes"]))
 
+    def test_grader_studio_only_has_specimen_queue(self):
+        """Verify /skill-assessment/admin only shows the Assessment Specimen Queue, while ingestion/batteries live in /skill-assessment/admin/ingest."""
+        self.client.post(
+            "/grader/login",
+            data=json.dumps({"pin": "1010"}),
+            content_type="application/json",
+        )
+        studio_html = self.client.get("/skill-assessment/admin").get_data(as_text=True)
+        self.assertIn("Assessment Specimen Queue", studio_html)
+        self.assertNotIn("Photographic Capture Standards", studio_html)
+        self.assertNotIn("Curriculum Director Agent & Exam Battery Orchestrator", studio_html)
+        self.assertNotIn("Ingest Assessment Specimen", studio_html)
+
+        ingest_html = self.client.get("/skill-assessment/admin/ingest").get_data(as_text=True)
+        self.assertIn("Photographic Capture Standards", ingest_html)
+        self.assertIn("Curriculum Director Agent", ingest_html)
+        self.assertIn("Ingest Assessment Specimen", ingest_html)
+
 
 if __name__ == "__main__":
     unittest.main()

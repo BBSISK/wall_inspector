@@ -390,21 +390,29 @@ class TestStudiosAndAuth(unittest.TestCase):
         self.assertIn('ground_truth', eval_data)
         self.assertEqual(len(eval_data['ground_truth']), 3)
 
-        # 4. Test Instructor Admin and Photography Guidelines HUD
+        # 4. Test Grader Studio Queue & Separate Ingestion / Photography Guidelines Studio
         with self.client.session_transaction() as sess:
             sess['is_admin'] = True
 
         res_admin = self.client.get('/skill-assessment/admin')
         self.assertEqual(res_admin.status_code, 200)
-        self.assertIn(b'Photographic Capture Standards', res_admin.data)
-        self.assertIn(b'Diffuse Overcast Daylight', res_admin.data)
-        self.assertIn(b'Orthogonal Normal Angle', res_admin.data)
+        self.assertIn(b'Assessment Specimen Queue', res_admin.data)
+        self.assertNotIn(b'Photographic Capture Standards', res_admin.data)
 
-        # 5. Test Grader Canvas
+        res_ingest = self.client.get('/skill-assessment/admin/ingest')
+        self.assertEqual(res_ingest.status_code, 200)
+        self.assertIn(b'Photographic Capture Standards', res_ingest.data)
+        self.assertIn(b'Diffuse Overcast Daylight', res_ingest.data)
+        self.assertIn(b'Orthogonal Normal Angle', res_ingest.data)
+
+        # 5. Test Grader Canvas & Separate Label Definition Studio
         res_grader = self.client.get('/skill-assessment/admin/grade/skill-drystone-limestone-delamination')
         self.assertEqual(res_grader.status_code, 200)
         self.assertIn(b'Ground Truth Defect Grader', res_grader.data)
-        self.assertIn(b'Specimen Dropdown', res_grader.data)
+
+        res_labels = self.client.get('/skill-assessment/admin/labels/skill-drystone-limestone-delamination')
+        self.assertEqual(res_labels.status_code, 200)
+        self.assertIn(b'Active Specimen Dropdown Order', res_labels.data)
 
         # 6. Test Setting Specimen Defect Mode Palette (with Custom Title)
         custom_palette = [
