@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Label &amp; Dropdown Definition Studio — {{ wall.title }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #090e1a;
+      --panel-dark: #0f172a;
+      --card-dark: #1e293b;
+      --border-dark: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --amber: #f59e0b;
+      --emerald: #10b981;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-nav {
+      background: var(--panel-dark);
+      border-bottom: 1px solid var(--border-dark);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .specimen-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .specimen-info h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .studio-badge {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border: 1px solid #f59e0b;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .btn-top {
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .btn-exit { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+    .btn-exit:hover { color: #f8fafc; border-color: #64748b; }
+    .btn-grade-link {
+      background: rgba(2, 132, 199, 0.2);
+      color: #38bdf8;
+      border-color: #0284c7;
+    }
+    .btn-grade-link:hover { background: #0284c7; color: white; }
+    .btn-save-all {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #090e1a;
+      border-color: #fbbf24;
+      font-weight: 800;
+    }
+    .btn-save-all:hover { filter: brightness(1.1); box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.75rem 1.5rem 4rem;
+      width: 100%;
+    }
+
+    .workflow-banner {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-left: 4px solid #f59e0b;
+      border-radius: 12px;
+      padding: 1.15rem 1.4rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .studio-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .panel-card {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+    .panel-card h2 {
+      margin: 0 0 0.85rem 0;
+      font-size: 1.02rem;
+      font-weight: 800;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .specimen-preview-img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border-dark);
+      display: block;
+      margin-bottom: 0.85rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #090e1a;
+      border: 1px solid var(--border-dark);
+      color: var(--text-main);
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-control:focus { border-color: #f59e0b; }
+
+    .palette-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-left: 4px solid #38bdf8;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      margin-bottom: 0.55rem;
+      font-size: 0.88rem;
+      color: #f1f5f9;
+      gap: 10px;
+    }
+    .palette-chip.custom {
+      border-left-color: #f59e0b;
+    }
+    .chip-badge-custom {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .palette-chip-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .priority-btn {
+      background: #0f172a;
+      border: 1px solid var(--border-dark);
+      color: #cbd5e1;
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .priority-btn:hover {
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+    .btn-remove-chip {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .btn-remove-chip:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    @media (max-width: 960px) {
+      .studio-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-nav">
+    <div class="specimen-info">
+      <a href="/skill-assessment/admin" class="btn-top btn-exit"><i class="fa-solid fa-arrow-left"></i> Specimen Queue</a>
+      <h1><i class="fa-solid fa-tags" style="color: #fbbf24;"></i> {{ wall.title }}</h1>
+      <span class="studio-badge">Label &amp; Dropdown Studio</span>
+      <span id="palette-save-status" style="font-size: 0.78rem; color: #34d399; display: inline-flex; align-items: center; gap: 5px; font-weight: 700;">
+        <i class="fa-solid fa-circle-check"></i> Saved
+      </span>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-top btn-grade-link" title="Switch to Ground-Truth Pin & General Issues Grader">
+        <i class="fa-solid fa-bullseye"></i> Go to Ground-Truth Grader &rarr;
+      </a>
+      <a href="/skill-assessment/{{ wall.slug }}" target="_blank" class="btn-top btn-exit">
+        <i class="fa-solid fa-eye"></i> Preview Student Dropdown
+      </a>
+      <button type="button" class="btn-top btn-save-all" onclick="saveModesPalette()">
+        <i class="fa-solid fa-floppy-disk"></i> Save Label Palette
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="workflow-banner">
+      <div>
+        <strong style="color: #fbbf24; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <i class="fa-solid fa-layer-group"></i> Dedicated Specimen Label &amp; Dropdown Definition
+        </strong>
+        <p style="margin: 0; font-size: 0.84rem; color: #cbd5e1; max-width: 780px; line-height: 1.45;">
+          Define custom pathology labels and prioritize the dropdown options students see when inspecting <strong>{{ wall.title }}</strong>. This activity is cleanly separated from placing defect pins on the wall.
+        </p>
+      </div>
+      <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-top btn-grade-link" style="padding: 0.6rem 1.1rem;">
+        <i class="fa-solid fa-crosshairs"></i> Switch to Pin &amp; Issue Grading ({{ defects|length }} Pins) &rarr;
+      </a>
+    </div>
+
+    <div class="studio-grid">
+
+      <!-- Left Column: Specimen Context & Existing Pins -->
+      <div>
+        <div class="panel-card">
+          <h2><i class="fa-solid fa-image" style="color: #38bdf8;"></i> Specimen Reference</h2>
+          <img src="{{ wall.image_url }}" alt="{{ wall.title }}" class="specimen-preview-img">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            <span>Archetype: <strong style="color: #f8fafc;">{{ wall.wall_type.replace('_', ' ').title() }}</strong></span>
+            <span>Region: <strong style="color: #f8fafc;">{{ wall.country }}</strong></span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            Active Ground-Truth Pins: <strong style="color: #38bdf8;">{{ defects|length }}</strong>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <h2><i class="fa-solid fa-thumbtack" style="color: #10b981;"></i> Labels Used by Current Pins ({{ defects|length }})</h2>
+          {% if defects and defects|length > 0 %}
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              {% for d in defects %}
+                <div style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 6px; padding: 0.55rem 0.75rem; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #f8fafc; display: block;">#{{ loop.index }} {{ d.title }}</strong>
+                    <span style="color: #38bdf8; font-family: monospace; font-size: 0.72rem;">{{ d.category }}</span>
+                  </div>
+                  <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">{{ d.severity }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p style="margin: 0; font-size: 0.82rem; color: var(--text-muted);">
+              No defect pins placed yet. You can define your custom labels here first, or head to the <a href="/skill-assessment/admin/grade/{{ wall.slug }}" style="color: #38bdf8;">Ground-Truth Grader</a>.
+            </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Right Column: Label Creation & Dropdown Priority Studio -->
+      <div>
+        <div class="panel-card">
+          <h2><i class="fa-solid fa-plus-circle" style="color: #fbbf24;"></i> 1. Create Custom Defect Label for This Wall</h2>
+          <p style="margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--text-muted);">
+            Add a custom defect classification title specific to this wall specimen. It will automatically be added to the prioritized dropdown palette for both grading and student inspection.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="new-custom-title" class="form-control" placeholder="e.g. Bed Joint Lime Washout / Basal Plinth Undercutting" onkeydown="if(event.key==='Enter') addCustomModeTitle()">
+            <button type="button" class="btn-top btn-save-all" style="padding: 0.65rem 1.2rem; white-space: nowrap;" onclick="addCustomModeTitle()">
+              <i class="fa-solid fa-plus"></i> Add Custom Label
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <h2><i class="fa-solid fa-star" style="color: #38bdf8;"></i> 2. Prioritise Standard Taxonomy Label</h2>
+          <p style="margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--text-muted);">
+            Promote any standard masonry pathology mode into this specimen's top prioritized dropdown section (useful for adding plausible distractors alongside true defects).
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <select id="select-add-mode" class="form-control"></select>
+            <button type="button" class="btn-top" style="background: #0284c7; color: white; border-color: #38bdf8; padding: 0.65rem 1.2rem; white-space: nowrap;" onclick="addSelectedStandardMode()">
+              <i class="fa-solid fa-arrow-up-wide-short"></i> Add to Priority Dropdown
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="margin: 0;">
+              <i class="fa-solid fa-list-ol" style="color: #10b981;"></i> 3. Active Specimen Dropdown Order (<span id="palette-count-inline">0</span>)
+            </h2>
+            <button type="button" onclick="resetToDefaultModes()" style="background: transparent; border: 1px solid var(--border-dark); color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-rotate-left"></i> Reset to Pin Defaults
+            </button>
+          </div>
+          <p style="margin: 0 0 1rem; font-size: 0.8rem; color: var(--text-muted);">
+            Use the up/down arrows to control the exact order in which prioritized defect modes appear at the top of the dropdown menu.
+          </p>
+
+          <div id="palette-chip-list"></div>
+
+          <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-dark); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-top btn-grade-link">
+              <i class="fa-solid fa-bullseye"></i> Continue to Ground-Truth Grading &rarr;
+            </a>
+            <button type="button" class="btn-top btn-save-all" style="padding: 0.65rem 1.4rem;" onclick="saveModesPalette()">
+              <i class="fa-solid fa-floppy-disk"></i> Save Specimen Label Palette
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const wallSlug = {{ wall.slug|tojson }};
+    const initialDefects = {{ defects|tojson }} || [];
+    let prioritizedModes = {{ prioritized_modes|tojson }} || [];
+    let allModes = {{ all_modes|tojson }} || [];
+    const modeLookup = {};
+    allModes.forEach(m => { modeLookup[m.id] = m; });
+
+    function renderPaletteUI() {
+      const palCount = prioritizedModes.length;
+      document.getElementById('palette-count-inline').textContent = palCount;
+
+      const chipContainer = document.getElementById('palette-chip-list');
+      chipContainer.innerHTML = '';
+
+      if (prioritizedModes.length === 0) {
+        chipContainer.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem 1rem; border: 1px dashed var(--border-dark); border-radius: 8px;">
+            <i class="fa-solid fa-tags" style="font-size: 1.6rem; color: #475569; margin-bottom: 0.5rem;"></i>
+            <div style="font-size: 0.88rem; font-weight: 700; color: #cbd5e1;">No prioritized labels configured yet.</div>
+            <small style="color: #64748b;">All standard taxonomy modes will be shown in default order.</small>
+          </div>
+        `;
+      } else {
+        prioritizedModes.forEach((mode, idx) => {
+          const chip = document.createElement('div');
+          chip.className = 'palette-chip' + (mode.is_custom ? ' custom' : '');
+          chip.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+              <span style="font-size: 0.78rem; font-weight: 800; color: #38bdf8; min-width: 24px;">#${idx + 1}</span>
+              <div>
+                <span style="font-weight: 700; color: #f8fafc;">${mode.label}</span>
+                <span style="font-size: 0.72rem; color: #64748b; font-family: monospace; margin-left: 6px;">(${mode.id})</span>
+              </div>
+              ${mode.is_custom ? '<span class="chip-badge-custom">Custom Label</span>' : ''}
+            </div>
+            <div class="palette-chip-actions">
+              ${idx > 0 ? `<button type="button" class="priority-btn" onclick="moveModePriority('${mode.id}', -1)" title="Move Up"><i class="fa-solid fa-chevron-up"></i></button>` : ''}
+              ${idx < prioritizedModes.length - 1 ? `<button type="button" class="priority-btn" onclick="moveModePriority('${mode.id}', 1)" title="Move Down"><i class="fa-solid fa-chevron-down"></i></button>` : ''}
+              <button type="button" class="btn-remove-chip" onclick="removeModeFromPalette('${mode.id}')" title="Remove from prioritized list"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          `;
+          chipContainer.appendChild(chip);
+        });
+      }
+
+      const selectAdd = document.getElementById('select-add-mode');
+      selectAdd.innerHTML = '';
+      const prioritizedIds = new Set(prioritizedModes.map(m => m.id));
+      const availableToAdd = allModes.filter(m => !prioritizedIds.has(m.id));
+
+      if (availableToAdd.length === 0) {
+        selectAdd.innerHTML = '<option disabled>All modes already prioritized</option>';
+      } else {
+        availableToAdd.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.label + (m.is_custom ? ' (Custom)' : '');
+          selectAdd.appendChild(opt);
+        });
+      }
+    }
+
+    function addCustomModeTitle() {
+      const input = document.getElementById('new-custom-title');
+      const title = input.value.trim();
+      if (!title) return;
+
+      const slugId = 'custom_' + title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      const existing = allModes.find(m => m.id === slugId || m.label.toLowerCase() === title.toLowerCase());
+      if (existing) {
+        if (!prioritizedModes.some(m => m.id === existing.id)) {
+          prioritizedModes.push(existing);
+        }
+      } else {
+        const newMode = {
+          id: slugId,
+          label: title,
+          hint: 'Custom defect mode for this wall specimen.',
+          is_custom: true
+        };
+        allModes.push(newMode);
+        modeLookup[newMode.id] = newMode;
+        prioritizedModes.push(newMode);
+      }
+
+      input.value = '';
+      renderPaletteUI();
+      saveModesPalette();
+    }
+
+    function addSelectedStandardMode() {
+      const selectAdd = document.getElementById('select-add-mode');
+      const chosenId = selectAdd.value;
+      if (!chosenId) return;
+
+      const mode = allModes.find(m => m.id === chosenId);
+      if (mode && !prioritizedModes.some(m => m.id === chosenId)) {
+        prioritizedModes.push(mode);
+        renderPaletteUI();
+        saveModesPalette();
+      }
+    }
+
+    function removeModeFromPalette(modeId) {
+      prioritizedModes = prioritizedModes.filter(m => m.id !== modeId);
+      renderPaletteUI();
+      saveModesPalette();
+    }
+
+    function moveModePriority(modeId, direction) {
+      const idx = prioritizedModes.findIndex(m => m.id === modeId);
+      if (idx < 0) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= prioritizedModes.length) return;
+
+      const temp = prioritizedModes[idx];
+      prioritizedModes[idx] = prioritizedModes[targetIdx];
+      prioritizedModes[targetIdx] = temp;
+
+      renderPaletteUI();
+      saveModesPalette();
+    }
+
+    function resetToDefaultModes() {
+      if (!confirm('Reset prioritized dropdown palette to the categories used by current ground-truth pins?')) return;
+      prioritizedModes = [];
+      const seen = new Set();
+      initialDefects.forEach(d => {
+        if (!seen.has(d.category)) {
+          seen.add(d.category);
+          const m = modeLookup[d.category] || { id: d.category, label: d.title || d.category, is_custom: true };
+          prioritizedModes.push(m);
+        }
+      });
+      renderPaletteUI();
+      saveModesPalette();
+    }
+
+    async function saveModesPalette() {
+      const statusEl = document.getElementById('palette-save-status');
+      if (statusEl) {
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        statusEl.style.color = '#38bdf8';
+      }
+
+      try {
+        const response = await fetch(`/api/skill-assessment/modes/${wallSlug}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prioritized_modes: prioritizedModes })
+        });
+        const res = await response.json();
+        if (res && res.success) {
+          if (statusEl) {
+            statusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> Saved';
+            statusEl.style.color = '#34d399';
+          }
+        } else {
+          if (statusEl) {
+            statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Save error';
+            statusEl.style.color = '#ef4444';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync defect modes palette:', err);
+        if (statusEl) {
+          statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Offline';
+          statusEl.style.color = '#ef4444';
+        }
+      }
+    }
+
+    renderPaletteUI();
+  </script>
+</body>
+</html>

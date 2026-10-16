@@ -745,13 +745,16 @@
         <a href="/portal" class="nav-link btn-nav-student">
           <i class="fa-solid fa-graduation-cap"></i> Student Portal
         </a>
+        <a href="/skill-assessment/admin" class="nav-link btn-nav-admin" style="border-color: #10b981; color: #6ee7b7 !important;">
+          <i class="fa-solid fa-bullseye"></i> Grader Studio
+        </a>
         <a href="/admin/class" class="nav-link btn-nav-admin" style="border-color: #38bdf8; color: #7dd3fc !important;">
           <i class="fa-solid fa-school"></i> Class Admin
         </a>
         <a href="/admin/system" class="nav-link btn-nav-admin" style="border-color: #8b5cf6; color: #d8b4fe !important;">
           <i class="fa-solid fa-shield-halved"></i> System Admin
         </a>
-        {% if is_admin %}
+        {% if is_admin or is_grader %}
           <a href="/admin/logout" class="nav-link" style="color: #f87171;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
         {% endif %}
       </div>
@@ -831,13 +834,19 @@
             </div>
             <div>
               <h3 class="door-title">Assessor &amp; Admin Studio</h3>
-              <span class="door-caption">Dual-Tiered Control Hub</span>
+              <span class="door-caption">Multi-Tiered Control Hub</span>
             </div>
           </div>
           <p class="door-desc">
-            Dual-tiered administrative control: manage local classroom cohorts and batteries, or govern global photographic specimen ingestion and ground-truth grading.
+            Dedicated credentials for Ground-Truth Specimen Grading &amp; Label Definition, or full Administrative control (Administrators automatically have Grader access).
           </p>
           <ul class="door-features">
+            <li>
+              <span class="door-feature-icon icon-mobile"><i class="fa-solid fa-bullseye"></i></span>
+              <div class="door-feature-text">
+                <strong style="color: #6ee7b7;">Grader &amp; Label Studio:</strong> Separate Ground-Truth Pin Grading and Specimen Dropdown Label Definition.
+              </div>
+            </li>
             <li>
               <span class="door-feature-icon icon-class"><i class="fa-solid fa-school"></i></span>
               <div class="door-feature-text">
@@ -851,19 +860,16 @@
               </div>
             </li>
             <li>
-              <span class="door-feature-icon icon-mobile"><i class="fa-solid fa-qrcode"></i></span>
-              <div class="door-feature-text">
-                <strong style="color: #6ee7b7;">Mobile QR Field Pairing:</strong> Direct camera capture from field sites with GPS and archetype tagging.
-              </div>
-            </li>
-            <li>
               <span class="door-feature-icon icon-mlops"><i class="fa-solid fa-download"></i></span>
               <div class="door-feature-text">
                 <strong style="color: #fde047;">MLOps COCO 1.0 Export:</strong> Instant JSON dataset download for CVAT &amp; YOLOv8 model training.
               </div>
             </li>
           </ul>
-          <div class="door-actions-split">
+          <div class="door-actions-split" style="grid-template-columns: 1fr 1fr 1fr;">
+            <a href="/skill-assessment/admin" class="btn-door" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399;">
+              <i class="fa-solid fa-bullseye"></i> Grader &rarr;
+            </a>
             <a href="/admin/class" class="btn-door btn-door-class">
               <i class="fa-solid fa-school"></i> Class Admin &rarr;
             </a>
@@ -939,17 +945,20 @@
               </div>
 
               <!-- Admin Management & Grading Ingestion Actions -->
-              <div style="display: flex; gap: 0.5rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(51, 65, 85, 0.7);">
-                <a href="/admin/walls/{{ wall.slug }}/edit" class="btn-card" style="flex: 1; background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 0.45rem 0.6rem; font-size: 0.78rem; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+              <div style="display: flex; gap: 0.4rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(51, 65, 85, 0.7);">
+                <a href="/admin/walls/{{ wall.slug }}/edit" class="btn-card" style="flex: 0.9; background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 0.45rem 0.5rem; font-size: 0.75rem; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
                   <i class="fa-solid fa-pen-to-square"></i> Edit
                 </a>
                 {% if not wall.is_skill_assessment %}
-                  <a href="/admin/walls/{{ wall.slug }}/promote" class="btn-card" style="flex: 1.6; background: rgba(5, 150, 105, 0.22); color: #34d399; border: 1px solid #10b981; padding: 0.45rem 0.6rem; font-size: 0.78rem; font-weight: 700; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+                  <a href="/admin/walls/{{ wall.slug }}/promote" class="btn-card" style="flex: 1.6; background: rgba(5, 150, 105, 0.22); color: #34d399; border: 1px solid #10b981; padding: 0.45rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
                     <i class="fa-solid fa-bullseye"></i> Promote to Grading
                   </a>
                 {% else %}
-                  <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-card" style="flex: 1.6; background: rgba(2, 132, 199, 0.22); color: #38bdf8; border: 1px solid #38bdf8; padding: 0.45rem 0.6rem; font-size: 0.78rem; font-weight: 700; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
-                    <i class="fa-solid fa-pen-ruler"></i> Grade Pins
+                  <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-card" style="flex: 1.2; background: rgba(2, 132, 199, 0.22); color: #38bdf8; border: 1px solid #38bdf8; padding: 0.45rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                    <i class="fa-solid fa-bullseye"></i> Grade
+                  </a>
+                  <a href="/skill-assessment/admin/labels/{{ wall.slug }}" class="btn-card" style="flex: 1; background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid #f59e0b; padding: 0.45rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-align: center; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                    <i class="fa-solid fa-tags"></i> Labels
                   </a>
                 {% endif %}
               </div>

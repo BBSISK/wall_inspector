@@ -272,9 +272,15 @@
 
     <!-- STATE A: Login Credentials Form -->
     <div id="login-view" style="display: {% if already_authenticated or login_success %}none{% else %}block{% endif %};">
-      <div class="header-icon"><i class="fa-solid fa-shield-halved"></i></div>
-      <h2>Instructor &amp; Assessor Portal</h2>
-      <p class="card-sub">Dual-tiered access for Class Administration and Platform Command.</p>
+      {% if portal_mode == 'grader' or role_hint == 'grader' %}
+        <div class="header-icon" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #34d399;"><i class="fa-solid fa-bullseye"></i></div>
+        <h2>Assessor &amp; Grader Login</h2>
+        <p class="card-sub">Dedicated authentication for Ground-Truth Specimen Grading &amp; Label Definition.<br><span style="color: #34d399; font-size: 0.78rem;">(Administrators automatically have full access with Admin credentials)</span></p>
+      {% else %}
+        <div class="header-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h2>Instructor &amp; Assessor Portal</h2>
+        <p class="card-sub">Multi-tiered access for Specimen Grading, Class Administration, and Platform Command.</p>
+      {% endif %}
 
       <div id="ajax-error-alert" class="error-alert" style="display: {% if error %}flex{% else %}none{% endif %};">
         <span>⚠️</span>
@@ -303,14 +309,14 @@
         </a>
       </div>
 
-      <div class="divider">Or Authenticate via Email / Root Access</div>
+      <div class="divider">Or Authenticate via Email / Grader / Admin Credentials</div>
 
       <div class="auth-tabs">
         <button type="button" class="auth-tab active" id="tab-email" onclick="switchAuthMode('email')">
           <i class="fa-solid fa-envelope"></i> Email Passcode
         </button>
         <button type="button" class="auth-tab" id="tab-pass" onclick="switchAuthMode('pass')">
-          <i class="fa-solid fa-key"></i> Master Password
+          <i class="fa-solid fa-key"></i> Grader / Admin Password
         </button>
         <button type="button" class="auth-tab" id="tab-pin" onclick="switchAuthMode('pin')">
           <i class="fa-solid fa-hashtag"></i> 4-Digit PIN
@@ -323,33 +329,34 @@
         <div id="mode-email">
           <div style="margin-bottom: 0.85rem;">
             <label>Institutional Email</label>
-            <input type="email" name="email" id="input-email" placeholder="e.g. instructor@masonryacademy.edu" required>
+            <input type="email" name="email" id="input-email" placeholder="e.g. grader@masonryacademy.edu" required>
           </div>
           <div>
-            <label>Workstation Access</label>
+            <label>Workstation Role</label>
             <select name="role">
-              <option value="class_admin" {% if role_hint != 'system_admin' %}selected{% endif %}>Class Admin (Cohort &amp; Test Management)</option>
-              <option value="system_admin" {% if role_hint == 'system_admin' %}selected{% endif %}>System Admin (Platform Command)</option>
+              <option value="grader" {% if role_hint == 'grader' or portal_mode == 'grader' %}selected{% endif %}>Assessor / Grader (Specimen Grading &amp; Label Studio)</option>
+              <option value="class_admin" {% if role_hint == 'class_admin' and portal_mode != 'grader' %}selected{% endif %}>Class Admin (Cohort &amp; Test Management + Grading)</option>
+              <option value="system_admin" {% if role_hint == 'system_admin' %}selected{% endif %}>System Admin (Platform Command + Full Access)</option>
             </select>
           </div>
           <button type="submit" class="btn-submit"><i class="fa-solid fa-paper-plane"></i> Send Access Passcode &rarr;</button>
         </div>
       </form>
 
-      <!-- MODE 2 & 3: Master Password & PIN -->
-      <form id="login-form" method="POST" action="/admin/login" style="display: none;">
+      <!-- MODE 2 & 3: Grader or Admin Password & PIN -->
+      <form id="login-form" method="POST" action="{{ '/grader/login' if portal_mode == 'grader' else '/admin/login' }}" style="display: none;">
         <input type="hidden" name="next" value="{{ next_url or '' }}">
         
         <!-- Password Mode -->
         <div id="mode-pass" style="display: none;">
-          <label>Root Master Password</label>
-          <input type="password" name="admin_password" id="input-pass" placeholder="Enter root system password">
+          <label>{% if portal_mode == 'grader' %}Grader or Administrator Password{% else %}Administrator or Grader Password{% endif %}</label>
+          <input type="password" name="admin_password" id="input-pass" placeholder="Enter Grader or Admin password">
           <button type="submit" id="btn-login-pass" class="btn-submit"><i class="fa-solid fa-lock-open"></i> Authenticate &rarr;</button>
         </div>
 
         <!-- Quick PIN Mode -->
         <div id="mode-pin" style="display: none;">
-          <label style="text-align: center;">Root 4-Digit Master PIN</label>
+          <label style="text-align: center;">4-Digit Grader or Admin PIN</label>
           <input type="password" name="admin_pin" id="input-pin" class="pin-input" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
           <button type="submit" id="btn-login-pin" class="btn-submit"><i class="fa-solid fa-hashtag"></i> Verify PIN &rarr;</button>
         </div>
@@ -357,7 +364,11 @@
 
       <div class="footer-links">
         <a href="/">&larr; Return to Public Catalog</a>
-        <a href="/portal"><i class="fa-solid fa-graduation-cap"></i> Student Portal &rarr;</a>
+        {% if portal_mode == 'grader' %}
+          <a href="/admin/login"><i class="fa-solid fa-shield-halved"></i> Admin Login &rarr;</a>
+        {% else %}
+          <a href="/grader/login"><i class="fa-solid fa-bullseye"></i> Grader Login &rarr;</a>
+        {% endif %}
       </div>
     </div>
 
@@ -387,7 +398,7 @@
       </div>
 
       <div class="action-row">
-        <a id="btn-proceed-dash" href="{{ next_url or '/admin/class' }}" class="btn-submit" style="margin-top: 0; background: #0284c7; flex: 1.2;">
+        <a id="btn-proceed-dash" href="{{ next_url or ('/skill-assessment/admin' if portal_mode == 'grader' else '/admin/class') }}" class="btn-submit" style="margin-top: 0; background: #0284c7; flex: 1.2;">
           Proceed to Workstation &rarr;
         </a>
         <a href="/" class="btn-submit" style="margin-top: 0; background: #1e293b; border: 1px solid #334155; color: #94a3b8; flex: 0.8;">
@@ -494,10 +505,11 @@
 
       const passVal = document.getElementById('input-pass').value.trim();
       const pinVal = document.getElementById('input-pin').value.trim();
-      const nextVal = document.querySelector('input[name="next"]').value || '/admin/class';
+      const nextVal = document.querySelector('input[name="next"]').value || '{{ "/skill-assessment/admin" if portal_mode == "grader" else "/admin/class" }}';
+      const postUrl = loginForm.getAttribute('action') || '/admin/login';
 
       try {
-        const res = await fetch('/admin/login', {
+        const res = await fetch(postUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -520,7 +532,7 @@
             showQrView(targetUrl);
           }
         } else {
-          errMsg.innerText = data.error || "Invalid instructor credentials.";
+          errMsg.innerText = data.error || "Invalid credentials.";
           errBox.style.display = 'flex';
         }
       } catch (err) {

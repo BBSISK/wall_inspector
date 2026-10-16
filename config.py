@@ -17,6 +17,8 @@ class Config:
 
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "stonecraft2026")
     ADMIN_PIN = os.getenv("ADMIN_PIN", "2026")
+    GRADER_PASSWORD = os.getenv("GRADER_PASSWORD", "grader2026")
+    GRADER_PIN = os.getenv("GRADER_PIN", "1010")
 
     # OAuth 2.0 Credentials (Google & Microsoft)
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")

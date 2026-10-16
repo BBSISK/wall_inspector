@@ -3194,9 +3194,11 @@ def create_app(config_class=Config):
         return verify_mobile_admin_token(token, app_instance=app, max_age=max_age)
 
     def is_authenticated_as(role=None):
+        user_role = session.get("user_role")
+        if role == "grader":
+            return bool(session.get("is_grader") or session.get("is_admin") or user_role in ["grader", "class_admin", "system_admin"])
         if not session.get("is_admin"):
             return False
-        user_role = session.get("user_role")
         if role == "system_admin":
             return bool(session.get("is_system_admin") or user_role == "system_admin" or ("is_system_admin" not in session and "user_role" not in session))
         if role == "class_admin":
@@ -3210,6 +3212,7 @@ def create_app(config_class=Config):
             token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
             if token and verify_token_for_admin(token):
                 session["is_admin"] = True
+                session["is_grader"] = True
                 session["is_system_admin"] = True
                 session["is_class_admin"] = True
                 session.permanent = True
@@ -3222,12 +3225,35 @@ def create_app(config_class=Config):
             return f(*args, **kwargs)
         return decorated_function
 
+    def grader_required(f):
+        """Allows access to users authenticated with Grader credentials OR any Administrator (System/Class Admin)."""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
+            if token and verify_token_for_admin(token):
+                session["is_admin"] = True
+                session["is_grader"] = True
+                session["is_system_admin"] = True
+                session["is_class_admin"] = True
+                session.permanent = True
+
+            if not is_authenticated_as("grader"):
+                if request.path.startswith("/api/") or (request.method in ["POST", "DELETE"] and not request.path.startswith("/grader/login") and not request.path.startswith("/admin/login")):
+                    return jsonify({"error": "Grader or Admin authentication required"}), 401
+                next_path = request.full_path if request.query_string else request.path
+                if request.path.startswith("/mobile/"):
+                    return redirect(url_for("admin_login", next=next_path))
+                return redirect(url_for("grader_login", next=next_path))
+            return f(*args, **kwargs)
+        return decorated_function
+
     def system_admin_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
             if token and verify_token_for_admin(token):
                 session["is_admin"] = True
+                session["is_grader"] = True
                 session["is_system_admin"] = True
                 session["is_class_admin"] = True
                 session.permanent = True
@@ -3251,6 +3277,7 @@ def create_app(config_class=Config):
             token = request.args.get("token") or request.args.get("auth_token") or (request.form.get("auth_token") if request.method == "POST" else None)
             if token and verify_token_for_admin(token):
                 session["is_admin"] = True
+                session["is_grader"] = True
                 session["is_system_admin"] = True
                 session["is_class_admin"] = True
                 session.permanent = True
@@ -3271,10 +3298,11 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_admin_status():
         is_admin = session.get("is_admin", False)
-        user_role = session.get("user_role", "system_admin" if is_admin else "student")
+        is_grader = bool(session.get("is_grader", False) or is_admin or session.get("user_role") in ["grader", "class_admin", "system_admin"])
+        user_role = session.get("user_role", "system_admin" if is_admin else ("grader" if is_grader else "student"))
         is_sys = is_admin and (session.get("is_system_admin", True) if "user_role" not in session else user_role == "system_admin")
         is_cls = is_admin and (session.get("is_class_admin", True) if "user_role" not in session else user_role in ["class_admin", "system_admin"])
-        admin_token = generate_token_for_admin() if is_admin else None
+        admin_token = generate_token_for_admin() if (is_admin or is_grader) else None
 
         curr_org_id = session.get("organization_id")
         curr_org = None
@@ -3291,6 +3319,7 @@ def create_app(config_class=Config):
 
         return {
             "is_admin": is_admin,
+            "is_grader": is_grader,
             "is_system_admin": is_sys,
             "is_class_admin": is_cls,
             "user_role": user_role,
@@ -3323,6 +3352,9 @@ def create_app(config_class=Config):
             elif intended_role == "student":
                 role = "student"
                 is_approved = True
+            elif intended_role == "grader":
+                role = "grader"
+                is_approved = True if app.config.get("TESTING") else False
             elif intended_role == "class_admin":
                 role = "class_admin"
                 is_approved = True if app.config.get("TESTING") else False
@@ -3391,7 +3423,7 @@ def create_app(config_class=Config):
             session.modified = True
             return redirect(next_url or url_for("student_portal"))
 
-        # 2. Admin (Class Admin or System Admin) - check approval
+        # 2. Admin or Grader - check approval
         if not user.is_approved:
             try:
                 from notification_service import notify_admin_access_requested
@@ -3410,8 +3442,26 @@ def create_app(config_class=Config):
 
             return redirect(url_for("pending_approval", email=user.email, role=user.role, provider=provider, next=next_url))
 
-        # Approved Administrator
+        # 2a. Approved Grader (Grading Studio Only)
+        if user.role == "grader":
+            session["is_grader"] = True
+            session["is_admin"] = False
+            session["is_system_admin"] = False
+            session["is_class_admin"] = False
+            session["user_role"] = "grader"
+            session["user_id"] = user.id
+            session["user_name"] = user.name
+            session["user_email"] = user.email
+            session["organization_id"] = user.organization_id
+            session["auth_provider"] = provider
+            session.permanent = True
+            session.modified = True
+            dest = next_url if (next_url and ("skill-assessment" in next_url or "mobile/admin" in next_url)) else url_for("skill_assessment_admin")
+            return redirect(dest)
+
+        # 2b. Approved Administrator (automatically gets Grader access too)
         session["is_admin"] = True
+        session["is_grader"] = True
         session["user_role"] = user.role
         session["user_id"] = user.id
         session["user_name"] = user.name
@@ -3440,7 +3490,7 @@ def create_app(config_class=Config):
             return redirect(url_for("admin_login"))
 
         role = request.args.get("role", "student")
-        next_url = request.args.get("next") or ("/portal" if role == "student" else ("/admin/class" if role == "class_admin" else "/admin/system"))
+        next_url = request.args.get("next") or ("/portal" if role == "student" else ("/skill-assessment/admin" if role == "grader" else ("/admin/class" if role == "class_admin" else "/admin/system")))
 
         client_id = app.config.get("GOOGLE_CLIENT_ID") if provider == "google" else app.config.get("MICROSOFT_CLIENT_ID")
         tenant = app.config.get("MICROSOFT_TENANT_ID", "common")
@@ -3469,7 +3519,7 @@ def create_app(config_class=Config):
             email = request.form.get("email", "").strip().lower()
             name = request.form.get("name", "").strip() or email.split("@")[0].capitalize()
             role = request.form.get("role", "student")
-            next_url = request.form.get("next") or ("/portal" if role == "student" else ("/admin/class" if role == "class_admin" else "/admin/system"))
+            next_url = request.form.get("next") or ("/portal" if role == "student" else ("/skill-assessment/admin" if role == "grader" else ("/admin/class" if role == "class_admin" else "/admin/system")))
 
             if not email:
                 flash("Please provide an email address.", "error")
@@ -3549,7 +3599,7 @@ def create_app(config_class=Config):
     def email_auth_request():
         email = request.form.get("email", "").strip().lower()
         role = request.form.get("role", "class_admin")
-        next_url = request.form.get("next") or ("/admin/class" if role == "class_admin" else "/portal")
+        next_url = request.form.get("next") or ("/skill-assessment/admin" if role == "grader" else ("/admin/class" if role == "class_admin" else "/portal"))
 
         if not email or "@" not in email:
             flash("Please provide a valid email address.", "error")
@@ -3628,21 +3678,28 @@ def create_app(config_class=Config):
         session.clear()
         return redirect(url_for("index"))
 
-    @app.route("/admin/login", methods=["GET", "POST"])
-    def admin_login():
+    def _handle_credential_login(default_next, default_role_hint, portal_mode="admin"):
         error = None
-        next_url = request.args.get("next") or request.form.get("next") or "/admin/class"
-        role_hint = request.args.get("role") or ("system_admin" if "system" in (next_url or "") else "class_admin")
+        next_url = request.args.get("next") or request.form.get("next") or default_next
+        role_hint = request.args.get("role") or default_role_hint
+
         if request.method == "POST":
             data = request.get_json(silent=True) or {}
-            password = (request.form.get("admin_password") or request.form.get("password") or data.get("password") or "").strip()
-            pin = (request.form.get("admin_pin") or request.form.get("pin") or data.get("pin") or "").strip()
+            password = (request.form.get("admin_password") or request.form.get("grader_password") or request.form.get("password") or data.get("password") or "").strip()
+            pin = (request.form.get("admin_pin") or request.form.get("grader_pin") or request.form.get("pin") or data.get("pin") or "").strip()
 
-            expected_password = app.config.get("ADMIN_PASSWORD", "stonecraft2026")
-            expected_pin = str(app.config.get("ADMIN_PIN", "2026"))
+            expected_admin_password = app.config.get("ADMIN_PASSWORD", "stonecraft2026")
+            expected_admin_pin = str(app.config.get("ADMIN_PIN", "2026"))
 
-            if (password and password == expected_password) or (pin and pin == expected_pin):
+            expected_grader_password = app.config.get("GRADER_PASSWORD", "grader2026")
+            expected_grader_pin = str(app.config.get("GRADER_PIN", "1010"))
+
+            is_admin_match = bool((password and password == expected_admin_password) or (pin and pin == expected_admin_pin))
+            is_grader_match = bool((password and password == expected_grader_password) or (pin and pin == expected_grader_pin))
+
+            if is_admin_match:
                 session["is_admin"] = True
+                session["is_grader"] = True
                 session["is_system_admin"] = True
                 session["is_class_admin"] = True
                 session["user_role"] = "system_admin"
@@ -3650,23 +3707,52 @@ def create_app(config_class=Config):
                 session["auth_provider"] = "root"
                 session.permanent = True
                 if request.is_json:
-                    return jsonify({"success": True, "redirect": next_url})
+                    return jsonify({"success": True, "role": "system_admin", "redirect": next_url})
                 return redirect(next_url)
+            elif is_grader_match:
+                session["is_grader"] = True
+                session["is_admin"] = False
+                session["is_system_admin"] = False
+                session["is_class_admin"] = False
+                session["user_role"] = "grader"
+                session["user_name"] = "Certified Grader"
+                session["auth_provider"] = "grader_credentials"
+                session.permanent = True
+                # If a grader logged in via /admin/login without a grading next_url, route them to the Grading Studio
+                grader_dest = next_url if ("skill-assessment" in (next_url or "") or "mobile/admin" in (next_url or "")) else url_for("skill_assessment_admin")
+                if request.is_json:
+                    return jsonify({"success": True, "role": "grader", "redirect": grader_dest})
+                return redirect(grader_dest)
             else:
-                error = "Invalid instructor credentials. Please verify your password or 4-digit PIN."
+                error = "Invalid credentials. Please verify your Grader or Administrator password / 4-digit PIN."
                 if request.is_json:
                     return jsonify({"success": False, "error": error}), 401
-                return render_template("admin_login.html", error=error, next_url=next_url, role_hint=role_hint), 401
+                return render_template("admin_login.html", error=error, next_url=next_url, role_hint=role_hint, portal_mode=portal_mode), 401
 
-        already_auth = session.get("is_admin", False) and not request.args.get("show_form")
+        already_auth = is_authenticated_as("grader") if portal_mode == "grader" else session.get("is_admin", False)
+        already_auth = already_auth and not request.args.get("show_form")
         if already_auth:
             user_agent = request.headers.get("User-Agent", "").lower()
             is_mobile = any(m in user_agent for m in ["iphone", "ipad", "android", "mobile"])
             if is_mobile or (next_url and next_url != "/dashboard"):
                 return redirect(next_url)
 
-        return render_template("admin_login.html", error=error, next_url=next_url, already_authenticated=already_auth, role_hint=role_hint)
+        return render_template("admin_login.html", error=error, next_url=next_url, already_authenticated=already_auth, role_hint=role_hint, portal_mode=portal_mode)
 
+    @app.route("/admin/login", methods=["GET", "POST"])
+    def admin_login():
+        default_next = request.args.get("next") or request.form.get("next") or "/admin/class"
+        default_role = "grader" if "skill-assessment" in (default_next or "") else ("system_admin" if "system" in (default_next or "") else "class_admin")
+        portal_mode = "grader" if default_role == "grader" else "admin"
+        return _handle_credential_login(default_next=default_next, default_role_hint=default_role, portal_mode=portal_mode)
+
+    @app.route("/skill-assessment/login", methods=["GET", "POST"])
+    @app.route("/grader/login", methods=["GET", "POST"])
+    def grader_login():
+        default_next = request.args.get("next") or request.form.get("next") or "/skill-assessment/admin"
+        return _handle_credential_login(default_next=default_next, default_role_hint="grader", portal_mode="grader")
+
+    @app.route("/grader/logout")
     @app.route("/admin/logout")
     def admin_logout():
         session.clear()
@@ -4197,7 +4283,7 @@ def create_app(config_class=Config):
 
     @app.route("/admin/walls/<wall_id>/promote-to-skill", methods=["POST"])
     @app.route("/admin/walls/<wall_id>/promote", methods=["GET", "POST"])
-    @admin_required
+    @grader_required
     def admin_promote_wall_to_skill(wall_id):
         wall = Wall.query.filter((Wall.id == wall_id) | (Wall.slug == wall_id)).first_or_404()
         wall.is_skill_assessment = True
@@ -4711,7 +4797,7 @@ def create_app(config_class=Config):
                     print(f"[AUTH APPROVE NOTIFY NOTICE] Could not trigger user approval notification: {notify_err}")
         elif action == "toggle_active":
             user.is_active = not user.is_active
-        elif action == "set_role" and new_role in ["system_admin", "class_admin", "student"]:
+        elif action == "set_role" and new_role in ["system_admin", "class_admin", "grader", "student"]:
             user.role = new_role
 
         commit_with_retry()
@@ -4733,7 +4819,7 @@ def create_app(config_class=Config):
             flash("A valid email address is required.", "error")
             return redirect(url_for("system_admin_dashboard"))
 
-        if role not in ["system_admin", "class_admin", "student"]:
+        if role not in ["system_admin", "class_admin", "grader", "student"]:
             role = "class_admin"
 
         if not name:
@@ -6523,9 +6609,9 @@ def create_app(config_class=Config):
     def serve_sw():
         return send_from_directory("static", "sw.js", mimetype="application/javascript")
 
-    # Mobile Field Capture (Admin)
+    # Mobile Field Capture (Admin / Grader)
     @app.route("/mobile/admin")
-    @admin_required
+    @grader_required
     def mobile_admin_capture():
         mode = request.args.get("mode", "")
         token = request.args.get("token") or request.args.get("auth_token") or ""
@@ -6537,7 +6623,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/mobile/admin/upload", methods=["POST"])
-    @admin_required
+    @grader_required
     def mobile_admin_upload():
         try:
             file = request.files.get("wall_image")
@@ -8882,7 +8968,7 @@ def create_app(config_class=Config):
 
     # --- Professional Controlled Ingestion & Grading Interface ---
     @app.route("/skill-assessment/admin")
-    @admin_required
+    @grader_required
     def skill_assessment_admin():
         """
         Controlled professional upload and specimen management interface.
@@ -8919,7 +9005,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/skill-assessment/admin/upload", methods=["POST"])
-    @admin_required
+    @grader_required
     def skill_assessment_upload():
         """
         Handles specimen image upload via camera or file dropzone.
@@ -9003,12 +9089,12 @@ def create_app(config_class=Config):
             return f"Error uploading assessment specimen: {str(e)}", 500
 
     @app.route("/skill-assessment/admin/grade/<slug>")
-    @admin_required
+    @grader_required
     def skill_assessment_grader(slug):
         """
         Professional point-and-tag defect grading workstation.
-        Allows instructor to place ground-truth defect pins, calibrate tolerance radius,
-        manage image-specific defect mode priorities and custom titles, and prescribe remediation.
+        Allows grader/instructor to place ground-truth defect pins, calibrate tolerance radius,
+        select general wall issues, and prescribe remediation.
         """
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
         defects = Defect.query.filter_by(wall_id=wall.id).all()
@@ -9026,8 +9112,30 @@ def create_app(config_class=Config):
             active_general_issues=active_general_issues
         )
 
+    @app.route("/skill-assessment/admin/labels/<slug>")
+    @grader_required
+    def skill_assessment_labels(slug):
+        """
+        Dedicated Label & Dropdown Definition Studio.
+        Separates the taxonomy / custom label / dropdown priority configuration
+        from the ground-truth pin & general issue grading activity.
+        """
+        wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
+        defects = Defect.query.filter_by(wall_id=wall.id).all()
+        modes_bundle = get_wall_defect_modes(wall)
+        standard_taxonomy = TAXONOMY_BY_WALL_TYPE.get(wall.wall_type, TAXONOMY_BY_WALL_TYPE["dry_stone"])
+        return render_template(
+            "skill_assessment_labels.html",
+            wall=wall.to_dict(),
+            defects=[d.to_dict() for d in defects],
+            prioritized_modes=modes_bundle["prioritized"],
+            all_modes=modes_bundle["all"],
+            standard_taxonomy=standard_taxonomy,
+            general_wall_issues=GENERAL_WALL_ISSUES
+        )
+
     @app.route("/api/skill-assessment/modes/<slug>", methods=["POST"], strict_slashes=False)
-    @admin_required
+    @grader_required
     def api_skill_assessment_save_modes(slug):
         """
         Saves or updates the prioritized defect modes and custom defect titles for this wall image.
@@ -9048,7 +9156,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/skill-assessment/grade/<slug>", methods=["POST"], strict_slashes=False)
-    @admin_required
+    @grader_required
     def api_skill_assessment_save_defects(slug):
         """Saves or updates ground-truth defect points and general wall issues for an assessment specimen."""
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
@@ -9132,7 +9240,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/skill-assessment/ai-suggest/<slug>", methods=["POST"], strict_slashes=False)
-    @admin_required
+    @grader_required
     def api_skill_assessment_ai_suggest(slug):
         """
         Generates or re-runs AI defect suggestions for an assessment specimen.
@@ -9156,7 +9264,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/skill-assessment/sentinel-override/<slug>", methods=["POST"], strict_slashes=False)
-    @admin_required
+    @grader_required
     def api_skill_assessment_sentinel_override(slug):
         """Allows instructor to acknowledge and override Sentinel advisory/warning flags to proceed under advisement."""
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()
@@ -9171,7 +9279,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/skill-assessment/sentinel-report/<slug>", methods=["GET"], strict_slashes=False)
-    @admin_required
+    @grader_required
     def api_skill_assessment_sentinel_report(slug):
         """Returns the structured Sentinel audit report and geological enrichment for modal inspection."""
         wall = Wall.query.filter_by(slug=slug, is_skill_assessment=True).first_or_404()

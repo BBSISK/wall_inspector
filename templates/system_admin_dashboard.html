@@ -594,6 +594,8 @@
                     <span class="badge badge-role-sys"><i class="fa-solid fa-shield"></i> System Admin</span>
                   {% elif u.role == 'class_admin' %}
                     <span class="badge badge-role-class"><i class="fa-solid fa-school"></i> Class Admin</span>
+                  {% elif u.role == 'grader' %}
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399;"><i class="fa-solid fa-bullseye"></i> Grader</span>
                   {% else %}
                     <span class="badge" style="background: #334155; color: #cbd5e1;"><i class="fa-solid fa-user"></i> Student</span>
                   {% endif %}
@@ -633,6 +635,7 @@
                     <select onchange="updateRole('{{ u.id }}', this.value)" style="background: #0f172a; border: 1px solid var(--border-color); color: #cbd5e1; font-size: 0.72rem; padding: 2px 4px; border-radius: 4px;">
                       <option value="system_admin" {% if u.role == 'system_admin' %}selected{% endif %}>System Admin</option>
                       <option value="class_admin" {% if u.role == 'class_admin' %}selected{% endif %}>Class Admin</option>
+                      <option value="grader" {% if u.role == 'grader' %}selected{% endif %}>Grader</option>
                       <option value="student" {% if u.role == 'student' %}selected{% endif %}>Student</option>
                     </select>
                   </div>
@@ -687,11 +690,16 @@
               <strong style="font-size: 0.85rem; color: #f8fafc; line-height: 1.3; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                 {{ spec.title }}
               </strong>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 4px;">
                 <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">{{ spec.wall_type }}</span>
-                <a href="/skill-assessment/admin/grade/{{ spec.slug }}" class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.72rem;">
-                  Grade &rarr;
-                </a>
+                <div style="display: flex; gap: 4px;">
+                  <a href="/skill-assessment/admin/labels/{{ spec.slug }}" class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.7rem; border-color: #f59e0b; color: #fbbf24;">
+                    Labels
+                  </a>
+                  <a href="/skill-assessment/admin/grade/{{ spec.slug }}" class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.7rem;">
+                    Grade &rarr;
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -741,14 +749,14 @@
       <div class="modal-header">
         <h3 style="display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-user-shield" style="color: var(--accent-purple);"></i>
-          Whitelist &amp; Pre-Approve Administrator
+          Whitelist &amp; Pre-Approve Administrator / Grader
         </h3>
         <button type="button" onclick="closeWhitelistModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">&times;</button>
       </div>
       <form method="POST" action="/admin/system/users/add">
         <div class="modal-body">
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0; margin-bottom: 1.2rem; line-height: 1.4;">
-            Pre-authorizing an email allows this user to bypass the pending approval queue. When they sign in with Google or Microsoft, they will immediately be granted administrator privileges.
+            Pre-authorizing an email allows this user to bypass the pending approval queue. When they sign in with Google or Microsoft, they will immediately be granted their assigned role.
           </p>
           <div class="form-group">
             <label>Email Address *</label>
@@ -761,7 +769,8 @@
           <div class="form-group">
             <label>Assigned Role *</label>
             <select name="role" class="form-control">
-              <option value="class_admin" selected>Class Admin (Upload Photos, Manage Cohorts &amp; Tests)</option>
+              <option value="grader">Grader (Specimen Grading &amp; Label Studio Only)</option>
+              <option value="class_admin" selected>Class Admin (Upload Photos, Manage Cohorts, Tests &amp; Grading)</option>
               <option value="system_admin">System Admin (Full Platform Control &amp; Specimen Ingestion)</option>
             </select>
           </div>

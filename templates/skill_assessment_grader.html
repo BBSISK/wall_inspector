@@ -479,6 +479,9 @@
       </button>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <a href="/skill-assessment/admin/labels/{{ wall.slug }}" class="btn-top" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; font-weight: 700;" title="Open Dedicated Label & Dropdown Definition Studio">
+        <i class="fa-solid fa-tags"></i> Define Labels ({{ prioritized_modes|length }})
+      </a>
       <button type="button" id="btn-grader-heatmap" class="btn-top" style="background: #1e293b; color: #fbbf24; border: 1px solid #f59e0b;" onclick="toggleGraderCohortHeatmap()" title="Toggle Student Cohort Heatmap">
         <i class="fa-solid fa-fire-flame-curved"></i> Cohort Heatmap
       </button>
@@ -542,24 +545,21 @@
       </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (Focused strictly on Ground-Truth Grading: Pins + General Wall Issues) -->
     <aside class="sidebar">
       <div class="sidebar-tabs">
         <button type="button" class="tab-btn active" id="tab-btn-targets" onclick="switchSidebarTab('targets')">
-          <i class="fa-solid fa-crosshairs"></i> Defect Targets (<span id="gt-tab-count">0</span>)
-        </button>
-        <button type="button" class="tab-btn" id="tab-btn-palette" onclick="switchSidebarTab('palette')">
-          <i class="fa-solid fa-list-check"></i> Specimen Dropdown (<span id="palette-tab-count">0</span>)
+          <i class="fa-solid fa-crosshairs"></i> 1. Defect Pins (<span id="gt-tab-count">0</span>)
         </button>
         <button type="button" class="tab-btn" id="tab-btn-general" onclick="switchSidebarTab('general')">
-          <i class="fa-solid fa-layer-group"></i> General Issues (<span id="general-issues-tab-count">0</span>/3)
+          <i class="fa-solid fa-layer-group"></i> 2. General Issues (<span id="general-issues-tab-count">0</span>/3)
         </button>
       </div>
 
       <!-- Tab 1: Defect Targets -->
       <div id="tab-content-targets" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
         <div class="sidebar-header">
-          <h2><i class="fa-solid fa-flag" style="color: #00f2fe;"></i> Ground Truth Targets</h2>
+          <h2><i class="fa-solid fa-flag" style="color: #00f2fe;"></i> Ground Truth Pins</h2>
           <span class="defect-count-badge" id="gt-count-badge">0 Targets</span>
         </div>
 
@@ -569,7 +569,13 @@
             <span style="color: #a5b4fc; font-weight: 700;"><i class="fa-solid fa-layer-group"></i> General Issues:</span>
             <span id="gt-general-issues-summary-count" style="color: #f1f5f9; margin-left: 4px;">0 / 3 active</span>
           </div>
-          <button type="button" onclick="switchSidebarTab('general')" style="background: transparent; border: 1px solid rgba(165, 180, 252, 0.4); color: #c7d2fe; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;">Configure</button>
+          <button type="button" onclick="switchSidebarTab('general')" style="background: transparent; border: 1px solid rgba(165, 180, 252, 0.4); color: #c7d2fe; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;">Select 2–3 &rarr;</button>
+        </div>
+
+        <!-- Dedicated Label Definition Link Banner -->
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 0.55rem 0.75rem; margin: 0.4rem 1rem 0; font-size: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+          <span style="color: #fde68a;"><i class="fa-solid fa-tags" style="color: #fbbf24;"></i> Need custom labels or dropdown order?</span>
+          <a href="/skill-assessment/admin/labels/{{ wall.slug }}" style="color: #fbbf24; font-weight: 700; text-decoration: none; border: 1px solid rgba(245, 158, 11, 0.4); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;">Label Studio &rarr;</a>
         </div>
 
         <div class="sidebar-content" id="gt-list"></div>
@@ -581,74 +587,7 @@
         </div>
       </div>
 
-      <!-- Tab 2: Specimen Defect Mode Palette -->
-      <div id="tab-content-palette" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
-        <div class="sidebar-header">
-          <h2><i class="fa-solid fa-layer-group" style="color: #00f2fe;"></i> Dropdown Palette</h2>
-          <span id="palette-save-status" style="font-size: 0.72rem; color: #34d399; display: flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-circle-check"></i> Synced
-          </span>
-        </div>
-
-        <div class="sidebar-content" style="gap: 1rem;">
-          <!-- Informational Banner -->
-          <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">
-            <strong style="color: #38bdf8; display: block; margin-bottom: 2px;">
-              <i class="fa-solid fa-circle-info"></i> Image-Level Defect Dropdown
-            </strong>
-            Prioritised defect modes appear at the top of the student's dropdown menu for this image. Configured once per wall to prevent admin overhead.
-          </div>
-
-          <!-- Add Custom Defect Mode Title -->
-          <div style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.85rem;">
-            <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #cbd5e1; margin-bottom: 0.4rem;">
-              <i class="fa-solid fa-plus" style="color: #38bdf8;"></i> Add Custom Defect Mode Title
-            </label>
-            <div style="display: flex; gap: 6px;">
-              <input type="text" id="new-custom-title" class="form-control" placeholder="e.g. Bed Joint Lime Washout" style="font-size: 0.82rem;" onkeydown="if(event.key==='Enter') addCustomModeTitle()">
-              <button type="button" class="btn-top btn-save-all" style="padding: 0.5rem 0.85rem; font-size: 0.78rem; white-space: nowrap;" onclick="addCustomModeTitle()">
-                <i class="fa-solid fa-plus"></i> Add
-              </button>
-            </div>
-            <small style="color: #64748b; font-size: 0.7rem; margin-top: 4px; display: block;">Adds a new pathology classification title unique to this wall specimen.</small>
-          </div>
-
-          <!-- Add Standard Mode to Prioritized Palette -->
-          <div style="background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.85rem;">
-            <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #cbd5e1; margin-bottom: 0.4rem;">
-              <i class="fa-solid fa-star" style="color: #f59e0b;"></i> Prioritise Existing Mode
-            </label>
-            <div style="display: flex; gap: 6px;">
-              <select id="select-add-mode" class="form-control" style="font-size: 0.82rem;"></select>
-              <button type="button" class="btn-top btn-save-all" style="padding: 0.5rem 0.85rem; font-size: 0.78rem; white-space: nowrap; background: #0284c7; border-color: #38bdf8;" onclick="addSelectedStandardMode()">
-                <i class="fa-solid fa-star"></i> Prioritise
-              </button>
-            </div>
-            <small style="color: #64748b; font-size: 0.7rem; margin-top: 4px; display: block;">Elevates a standard defect mode into this specimen's top dropdown group.</small>
-          </div>
-
-          <!-- Prioritized Modes List -->
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-              <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">
-                Prioritised Specimen Modes (<span id="palette-count-inline">0</span>)
-              </span>
-              <button type="button" onclick="resetToDefaultModes()" style="background: transparent; border: none; color: #94a3b8; font-size: 0.7rem; cursor: pointer;" title="Reset to auto-detected Ground Truth + distractors">
-                <i class="fa-solid fa-rotate-left"></i> Reset Defaults
-              </button>
-            </div>
-            <div id="palette-chip-list"></div>
-          </div>
-        </div>
-
-        <div class="sidebar-footer">
-          <button type="button" class="btn-top btn-save-all" style="justify-content: center; padding: 0.75rem;" onclick="saveModesPalette()">
-            <i class="fa-solid fa-floppy-disk"></i> Save Specimen Dropdown Palette
-          </button>
-        </div>
-      </div>
-
-      <!-- Tab 3: General Wall Issues (2-3 items from 10) -->
+      <!-- Tab 2: General Wall Issues (2-3 items from 10) -->
       <div id="tab-content-general" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
         <div class="sidebar-header">
           <h2><i class="fa-solid fa-layer-group" style="color: #818cf8;"></i> General Wall Issues</h2>
@@ -742,19 +681,12 @@
       <div class="form-group">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
           <label style="margin-bottom: 0;">Defect Mode (Pathological Classification)</label>
-          <a href="javascript:void(0)" onclick="toggleInlineModalCustomMode()" style="color: #00f2fe; font-size: 0.75rem; text-decoration: none; font-weight: 600;">
-            <i class="fa-solid fa-plus-circle"></i> + Add Custom Title
+          <a href="/skill-assessment/admin/labels/{{ wall.slug }}" style="color: #fbbf24; font-size: 0.75rem; text-decoration: none; font-weight: 600;">
+            <i class="fa-solid fa-tags"></i> Manage Labels &rarr;
           </a>
         </div>
         <select class="form-control" id="modal-category">
         </select>
-        <div id="modal-inline-custom-box" style="display: none; margin-top: 8px; padding: 8px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: 6px;">
-          <input type="text" id="modal-inline-title" class="form-control" placeholder="Enter custom defect mode title..." style="font-size: 0.82rem; margin-bottom: 6px;" onkeydown="if(event.key==='Enter') submitModalInlineCustomMode()">
-          <div style="display: flex; justify-content: flex-end; gap: 6px;">
-            <button type="button" class="btn-cancel" style="padding: 3px 8px; font-size: 0.75rem;" onclick="toggleInlineModalCustomMode(false)">Cancel</button>
-            <button type="button" class="btn-top btn-save-all" style="padding: 3px 10px; font-size: 0.75rem;" onclick="submitModalInlineCustomMode()">Add & Select</button>
-          </div>
-        </div>
       </div>
 
       <div class="form-group">
@@ -930,14 +862,15 @@
 
     function switchSidebarTab(tabName) {
       const isTargets = tabName === 'targets';
-      const isPalette = tabName === 'palette';
       const isGeneral = tabName === 'general';
-      document.getElementById('tab-btn-targets').classList.toggle('active', isTargets);
-      document.getElementById('tab-btn-palette').classList.toggle('active', isPalette);
-      document.getElementById('tab-btn-general').classList.toggle('active', isGeneral);
-      document.getElementById('tab-content-targets').style.display = isTargets ? 'flex' : 'none';
-      document.getElementById('tab-content-palette').style.display = isPalette ? 'none' : 'flex';
-      document.getElementById('tab-content-general').style.display = isGeneral ? 'flex' : 'none';
+      const btnTargets = document.getElementById('tab-btn-targets');
+      const btnGeneral = document.getElementById('tab-btn-general');
+      if (btnTargets) btnTargets.classList.toggle('active', isTargets);
+      if (btnGeneral) btnGeneral.classList.toggle('active', isGeneral);
+      const contentTargets = document.getElementById('tab-content-targets');
+      const contentGeneral = document.getElementById('tab-content-general');
+      if (contentTargets) contentTargets.style.display = isTargets ? 'flex' : 'none';
+      if (contentGeneral) contentGeneral.style.display = isGeneral ? 'flex' : 'none';
     }
 
     function renderGeneralIssuesUI() {
@@ -1054,61 +987,9 @@
     }
 
     function renderPaletteUI() {
-      // 1. Tab badges
       const gtCount = defectList.length;
-      document.getElementById('gt-tab-count').textContent = gtCount;
-      const palCount = prioritizedModes.length;
-      document.getElementById('palette-tab-count').textContent = palCount;
-      document.getElementById('palette-count-inline').textContent = palCount;
-
-      // 2. Render chip list
-      const chipContainer = document.getElementById('palette-chip-list');
-      chipContainer.innerHTML = '';
-
-      if (prioritizedModes.length === 0) {
-        chipContainer.innerHTML = `
-          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem 1rem; border: 1px dashed var(--border-dark); border-radius: 6px;">
-            <i class="fa-solid fa-layer-group" style="font-size: 1.5rem; color: #334155; margin-bottom: 0.35rem;"></i>
-            <div style="font-size: 0.78rem;">No prioritized modes set.</div>
-            <small style="color: #64748b;">All standard modes will show alphabetically in the student workstation.</small>
-          </div>
-        `;
-      } else {
-        prioritizedModes.forEach((mode, idx) => {
-          const chip = document.createElement('div');
-          chip.className = 'palette-chip' + (mode.is_custom ? ' custom' : '');
-          chip.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
-              <span style="font-size: 0.7rem; font-weight: 800; color: #38bdf8; width: 16px;">#${idx + 1}</span>
-              <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mode.label}">${mode.label}</span>
-              ${mode.is_custom ? '<span class="chip-badge-custom">Custom</span>' : ''}
-            </div>
-            <div class="palette-chip-actions">
-              ${idx > 0 ? `<button type="button" class="priority-btn" onclick="moveModePriority('${mode.id}', -1)" title="Move Up"><i class="fa-solid fa-chevron-up"></i></button>` : ''}
-              ${idx < prioritizedModes.length - 1 ? `<button type="button" class="priority-btn" onclick="moveModePriority('${mode.id}', 1)" title="Move Down"><i class="fa-solid fa-chevron-down"></i></button>` : ''}
-              <button type="button" class="btn-remove-chip" onclick="removeModeFromPalette('${mode.id}')" title="Remove from prioritized list">&times;</button>
-            </div>
-          `;
-          chipContainer.appendChild(chip);
-        });
-      }
-
-      // 3. Render select for unprioritized modes
-      const selectAdd = document.getElementById('select-add-mode');
-      selectAdd.innerHTML = '';
-      const prioritizedIds = new Set(prioritizedModes.map(m => m.id));
-      const availableToAdd = allModes.filter(m => !prioritizedIds.has(m.id));
-
-      if (availableToAdd.length === 0) {
-        selectAdd.innerHTML = '<option disabled>All modes already prioritized</option>';
-      } else {
-        availableToAdd.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.id;
-          opt.textContent = m.label + (m.is_custom ? ' (Custom)' : '');
-          selectAdd.appendChild(opt);
-        });
-      }
+      const gtTabCount = document.getElementById('gt-tab-count');
+      if (gtTabCount) gtTabCount.textContent = gtCount;
     }
 
     function renderModalCategorySelect(selectedId = null) {
@@ -1270,12 +1151,15 @@
 
     function toggleInlineModalCustomMode(forceState) {
       const box = document.getElementById('modal-inline-custom-box');
+      if (!box) return;
       const show = forceState !== undefined ? forceState : (box.style.display === 'none');
       box.style.display = show ? 'block' : 'none';
       if (show) {
         const input = document.getElementById('modal-inline-title');
-        input.value = '';
-        input.focus();
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
       }
     }
 

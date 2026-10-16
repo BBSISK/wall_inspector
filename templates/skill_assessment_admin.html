@@ -423,9 +423,9 @@
     <div style="display: flex; align-items: center; gap: 10px;">
       <a href="/skill-assessment" class="brand">
         <i class="fa-solid fa-camera"></i>
-        Professional Skill Assessment Ingestion
+        Professional Skill Assessment &amp; Grading Studio
       </a>
-      <span class="badge-admin">Admin Control</span>
+      <span class="badge-admin">{% if is_admin %}Admin &amp; Grader Access{% else %}Certified Grader{% endif %}</span>
     </div>
     <div class="nav-actions">
       <button type="button" class="btn-nav" onclick="openSkillQrModal()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: 1px solid #10b981; font-weight: 700; cursor: pointer;">
@@ -435,8 +435,11 @@
         <i class="fa-solid fa-boxes-packing"></i> Export COCO / CVAT
       </a>
       <a href="/portal" class="btn-nav btn-back"><i class="fa-solid fa-graduation-cap"></i> Student Portal</a>
-      <a href="/dashboard" class="btn-nav btn-back"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+      {% if is_admin %}
+        <a href="/dashboard" class="btn-nav btn-back"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+      {% endif %}
       <a href="/" class="btn-nav btn-back"><i class="fa-solid fa-house"></i> Main Catalog</a>
+      <a href="/grader/logout" class="btn-nav" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
     </div>
   </header>
 
@@ -869,8 +872,11 @@
                   </td>
                   <td>
                     <div class="action-btn-group">
-                      <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-action-small btn-grade" title="Grade / Edit Ground Truth Pins">
-                        <i class="fa-solid fa-pen-ruler"></i> Grade
+                      <a href="/skill-assessment/admin/grade/{{ wall.slug }}" class="btn-action-small btn-grade" title="Grade Ground Truth Pins &amp; General Issues">
+                        <i class="fa-solid fa-bullseye"></i> Grade
+                      </a>
+                      <a href="/skill-assessment/admin/labels/{{ wall.slug }}" class="btn-action-small" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: #f59e0b;" title="Define Custom Labels &amp; Dropdown Palette">
+                        <i class="fa-solid fa-tags"></i> Labels
                       </a>
                       {% if not wall.is_ai_reviewed %}
                         <button type="button" class="btn-action-small" style="background: rgba(124, 58, 237, 0.15); color: #c4b5fd; border-color: #8b5cf6;" onclick="triggerAdminAiSuggest('{{ wall.slug }}', this)" title="Suggest Defects with AI">
