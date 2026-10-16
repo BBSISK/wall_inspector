@@ -8967,6 +8967,35 @@ def create_app(config_class=Config):
         return created_defects
 
     # --- Professional Controlled Ingestion & Grading Interface ---
+    @app.route("/skill-assessment/admin/ingest")
+    @grader_required
+    def skill_assessment_ingest():
+        specimens = Wall.query.filter_by(is_skill_assessment=True).order_by(Wall.created_at.desc()).all()
+        specimen_list = []
+        for s in specimens:
+            d_count = Defect.query.filter_by(wall_id=s.id).count()
+            data = s.to_dict()
+            data["defect_count"] = d_count
+            specimen_list.append(data)
+        count_human = sum(1 for s in specimen_list if s.get("grading_status") == "human_graded")
+        count_accepted = sum(1 for s in specimen_list if s.get("grading_status") == "auto_accepted")
+        count_auto = sum(1 for s in specimen_list if s.get("grading_status") in ["auto_suggested", "auto", None])
+        active_batteries = [b.to_dict() for b in Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()]
+        attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.created_at.desc()).limit(200).all()
+        walls_map = {s.id: s for s in specimens}
+        cohort_intel = analyze_cohort_intelligence(attempts, walls_map)
+        return render_template(
+            "skill_assessment_ingest.html",
+            specimens=specimen_list,
+            count_human=count_human,
+            count_accepted=count_accepted,
+            count_auto=count_auto,
+            wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()),
+            remedial_options=REMEDIAL_OPTIONS,
+            batteries=active_batteries,
+            cohort_intel=cohort_intel
+        )
+
     @app.route("/skill-assessment/admin")
     @grader_required
     def skill_assessment_admin():
@@ -8987,21 +9016,12 @@ def create_app(config_class=Config):
         count_accepted = sum(1 for s in specimen_list if s.get("grading_status") == "auto_accepted")
         count_auto = sum(1 for s in specimen_list if s.get("grading_status") in ["auto_suggested", "auto", None])
 
-        active_batteries = [b.to_dict() for b in Assignment.query.filter_by(is_active=True).order_by(Assignment.created_at.desc()).all()]
-        attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.created_at.desc()).limit(200).all()
-        walls_map = {s.id: s for s in specimens}
-        cohort_intel = analyze_cohort_intelligence(attempts, walls_map)
-
         return render_template(
             "skill_assessment_admin.html",
             specimens=specimen_list,
             count_human=count_human,
             count_accepted=count_accepted,
-            count_auto=count_auto,
-            wall_types=list(TAXONOMY_BY_WALL_TYPE.keys()),
-            remedial_options=REMEDIAL_OPTIONS,
-            batteries=active_batteries,
-            cohort_intel=cohort_intel
+            count_auto=count_auto
         )
 
     @app.route("/skill-assessment/admin/upload", methods=["POST"])
@@ -9554,5 +9574,86 @@ def create_app(config_class=Config):
                 x_min = max(0.0, min(1.0, (d.x_min - tol) if abs(d.x_max - d.x_min) < 0.005 else d.x_min))
                 y_min = max(0.0, min(1.0, (d.y_min - tol) if abs(d.y_max - d.y_min) < 0.005 else d.y_min))
                 x_max = max(0.0, min(1.0, (d.x_max + tol) if abs(d.x_max - d.x_min) < 0.005 else d.x_max))
-      
-... [truncated for diff preview]
+                y_max = max(0.0, min(1.0, (d.y_max + tol) if abs(d.y_max - d.y_min) < 0.005 else d.y_max))
+
+                px_x = round(x_min * ref_w, 2)
+                px_y = round(y_min * ref_h, 2)
+                px_w = round(max(12.0, (x_max - x_min) * ref_w), 2)
+                px_h = round(max(12.0, (y_max - y_min) * ref_h), 2)
+
+                annotations.append({
+                    "id": ann_id,
+                    "image_id": img_idx,
+                    "category_id": cat_id,
+                    "bbox": [px_x, px_y, px_w, px_h],
+                    "area": round(px_w * px_h, 2),
+                    "iscrowd": 0,
+                    "attributes": {
+                        "severity": d.severity,
+                        "remedial_action": d.remedial_action,
+                        "title": d.title,
+                        "source": "expert_ground_truth"
+                    }
+                })
+                ann_id += 1
+
+            if include_consensus:
+                attempts = AssessmentAttempt.query.filter_by(wall_id=wall.id).limit(50).all()
+                for att in attempts:
+                    raw_markers = att.submitted_markers
+                    if isinstance(raw_markers, str):
+                        try:
+                            raw_markers = json.loads(raw_markers)
+                        except Exception:
+                            raw_markers = []
+                    for pin in (raw_markers if isinstance(raw_markers, list) else []):
+                        if not isinstance(pin, dict):
+                            continue
+                        p_cat = pin.get("category")
+                        if not p_cat:
+                            continue
+                        cat_id = cat_slug_to_id.get(p_cat, 1)
+                        px = round(float(pin.get("x", 0.5)) * ref_w - 40, 2)
+                        py = round(float(pin.get("y", 0.5)) * ref_h - 40, 2)
+                        annotations.append({
+                            "id": ann_id,
+                            "image_id": img_idx,
+                            "category_id": cat_id,
+                            "bbox": [max(0.0, px), max(0.0, py), 80.0, 80.0],
+                            "area": 6400.0,
+                            "iscrowd": 0,
+                            "attributes": {
+                                "severity": pin.get("severity", "moderate"),
+                                "remedial_action": pin.get("remedial", "repoint_lime"),
+                                "source": "student_consensus_pin"
+                            }
+                        })
+                        ann_id += 1
+
+        coco_payload = {
+            "info": {
+                "description": "Global Wall Inspector — Masonry Defect Dataset (COCO 1.0)",
+                "version": "2.0.0",
+                "year": 2026,
+                "contributor": "Global Wall Inspector AI & Assessor Studio",
+                "date_created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            },
+            "licenses": [
+                {"id": 1, "name": "Global Wall Inspector Certification & MLOps License"}
+            ],
+            "categories": categories,
+            "images": images,
+            "annotations": annotations
+        }
+
+        resp = jsonify(coco_payload)
+        if as_download:
+            resp.headers["Content-Disposition"] = 'attachment; filename="wall_inspector_coco_dataset.json"'
+        return resp
+
+    return app
+
+app = create_app()
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
